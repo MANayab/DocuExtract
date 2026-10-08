@@ -1,0 +1,1 @@
+export function ProgressIndicator({value,label}:{value:number;label:string}){return <div aria-live="polite"><div className="flex justify-between text-sm"><span>{label}</span><span>{value}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-blue-600 transition-all" style={{width:`${value}%`}}/></div></div>}

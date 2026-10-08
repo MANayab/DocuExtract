@@ -1,0 +1,1 @@
+export function ErrorPanel({message,onDismiss}:{message:string;onDismiss:()=>void}){return <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800"><div className="flex items-start justify-between gap-4"><p>{message}</p><button type="button" className="font-medium underline" onClick={onDismiss}>Dismiss</button></div></div>}

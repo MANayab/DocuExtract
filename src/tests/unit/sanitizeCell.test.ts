@@ -1,0 +1,2 @@
+import {describe,expect,it} from 'vitest';import {sanitizeCell,sanitizeRow} from '../../features/export/sanitizeCell';
+describe('sanitizeCell',()=>{it.each(['=cmd|\'/c calc\'!A1','=SUM(A1:A2)','+123','-123','@mention','\tformula','\rformula'])('prefixes %s',v=>expect(sanitizeCell(v)).toBe(`'${v}`));it('keeps normal values',()=>{expect(sanitizeCell('Invoice 123')).toBe('Invoice 123');expect(sanitizeCell(42)).toBe(42);});it('sanitizes whole rows',()=>{expect(sanitizeRow(['=1+1',5,null,'ok'])).toEqual(["'=1+1",5,null,'ok']);});});

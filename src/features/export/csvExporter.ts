@@ -1,0 +1,3 @@
+import type { Invoice } from '../../types/invoice'; import { sanitizeCell } from './sanitizeCell';
+const q=(v:unknown)=>{const s=String(sanitizeCell(v)??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+export function invoiceToCsv(i:Invoice):Blob{const rows=[['Invoice Number','Line Number','Description','Quantity','Unit','Unit Price','Discount','Tax Rate','Tax Amount','Line Total'],...i.items.map((x,n)=>[i.invoiceNumber.value,n+1,x.description.value,x.quantity.value,x.unit.value,x.unitPrice.value,x.discount.value,x.taxRate.value,x.taxAmount.value,x.lineTotal.value])]; return new Blob([rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});}

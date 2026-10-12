@@ -19,7 +19,7 @@ export const SITE = {
   keywords:
     'pdf invoice to excel, invoice data extraction, gst invoice to excel, invoice ocr, convert invoice pdf to csv, private invoice parser',
   /** Paste the token from Google Search Console (HTML tag method); injected into <head> at build time. */
-  googleSiteVerification: '',
+  googleSiteVerification: 'LG9hgW4y64yMzHTyEO7wEkTWzpy2BdXJJF6ilYaGp9U',
 } as const;
 
 export interface Feature {

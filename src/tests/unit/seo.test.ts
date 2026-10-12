@@ -32,7 +32,7 @@ describe('search snippet basics', () => {
   });
 
   it('only injects a Search Console token when one is configured', () => {
-    expect(seoHead(false).includes('google-site-verification')).toBe(SITE.googleSiteVerification !== '');
+    expect(seoHead(false).includes('google-site-verification')).toBe(String(SITE.googleSiteVerification) !== '');
   });
 });
 

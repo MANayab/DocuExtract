@@ -1,45 +1,60 @@
 import { useState } from 'react';
 import { saveAs } from 'file-saver';
-import type { Invoice } from '../../types/invoice';
-import type { ValidationCheck } from '../../features/validation/totalsValidator';
-import { invoiceToCsv } from '../../features/export/csvExporter';
-import { invoiceToJson } from '../../features/export/jsonExporter';
+import { invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
+import { invoicesToJson } from '../../features/export/jsonExporter';
+import type { ExportEntry } from '../../features/export/workbookModel';
+import { IconDownload } from '../layout/Icons';
 
-export function ExportPanel({ invoice, checks }: { invoice: Invoice; checks: ValidationCheck[] }) {
+interface Props {
+  entries: ExportEntry[];
+  /** Used in file names and headings: "all invoices" or "this invoice". */
+  scope: 'all' | 'one';
+  flagged: number;
+}
+
+const stamp = () => new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+export function ExportPanel({ entries, scope, flagged }: Props) {
   const [error, setError] = useState('');
-  const name = invoice.extraction.sourceFile.replace(/\.pdf$/i, '') || 'invoice';
+  const base = `docuextract-${scope === 'all' ? 'invoices' : 'invoice'}-${stamp()}`;
+  const empty = entries.length === 0;
 
   const downloadXlsx = async () => {
     setError('');
     try {
       // Loaded on demand: the Excel library is large and only needed for this button.
-      const { invoiceToXlsx } = await import('../../features/export/xlsxExporter');
-      saveAs(await invoiceToXlsx(invoice, checks), `${name}.xlsx`);
+      const { invoicesToXlsx } = await import('../../features/export/xlsxExporter');
+      saveAs(await invoicesToXlsx(entries), `${base}.xlsx`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The Excel file could not be created.');
     }
   };
 
   return (
-    <section className="mt-6 rounded-2xl border bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-semibold">Export</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Review your data and validations before using exports for accounting or tax purposes.
-      </p>
-      {error && (
-        <p role="alert" className="mt-3 text-sm text-red-700">
-          {error}
+    <section className="dx-card dx-export" aria-labelledby={`export-title-${scope}`}>
+      <div>
+        <h2 id={`export-title-${scope}`}>{scope === 'all' ? 'Export all invoices' : 'Export this invoice'}</h2>
+        <p className="dx-muted dx-small">
+          {empty
+            ? 'Nothing to export yet.'
+            : `${entries.length} invoice${entries.length === 1 ? '' : 's'} ready.`}
+          {flagged > 0 ? ` ${flagged} flagged for review are marked in the Status column.` : ''}
         </p>
-      )}
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white" onClick={downloadXlsx}>
-          Download XLSX
+        {error && <p role="alert" className="dx-error-text">{error}</p>}
+      </div>
+
+      <div className="dx-export__buttons">
+        <button type="button" className="dx-btn dx-btn--primary" disabled={empty} onClick={downloadXlsx}>
+          <IconDownload /> Download Excel
         </button>
-        <button className="rounded-lg border px-4 py-2" onClick={() => saveAs(invoiceToCsv(invoice), `${name}.csv`)}>
-          Download CSV
+        <button type="button" className="dx-btn" disabled={empty} onClick={() => saveAs(invoicesToCsv(entries), `${base}.csv`)}>
+          CSV · invoices
         </button>
-        <button className="rounded-lg border px-4 py-2" onClick={() => saveAs(invoiceToJson(invoice), `${name}.json`)}>
-          Download JSON
+        <button type="button" className="dx-btn" disabled={empty} onClick={() => saveAs(lineItemsToCsv(entries), `${base}-line-items.csv`)}>
+          CSV · line items
+        </button>
+        <button type="button" className="dx-btn" disabled={empty} onClick={() => saveAs(invoicesToJson(entries), `${base}.json`)}>
+          JSON
         </button>
       </div>
     </section>

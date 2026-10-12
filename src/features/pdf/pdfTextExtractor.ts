@@ -71,6 +71,7 @@ export async function extractPdf(
       pageCount: pdf.numPages,
       spans,
       text,
+      pageTexts,
       kind:
         text.length >= MIN_TEXT_CHARS_PER_PAGE * pdf.numPages
           ? 'text-based'

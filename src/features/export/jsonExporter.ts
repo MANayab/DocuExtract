@@ -1,1 +1,24 @@
-import type { Invoice } from '../../types/invoice'; export function invoiceToJson(i:Invoice):Blob{return new Blob([JSON.stringify(i,null,2)],{type:'application/json;charset=utf-8'});}
+import { analyzeInvoice } from '../validation/analysis';
+import type { ExportEntry } from './workbookModel';
+
+export const APP_VERSION = '1.1.0';
+
+export function buildJson(entries: ExportEntry[], exportedAt = new Date().toISOString()) {
+  return {
+    generator: 'DocuExtract',
+    version: APP_VERSION,
+    exportedAt,
+    count: entries.length,
+    invoices: entries.map(({ invoice, checks }) => {
+      const analysis = analyzeInvoice(invoice);
+
+      return {
+        invoice,
+        validation: { status: analysis.status, reasons: analysis.reasons, checks },
+      };
+    }),
+  };
+}
+
+export const invoicesToJson = (entries: ExportEntry[]): Blob =>
+  new Blob([JSON.stringify(buildJson(entries), null, 2)], { type: 'application/json;charset=utf-8' });

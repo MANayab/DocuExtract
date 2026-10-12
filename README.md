@@ -10,7 +10,7 @@ No backend. No account. No database. No analytics. No telemetry.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MANayab/DocuExtract/deploy.yml?branch=main&style=flat-square&label=deploy)](https://github.com/MANayab/DocuExtract/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1F6B45?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-C8431F?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-C8431F?style=flat-square)](CHANGELOG.md)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-1C1B19?style=flat-square)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-18.3-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -28,7 +28,9 @@ No backend. No account. No database. No analytics. No telemetry.
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Support matrix](#support-matrix)
-- [Known limitations](#known-limitations-v100)
+- [Known limitations](#known-limitations-v110)
+- [OCR for scanned PDFs](#ocr-for-scanned-pdfs-optional)
+- [Search and AI discoverability](#search-and-ai-discoverability)
 - [Quick start](#quick-start)
 - [Scripts](#scripts)
 - [Testing](#testing)
@@ -54,14 +56,18 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 | | |
 |---|---|
 | **Local-only processing** | PDFs are parsed in the browser with pdf.js. No upload, no server round trip. |
-| **Three export formats** | XLSX (full invoice), CSV (line items), JSON (full invoice). |
-| **Review before export** | Edit extracted fields and line items before you download anything. |
-| **Date safety** | Ambiguous numeric dates such as `05/09/2026` are read as DD/MM/YYYY and flagged for confirmation. |
-| **Safe spreadsheets** | Cells that could trigger spreadsheet formulas are sanitized on export. |
-| **Validated data** | Extracted invoice data is validated with Zod before it reaches the review screen. |
-| **Clean memory handling** | PDF buffers are released and PDF documents are destroyed after processing. |
-| **No persistence** | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. |
-| **Tested** | Unit and component tests with Vitest, end-to-end tests with Playwright, type checking and linting in CI. |
+| **Batch dashboard** | Drop up to 50 PDFs at once. Live queue, KPI cards, per-invoice status (Validated, Review, Failed, Scanned) and duplicate detection. |
+| **Multi-invoice PDFs** | A PDF that holds several invoices is split automatically; multi-page invoices stay together. |
+| **GST-aware** | GSTIN per party, CGST / SGST / IGST, and per-line HSN, taxable value, tax rate and tax amount columns. |
+| **Labels above values** | Reads layouts where "Invoice No." sits above its value, not just `Label: value` lines. |
+| **Optional local OCR** | Scanned PDFs can be read with Tesseract running in your browser, from files served by this site (no CDN). Always marked lower confidence. |
+| **Combined exports** | One Excel workbook (one row per invoice plus line items, parties, taxes, validation, metadata), CSV for invoices or line items, JSON. |
+| **Review before export** | Edit every field and line item; confidence bands highlight what to check; checks re-run as you type. |
+| **Date safety** | Ambiguous numeric dates such as `05/09/2026` are read as DD/MM/YYYY and flagged on the field. |
+| **Safe spreadsheets** | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly. |
+| **No persistence** | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. Memory is released after each file. |
+| **SEO and AI-ready** | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md). |
+| **Tested** | Unit, integration and end-to-end tests; type checking and linting in CI. |
 
 ## How it works
 
@@ -71,9 +77,11 @@ flowchart LR
     B -- "invalid or encrypted" --> X["Rejected with<br/>clear message"]
     B -- "valid" --> C["pdf.js<br/>read text layer"]
     C --> D{"Text found?"}
-    D -- "no (scanned)" --> W["Warning: OCR<br/>not available in v1.0.0"]
+    D -- "no (scanned)" --> W["Optional local OCR<br/>(Tesseract, WASM)"]
+    W --> E
     D -- "yes" --> E["Group items into<br/>rows and columns"]
-    E --> F["Heuristic extraction<br/>header fields + line items"]
+    E --> S["Split multi-invoice PDFs"]
+    S --> F["Heuristic extraction<br/>header fields + line items"]
     F --> G["Zod validation"]
     G --> H["Review screen<br/>edit and confirm"]
     H --> I["Sanitize cells"]
@@ -84,8 +92,9 @@ flowchart LR
     classDef ok fill:#DCEBDF,stroke:#1F6B45,color:#1C1B19;
     classDef bad fill:#F0B9A7,stroke:#C8431F,color:#1C1B19;
     classDef out fill:#FBF9F3,stroke:#1C1B19,color:#1C1B19;
-    class C,E,F,G,H,I ok;
-    class X,W bad;
+    class C,E,S,F,G,H,I ok;
+    class X bad;
+    class W ok;
     class J,K,L out;
 ```
 
@@ -142,22 +151,22 @@ stateDiagram-v2
 | PDF type | Support |
 | --- | --- |
 | Text-based | **Yes.** Reliably supported. |
-| Scanned PDF | **Not yet.** OCR is not implemented in v1.0.0 (planned for Phase 2). |
-| Image-only | **Not yet.** OCR is not implemented in v1.0.0 (planned for Phase 2). |
+| Scanned PDF | **Optional.** Local OCR when the build bundles it ([docs/OCR.md](docs/OCR.md)); otherwise listed as "Scanned PDF". Always lower confidence. |
+| Image-only | **Optional.** Same as scanned PDFs. |
 | Password-protected | **Limited.** Encrypted files are rejected unless provided as an already-decrypted PDF. |
 | Corrupt | No. |
 | Handwritten | Not guaranteed. |
 | Multi-page | **Yes**, up to 100 pages. |
-| Multiple invoices per PDF | Phase 2. |
+| Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together. |
 
-## Known limitations (v1.0.0)
+## Known limitations (v1.1.0)
 
-- **OCR is not implemented.** Scanned or image-only PDFs show a warning and cannot be extracted. The "Enable OCR" button explains this instead of downloading anything.
-- Labels and values must be on the **same line** or in **neighbouring columns of the same row**. Layouts that put a label *above* its value are not read.
-- Numeric dates such as `05/09/2026` are read as **DD/MM/YYYY** and flagged for confirmation.
-- Line items are detected with column gaps and the table header. Unusual tables may need manual correction on the review screen.
-- One invoice per PDF.
-- The CSV export contains **line items only**. Use XLSX or JSON for the full invoice.
+- **OCR is English only**, limited to 20 pages per PDF, and slower and less accurate than text PDFs. Every OCR'd invoice is marked **Review**.
+- OCR needs a one-time build step to bundle the Tesseract files ([docs/OCR.md](docs/OCR.md)). Without it, scanned PDFs are detected but not read.
+- Multi-invoice splitting relies on the invoice number changing between pages. A PDF where invoices share a number, or print none, is read as one invoice.
+- Line items need visible column gaps and a header row. Tables without a header, or with wrapped two-line headers, may need manual correction on the review screen.
+- Numeric dates such as `05/09/2026` are read as **DD/MM/YYYY**; check the highlighted field when your invoices use MM/DD.
+- Extraction is heuristic. Always review before using values for accounting or tax.
 
 ## Quick start
 
@@ -172,6 +181,8 @@ npm run dev
 
 Open the URL Vite prints. Because the app is built for GitHub Pages, the path includes `/DocuExtract/`.
 
+Try the files in [`samples/`](samples/) (text, GST table, label-above, multi-invoice and a scan).
+
 To preview a production build:
 
 ```bash
@@ -183,7 +194,8 @@ npm run preview
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Start the Vite dev server with hot reload. |
+| `npm run dev` | Start the Vite dev server with hot reload (runs `prepare:ocr` first). |
+| `npm run prepare:ocr` | Copy the Tesseract worker, WASM core and language data into `public/ocr/` (also runs before `dev` and `build`). |
 | `npm run build` | Produce a production build in `dist/`. |
 | `npm run preview` | Serve the production build locally. |
 | `npm run typecheck` | Run `tsc --noEmit`. |
@@ -243,6 +255,21 @@ flowchart LR
 
 > [!NOTE]
 > If you fork the project under a different repository name, change `base` in `vite.config.ts` to match.
+
+## OCR for scanned PDFs (optional)
+
+OCR runs entirely in the browser from files served by your own site. Enable it once:
+
+```bash
+npm install --save-exact '@tesseract.js-data/eng'
+npm run build
+```
+
+Full guide, limits and troubleshooting: [docs/OCR.md](docs/OCR.md).
+
+## Search and AI discoverability
+
+The page ships title and description tags, canonical URL, Open Graph and Twitter cards, JSON-LD (`WebSite`, `WebApplication`, `FAQPage`), pre-rendered semantic HTML for crawlers that do not run JavaScript, a sitemap, `robots.txt` and `llms.txt`. Step-by-step Google Search Console indexing and honest caveats: [docs/SEO.md](docs/SEO.md).
 
 ## Architecture
 
@@ -306,13 +333,14 @@ gantt
     axisFormat  %b %Y
     section Released
     v1.0.0 Text-PDF extraction, XLSX/CSV/JSON, review screen :done, v1, 2026-06, 2026-09
-    section Phase 2 (planned)
-    OCR for scanned and image-only PDFs                       :active, ocr, 2026-10, 2026-12
-    Multiple invoices per PDF                                 :multi, after ocr, 60d
-    Labels placed above values                                :layout, after multi, 45d
-    section Later (ideas)
-    Locale-aware date and number parsing                      :loc, after layout, 45d
-    Batch processing                                          :batch, after loc, 60d
+    v1.1.0 Batch, multi-invoice, GST columns, labels above, OCR, dashboard, SEO :done, v11, 2026-10, 2026-10
+    section Next
+    Locale-aware dates and numbers                           :loc, 2026-11, 45d
+    More OCR languages (Hindi and others)                    :lang, after loc, 45d
+    Vendor templates stored only with explicit consent       :tpl, after lang, 60d
+    section Ideas
+    Dedicated pages per use case (SEO)                       :seo, 2027-02, 30d
+    Installable offline PWA                                  :pwa, after seo, 45d
 ```
 
 > [!NOTE]
@@ -322,10 +350,10 @@ gantt
 
 | Layer | Tools |
 | --- | --- |
-| UI | React 18.3, Tailwind CSS 3.4 |
+| UI | React 18.3, hand-written CSS design system (Tailwind CSS 3.4 in the toolchain) |
 | Language and build | TypeScript 5.6, Vite 5.4 |
 | PDF parsing | pdfjs-dist 4.10 |
-| OCR (Phase 2) | tesseract.js 5.1 |
+| OCR (optional, bundled locally) | tesseract.js 5.1 + tesseract.js-core |
 | Validation | Zod 3.23 |
 | Export | ExcelJS 4.4, file-saver 2.0 |
 | Quality | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.48 |

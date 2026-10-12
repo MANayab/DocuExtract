@@ -1,9 +1,11 @@
 {
   "name": "docuextract",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare:ocr": "node scripts/prepare-ocr-assets.mjs",
+    "predev": "node scripts/prepare-ocr-assets.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
@@ -11,10 +13,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "prebuild": "node scripts/prepare-ocr-assets.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "exceljs": "4.4.0",
     "file-saver": "2.0.5",
     "pdfjs-dist": "4.10.38",

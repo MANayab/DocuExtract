@@ -1,2 +1,147 @@
-import { useMemo,useState } from 'react'; import type { Invoice } from '../types/invoice'; import type { PdfExtraction } from '../types/extraction'; import { FileUploader } from '../components/FileUploader'; import { ProgressIndicator } from '../components/ProgressIndicator'; import { ErrorPanel } from '../components/ErrorPanel'; import { InvoicePreview } from '../components/InvoicePreview'; import { ExtractionTable } from '../components/ExtractionTable'; import { ValidationPanel } from '../components/ValidationPanel'; import { ExportPanel } from '../components/ExportPanel'; import { parseInvoice } from '../features/extraction/invoiceParser'; import { runOcr } from '../features/ocr/ocrEngine'; import { validateInvoice } from '../features/validation/invoiceValidator';
-export function App(){const [screen,setScreen]=useState<'upload'|'processing'|'review'|'export'>('upload');const [progress,setProgress]=useState(0);const [label,setLabel]=useState('Waiting for a file');const [error,setError]=useState('');const [invoice,setInvoice]=useState<Invoice>();const [raw,setRaw]=useState<PdfExtraction>();const checks=useMemo(()=>invoice?validateInvoice(invoice).checks:[],[invoice]);const handleFile=async(file:File)=>{setError('');setScreen('processing');setProgress(5);setLabel('Opening PDF');try{const {extractPdf}=await import('../features/pdf/pdfTextExtractor');const r=await extractPdf(file,p=>{setProgress(10+Math.round(p*.75));setLabel('Extracting PDF text');});setRaw(r);setProgress(92);setLabel('Detecting invoice fields');const parsed=parseInvoice(r);setInvoice(parsed);setProgress(100);setLabel('Ready for review');setTimeout(()=>setScreen('review'),150);}catch(e){setError(e instanceof Error?e.message:'This PDF could not be processed.');setScreen('upload');}};return <main className="min-h-screen bg-slate-50 text-slate-900"><div className="mx-auto max-w-6xl px-4 py-8 sm:px-6"><header className="mb-8 flex items-end justify-between"><div><p className="text-sm font-semibold text-blue-600">DocuExtract</p><h1 className="mt-1 text-3xl font-bold tracking-tight">PDF Invoice to Excel</h1><p className="mt-2 max-w-2xl text-slate-600">Private, browser-only extraction for structured invoice data.</p></div><span className="rounded-full border bg-white px-3 py-1 text-xs">No upload / no account</span></header>{error&&<div className="mb-5"><ErrorPanel message={error} onDismiss={()=>setError('')}/></div>}{screen==='upload'&&<FileUploader onFile={handleFile} onError={setError}/>} {screen==='processing'&&<section className="rounded-2xl border bg-white p-8 shadow-sm"><h2 className="text-xl font-semibold">Processing locally</h2><p className="mt-2 text-sm text-slate-600">Your PDF stays in this browser.</p><div className="mt-8"><ProgressIndicator value={progress} label={label}/></div></section>} {screen==='review'&&invoice&&<><div className="mb-5 flex flex-wrap gap-2"><button className="rounded-lg border bg-white px-4 py-2" onClick={()=>{setInvoice(undefined);setRaw(undefined);setScreen('upload')}}>Start over</button><button className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white" onClick={()=>setScreen('export')}>Continue to export</button></div><InvoicePreview invoice={invoice} onChange={setInvoice}/><ExtractionTable invoice={invoice} onChange={setInvoice}/><ValidationPanel checks={checks}/></>} {screen==='export'&&invoice&&<><div className="mb-5 flex gap-2"><button className="rounded-lg border bg-white px-4 py-2" onClick={()=>setScreen('review')}>Back to review</button><button className="rounded-lg border bg-white px-4 py-2" onClick={()=>{setInvoice(undefined);setRaw(undefined);setScreen('upload')}}>New invoice</button></div><ExportPanel invoice={invoice} checks={checks}/></>}{raw?.kind==='image-only'&&screen==='review'&&<div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm"><p>This appears to be image-only. OCR is best-effort and requires local Tesseract language data; it is never downloaded silently.</p><button type="button" className="mt-3 rounded-lg border border-amber-400 bg-white px-4 py-2 font-medium" onClick={async()=>{try{await runOcr([]);}catch(e){setError(e instanceof Error?e.message:String(e));}}}>Enable OCR</button></div>}<footer className="mt-12 border-t pt-5 text-xs text-slate-500">Process locally. Review all extracted values before accounting or tax use.</footer></div></main>}
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ErrorPanel } from '../components/ErrorPanel';
+import { ExportPanel } from '../components/ExportPanel';
+import { FileUploader } from '../components/FileUploader';
+import { Footer } from '../components/layout/Footer';
+import { Header } from '../components/layout/Header';
+import { IconCheck, IconShield, IconSparkle } from '../components/layout/Icons';
+import { Features, Faq, HowItWorks } from '../components/marketing/Sections';
+import { KpiCards } from '../components/Dashboard/KpiCards';
+import { ResultsTable } from '../components/Dashboard/ResultsTable';
+import { ReviewScreen } from '../components/review/ReviewScreen';
+import { OCR_BUNDLED } from '../config/build';
+import { SITE } from '../content/site';
+import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
+import { findDuplicates, summarize } from '../features/batch/summary';
+import type { ExportEntry } from '../features/export/workbookModel';
+import { analyzeInvoice } from '../features/validation/analysis';
+import type { Invoice } from '../types/invoice';
+
+type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
+
+export function App() {
+  const { store, records } = useBatchStore();
+  const ocrAvailable = useOcrAvailable();
+  const [view, setView] = useState<View>({ kind: 'dashboard' });
+  const [notices, setNotices] = useState<string[]>([]);
+  const autoOpen = useRef(false);
+
+  const summary = useMemo(() => summarize(records), [records]);
+  const duplicates = useMemo(() => findDuplicates(records), [records]);
+
+  const ready = useMemo(() => records.filter((r) => r.status === 'ready' && r.invoice), [records]);
+  const entries: ExportEntry[] = useMemo(
+    () => ready.map((r) => ({ invoice: r.invoice as Invoice, checks: analyzeInvoice(r.invoice as Invoice).checks })),
+    [ready],
+  );
+
+  const handleFiles = (files: File[]) => {
+    const wasEmpty = store.getSnapshot().length === 0;
+    const result = store.addFiles(files);
+
+    setNotices(result.rejected.map((r) => `${r.name}: ${r.reason}`));
+    // A single dropped file goes straight to review, like a one-off converter.
+    autoOpen.current = wasEmpty && files.length === 1 && result.accepted === 1;
+  };
+
+  useEffect(() => {
+    if (!autoOpen.current || records.length === 0) return;
+
+    if (records.length === 1 && records[0].status === 'ready') {
+      autoOpen.current = false;
+      setView({ kind: 'review', id: records[0].id });
+    } else if (records.some((r) => r.status === 'error' || r.status === 'needs-ocr') || records.length > 1) {
+      autoOpen.current = false;
+    }
+  }, [records]);
+
+  const current = view.kind === 'review' ? records.find((r) => r.id === view.id) : undefined;
+  const reviewing = current?.invoice ? current : undefined;
+  const readyIds = ready.map((r) => r.id);
+  const position = reviewing ? readyIds.indexOf(reviewing.id) : -1;
+
+  const goHome = () => setView({ kind: 'dashboard' });
+
+  if (reviewing?.invoice) {
+    const invoice = reviewing.invoice;
+
+    return (
+      <div className="dx-app">
+        <Header onHome={goHome} />
+        <main id="main">
+          <ReviewScreen
+            record={reviewing}
+            invoice={invoice}
+            analysis={analyzeInvoice(invoice)}
+            position={{ index: position + 1, total: readyIds.length }}
+            onBack={goHome}
+            onPrev={position > 0 ? () => setView({ kind: 'review', id: readyIds[position - 1] }) : undefined}
+            onNext={position < readyIds.length - 1 ? () => setView({ kind: 'review', id: readyIds[position + 1] }) : undefined}
+            onChange={(next) => store.updateInvoice(reviewing.id, next)}
+          />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const hasRecords = records.length > 0;
+
+  return (
+    <div className="dx-app">
+      <a className="dx-skip" href="#main">Skip to content</a>
+      <Header onHome={goHome} />
+
+      <main id="main">
+        <section className="dx-hero">
+          <div className="dx-container dx-hero__inner">
+            <p className="dx-eyebrow"><IconSparkle /> v{SITE.version} · batch, GST{OCR_BUNDLED ? ' and OCR' : ' and multi-invoice PDFs'}</p>
+            <h1 className="dx-hero__title">{SITE.h1}</h1>
+            <p className="dx-hero__lead">
+              {SITE.tagline}. Drop invoices, check what was flagged and download Excel, CSV or JSON. Nothing is uploaded.
+            </p>
+            <ul className="dx-trust" aria-label="Highlights">
+              <li><IconShield /> No upload, no account</li>
+              <li><IconCheck /> Totals and tax validated</li>
+              <li><IconCheck /> Free and open source</li>
+            </ul>
+          </div>
+        </section>
+
+        <div className="dx-container dx-lift">
+          {notices.length > 0 && (
+            <div className="dx-notices">
+              {notices.map((message) => (
+                <ErrorPanel key={message} message={message} onDismiss={() => setNotices((all) => all.filter((m) => m !== message))} />
+              ))}
+            </div>
+          )}
+
+          <FileUploader onFiles={handleFiles} />
+
+          {hasRecords && (
+            <div className="dx-stack dx-dashboard">
+              <KpiCards summary={summary} />
+              <ResultsTable
+                records={records}
+                duplicates={duplicates}
+                ocrAvailable={ocrAvailable}
+                onOpen={(id) => setView({ kind: 'review', id })}
+                onRemove={(id) => store.remove(id)}
+                onOcr={(id) => store.requestOcr(id)}
+                onClear={() => store.clear()}
+              />
+              <ExportPanel entries={entries} scope="all" flagged={summary.needsReview} />
+            </div>
+          )}
+        </div>
+
+        <HowItWorks />
+        <Features />
+        <Faq />
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

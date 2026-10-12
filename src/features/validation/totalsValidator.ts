@@ -1,5 +1,77 @@
 import type { Invoice } from '../../types/invoice';
-export interface ValidationCheck { check:string; expected:number; actual:number; status:'PASS'|'FAIL'; message:string; }
-const round=(n:number)=>Math.round(n*100)/100;
-export function validateTotals(i:Invoice):ValidationCheck[]{ const tol=.02; const lineExpected=round(i.items.reduce((s,x)=>s+x.lineTotal.value,0)); const subtotal=round(i.subtotal.value); const grandExpected=round(subtotal-i.discountTotal.value+i.taxTotal.value+i.shipping.value+i.otherCharges.value); const grand=round(i.grandTotal.value); return [{check:'Line items → subtotal',expected:lineExpected,actual:subtotal,status:Math.abs(lineExpected-subtotal)<=tol?'PASS':'FAIL',message:Math.abs(lineExpected-subtotal)<=tol?'Line totals reconcile.':`Difference: ${round(subtotal-lineExpected).toFixed(2)}`},{check:'Invoice total arithmetic',expected:grandExpected,actual:grand,status:Math.abs(grandExpected-grand)<=tol?'PASS':'FAIL',message:Math.abs(grandExpected-grand)<=tol?'Header totals reconcile.':`Difference: ${round(grand-grandExpected).toFixed(2)}`}]; }
-export function validateLineItems(i:Invoice):ValidationCheck[]{ return i.items.map((x,n)=>{const expected=round(x.quantity.value*x.unitPrice.value-x.discount.value);const actual=round(x.lineTotal.value);const pass=Math.abs(expected-actual)<=.02;return {check:`Line ${n+1} arithmetic`,expected,actual,status:pass?'PASS':'FAIL',message:pass?'Quantity × price − discount reconciles.':`Difference: ${round(actual-expected).toFixed(2)}`};}); }
+
+export interface ValidationCheck {
+  check: string;
+  expected: number;
+  actual: number;
+  status: 'PASS' | 'FAIL';
+  message: string;
+}
+
+const TOLERANCE = 0.02;
+const round = (n: number) => Math.round(n * 100) / 100;
+const near = (a: number, b: number) => Math.abs(a - b) <= TOLERANCE;
+
+export function validateTotals(i: Invoice): ValidationCheck[] {
+  const lineSum = round(i.items.reduce((s, x) => s + x.lineTotal.value, 0));
+  const taxColumn = round(i.items.reduce((s, x) => s + x.taxAmount.value, 0));
+  const subtotal = round(i.subtotal.value);
+
+  // Some invoices print line totals including tax; accept that reading too.
+  const lineExTax = round(lineSum - taxColumn);
+  const subtotalMatches = near(lineSum, subtotal) || (taxColumn > 0 && near(lineExTax, subtotal));
+  const subtotalExpected = taxColumn > 0 && !near(lineSum, subtotal) && near(lineExTax, subtotal) ? lineExTax : lineSum;
+
+  const grandExpected = round(
+    subtotal - i.discountTotal.value + i.taxTotal.value + i.shipping.value + i.otherCharges.value,
+  );
+  const grand = round(i.grandTotal.value);
+  const grandOk = near(grandExpected, grand);
+
+  return [
+    {
+      check: 'Line items → subtotal',
+      expected: subtotalExpected,
+      actual: subtotal,
+      status: subtotalMatches ? 'PASS' : 'FAIL',
+      message: subtotalMatches
+        ? 'Line totals reconcile.'
+        : `Difference: ${round(subtotal - lineSum).toFixed(2)}`,
+    },
+    {
+      check: 'Invoice total arithmetic',
+      expected: grandExpected,
+      actual: grand,
+      status: grandOk ? 'PASS' : 'FAIL',
+      message: grandOk ? 'Header totals reconcile.' : `Difference: ${round(grand - grandExpected).toFixed(2)}`,
+    },
+  ];
+}
+
+export function validateLineItems(i: Invoice): ValidationCheck[] {
+  return i.items.map((x, n) => {
+    const base = round(x.quantity.value * x.unitPrice.value - x.discount.value);
+    const actual = round(x.lineTotal.value);
+    const withTaxAmount = round(base + x.taxAmount.value);
+    const withTaxRate = round(base * (1 + x.taxRate.value / 100));
+
+    const pass =
+      near(base, actual) ||
+      (x.taxAmount.value > 0 && near(withTaxAmount, actual)) ||
+      (x.taxRate.value > 0 && near(withTaxRate, actual));
+
+    const includesTax = !near(base, actual) && pass;
+
+    return {
+      check: `Line ${n + 1} arithmetic`,
+      expected: includesTax ? (near(withTaxAmount, actual) ? withTaxAmount : withTaxRate) : base,
+      actual,
+      status: pass ? 'PASS' : 'FAIL',
+      message: pass
+        ? includesTax
+          ? 'Quantity × price − discount + tax reconciles (line total includes tax).'
+          : 'Quantity × price − discount reconciles.'
+        : `Difference: ${round(actual - base).toFixed(2)}`,
+    } as ValidationCheck;
+  });
+}

@@ -1,1 +1,13 @@
-export function ErrorPanel({message,onDismiss}:{message:string;onDismiss:()=>void}){return <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800"><div className="flex items-start justify-between gap-4"><p>{message}</p><button type="button" className="font-medium underline" onClick={onDismiss}>Dismiss</button></div></div>}
+import { IconAlert } from '../layout/Icons';
+
+export function ErrorPanel({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  return (
+    <div role="alert" className="dx-alert dx-alert--error">
+      <IconAlert />
+      <p>{message}</p>
+      <button type="button" className="dx-link" onClick={onDismiss}>
+        Dismiss
+      </button>
+    </div>
+  );
+}

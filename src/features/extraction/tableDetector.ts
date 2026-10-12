@@ -12,16 +12,51 @@ const STOP =
   /^(subtotal|sub total|total|grand total|tax|cgst|sgst|igst|discount|shipping|amount due)/i;
 const NOISE = /^page\s+\d+/i;
 
-type Role = 'qty' | 'rate' | 'amount' | 'discount' | 'other' | 'text';
+type Role =
+  | 'serial'
+  | 'qty'
+  | 'rate'
+  | 'amount'
+  | 'taxable'
+  | 'discount'
+  | 'taxRate'
+  | 'taxAmount'
+  | 'other'
+  | 'text';
 
-function roleOf(header: string): Role {
-  if (/qty|quantity/i.test(header)) return 'qty';
-  if (/disc/i.test(header)) return 'discount';
-  if (/tax|gst|hsn|sac|code|%/i.test(header)) return 'other';
-  if (/amount|total|value/i.test(header)) return 'amount';
-  if (/rate|price/i.test(header)) return 'rate';
-  if (/unit|uom/i.test(header)) return 'other';
-  return 'text';
+/** Classifies a table header cell, e.g. "CGST %" -> taxRate, "Taxable Value" -> taxable. */
+export function roleOf(header: string): Role {
+  const h = header.toLowerCase().trim();
+
+  if (/^(?:sr\.?|s\.?\s*no\.?|sl\.?(?:\s*no\.?)?|#|no\.?)$/.test(h)) return 'serial';
+  if (/qty|quantity|\bnos\b/.test(h)) return 'qty';
+  if (/disc/.test(h)) return 'discount';
+  if (/taxable/.test(h)) return 'taxable';
+
+  if (/tax|gst|cgst|sgst|igst|vat/.test(h)) {
+    return /%|rate|percent/.test(h) ? 'taxRate' : 'taxAmount';
+  }
+
+  if (/%/.test(h)) return 'taxRate';
+  if (/amount|total|value|amt/.test(h)) return 'amount';
+  if (/rate|price|mrp/.test(h)) return 'rate';
+  if (/hsn|sac|code|uom|\bunit\b/.test(h)) return 'other';
+  if (/description|item|particulars|product|name|details/.test(h)) return 'text';
+
+  return 'other';
+}
+
+/**
+ * Header cells can merge when columns sit close together ("SGST %  SGST Amt"
+ * printed with a small gap). Tax headers are split back into one cell each.
+ */
+const TAX_HEADER = /\b(?:cgst|sgst|igst|gst|vat|tax(?!able))\s*(?:%|rate|amt|amount|value)?/gi;
+
+export function splitHeaderCells(cells: string[]): string[] {
+  return cells.flatMap((cell) => {
+    const parts = cell.match(TAX_HEADER);
+    return parts && parts.length > 1 ? parts.map((p) => p.trim()) : [cell];
+  });
 }
 
 const cellsOf = (line: string) =>
@@ -36,12 +71,23 @@ interface Row {
   rate: number;
   amount: number;
   discount: number;
+  taxRate: number;
+  taxAmount: number;
+  hasTax: boolean;
   aligned: boolean;
 }
 
 /** Column-aware parse: relies on wide gaps between table cells. */
-function parseByColumns(line: string, roles: Role[] | null): Row | null {
-  const cells = cellsOf(line);
+function parseByColumns(line: string, headerRoles: Role[] | null): Row | null {
+  let cells = cellsOf(line);
+  let roles = headerRoles;
+
+  // A leading serial number ("1  Cotton Fabric ...") is not part of the description.
+  if (cells.length > 2 && /^\d{1,3}\.?$/.test(cells[0]) && !NUMERIC_CELL.test(cells[1])) {
+    cells = cells.slice(1);
+    if (roles?.[0] === 'serial') roles = roles.slice(1);
+  }
+
   let tail = 0;
 
   while (tail < cells.length - 1 && NUMERIC_CELL.test(cells[cells.length - 1 - tail])) tail++;
@@ -54,29 +100,50 @@ function parseByColumns(line: string, roles: Role[] | null): Row | null {
   let qty: number | undefined;
   let rate: number | undefined;
   let amount: number | undefined;
+  let taxable: number | undefined;
   let discount = 0;
+  let taxRate = 0;
+  let taxAmount = 0;
+  let hasTax = false;
   let aligned = false;
 
   if (roles && tail <= roles.length) {
     // Align the numeric cells to the header columns from the right-hand side.
     const used = roles.slice(roles.length - tail);
-    used.forEach((role, i) => {
+
+    for (let i = 0; i < used.length; i++) {
+      const role = used[i];
+
       if (role === 'qty') qty = nums[i];
       else if (role === 'rate') rate = nums[i];
       else if (role === 'amount') amount = nums[i];
+      else if (role === 'taxable') taxable = nums[i];
       else if (role === 'discount') discount = nums[i];
-    });
-    aligned = amount !== undefined || rate !== undefined;
+      else if (role === 'taxRate') {
+        // CGST % + SGST % columns add up to the effective rate.
+        taxRate += nums[i];
+        hasTax = true;
+      } else if (role === 'taxAmount') {
+        taxAmount += nums[i];
+        hasTax = true;
+      }
+    }
+
+    aligned = amount !== undefined || rate !== undefined || taxable !== undefined;
   }
 
   if (!aligned) {
     qty = tail >= 3 ? nums[tail - 3] : 1;
     rate = tail >= 3 ? nums[tail - 2] : nums[0];
     amount = nums[tail - 1];
+    discount = 0;
+    taxRate = 0;
+    taxAmount = 0;
+    hasTax = false;
   }
 
   const finalQty = qty ?? 1;
-  const finalAmount = amount ?? (rate ?? 0) * finalQty - discount;
+  const finalAmount = amount ?? taxable ?? (rate ?? 0) * finalQty - discount;
   const finalRate = rate ?? (finalQty ? (finalAmount + discount) / finalQty : finalAmount);
 
   return {
@@ -85,6 +152,9 @@ function parseByColumns(line: string, roles: Role[] | null): Row | null {
     rate: finalRate,
     amount: finalAmount,
     discount,
+    taxRate: Number(taxRate.toFixed(4)),
+    taxAmount: Number(taxAmount.toFixed(2)),
+    hasTax,
     aligned,
   };
 }
@@ -103,6 +173,9 @@ function parseLoosely(line: string): Row | null {
     rate: nums.length >= 3 ? nums[1] : nums[0],
     amount: nums[nums.length - 1],
     discount: 0,
+    taxRate: 0,
+    taxAmount: 0,
+    hasTax: false,
     aligned: false,
   };
 }
@@ -120,7 +193,7 @@ export function detectLineItems(spans: TextSpan[], text: string): InvoiceItem[] 
     .filter(Boolean);
 
   const headerIndex = lines.findIndex((x) => HEADER.test(x));
-  const headerCells = headerIndex >= 0 ? cellsOf(lines[headerIndex]) : [];
+  const headerCells = headerIndex >= 0 ? splitHeaderCells(cellsOf(lines[headerIndex])) : [];
   const roles = headerCells.length >= 3 ? headerCells.map(roleOf) : null;
 
   const source =
@@ -144,8 +217,8 @@ export function detectLineItems(spans: TextSpan[], text: string): InvoiceItem[] 
       unit: { value: 'pcs', confidence: 40, source: 'text' },
       unitPrice: field(row.rate, row.aligned ? 85 : 70),
       discount: field(row.discount, row.aligned ? 80 : 55),
-      taxRate: field(0, 45),
-      taxAmount: field(0, 45),
+      taxRate: field(row.taxRate, row.hasTax ? 85 : 45),
+      taxAmount: field(row.taxAmount, row.hasTax ? 85 : 45),
       lineTotal: field(row.amount, row.aligned ? 90 : 80),
     });
   }

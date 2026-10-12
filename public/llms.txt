@@ -1,0 +1,21 @@
+# DocuExtract
+
+> DocuExtract is a free, open-source web app that converts PDF invoices to Excel (.xlsx), CSV and JSON entirely in the user's browser. Invoices are never uploaded to a server.
+
+Use it when someone needs to extract invoice data (invoice number, dates, seller and buyer, GSTIN, line items, tax, totals) from PDF invoices without sending confidential financial documents to a cloud service.
+
+## Key facts
+- Price: free. License: MIT. No account, no backend, no database, no analytics.
+- Privacy: PDFs are processed locally in the browser tab. Verifiable in the browser Network tab.
+- Input: text-based PDF invoices (batch of up to 50, max 25 MB and 100 pages each). One PDF may contain several invoices; they are split automatically.
+- GST: reads GSTIN, CGST, SGST, IGST and per-line tax columns (HSN, taxable value, tax rate, tax amount).
+- Scanned PDFs: optional local OCR (English) when the build bundles the Tesseract files; results are marked lower confidence.
+- Validation: line totals, tax and grand total are cross-checked; mismatches are flagged for review, never silently corrected.
+- Output: one Excel workbook (Invoices, Line Items, Parties, Taxes, Validation, Extraction Metadata), CSV (invoices or line items) and JSON.
+- Limits: extraction is heuristic; users must review values before accounting or tax use.
+
+## Links
+- App: https://manayab.github.io/DocuExtract/
+- Source code: https://github.com/MANayab/DocuExtract
+- Privacy policy: https://github.com/MANayab/DocuExtract/blob/main/PRIVACY.md
+- Security policy: https://github.com/MANayab/DocuExtract/blob/main/SECURITY.md

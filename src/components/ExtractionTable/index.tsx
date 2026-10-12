@@ -1,2 +1,78 @@
-import type { Invoice } from '../../types/invoice';
-export function ExtractionTable({invoice,onChange}:{invoice:Invoice;onChange:(i:Invoice)=>void}){return <section className="mt-6 rounded-2xl border bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Line items</h2><span className="text-sm text-slate-500">{invoice.items.length} detected</span></div><div className="mt-4 overflow-x-auto"><table className="min-w-[760px] w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">Description</th><th className="p-2">Qty</th><th className="p-2">Unit price</th><th className="p-2">Discount</th><th className="p-2">Tax</th><th className="p-2">Line total</th></tr></thead><tbody>{invoice.items.map((x,n)=><tr key={n} className="border-b"><td className="p-2"><input className="w-full rounded border p-2" value={x.description.value} aria-label={`Description ${n+1}`} onChange={e=>{const items=[...invoice.items];items[n]={...x,description:{...x.description,value:e.target.value,source:'manual'}};onChange({...invoice,items});}}/></td>{[['quantity',x.quantity.value],['unitPrice',x.unitPrice.value],['discount',x.discount.value],['taxRate',x.taxRate.value],['lineTotal',x.lineTotal.value]].map(([k,v])=><td className="p-2" key={String(k)}><input className="w-24 rounded border p-2" type="number" step="any" value={Number(v)} aria-label={`${String(k)} ${n+1}`} onChange={e=>{const items=[...invoice.items];items[n]={...x,[k]:{...x[k as keyof typeof x],value:Number(e.target.value),source:'manual'}} as typeof x;onChange({...invoice,items});}}/></td>)}</tr>)}</tbody></table></div></section>}
+import type { Invoice, InvoiceItem } from '../../types/invoice';
+import { confidenceBand } from '../../utils/formatting';
+
+type NumericKey = 'quantity' | 'unitPrice' | 'discount' | 'taxRate' | 'taxAmount' | 'lineTotal';
+
+const COLUMNS: { key: NumericKey; label: string }[] = [
+  { key: 'quantity', label: 'Qty' },
+  { key: 'unitPrice', label: 'Unit price' },
+  { key: 'discount', label: 'Discount' },
+  { key: 'taxRate', label: 'Tax %' },
+  { key: 'taxAmount', label: 'Tax amount' },
+  { key: 'lineTotal', label: 'Line total' },
+];
+
+export function ExtractionTable({ invoice, onChange }: { invoice: Invoice; onChange: (i: Invoice) => void }) {
+  const update = (n: number, item: InvoiceItem) => {
+    const items = [...invoice.items];
+    items[n] = item;
+    onChange({ ...invoice, items });
+  };
+
+  return (
+    <section className="dx-card" aria-labelledby="items-title">
+      <div className="dx-card__head">
+        <h2 id="items-title">Line items</h2>
+        <span className="dx-muted dx-small">{invoice.items.length} detected</span>
+      </div>
+
+      <div className="dx-tablewrap">
+        <table className="dx-table dx-table--items">
+          <thead>
+            <tr>
+              <th scope="col">Description</th>
+              {COLUMNS.map((c) => (
+                <th key={c.key} scope="col" className="dx-num">{c.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.items.map((item, n) => (
+              <tr key={n}>
+                <td>
+                  <input
+                    className={`dx-input dx-input--cell dx-conf-${confidenceBand(item.description.confidence).toLowerCase()}`}
+                    value={item.description.value}
+                    aria-label={`Description ${n + 1}`}
+                    onChange={(e) => update(n, { ...item, description: { ...item.description, value: e.target.value, source: 'manual' } })}
+                  />
+                </td>
+                {COLUMNS.map((c) => (
+                  <td key={c.key} className="dx-num">
+                    <input
+                      className={`dx-input dx-input--cell dx-input--num dx-conf-${confidenceBand(item[c.key].confidence).toLowerCase()}`}
+                      type="number"
+                      step="any"
+                      value={Number(item[c.key].value)}
+                      aria-label={`${c.key} ${n + 1}`}
+                      onChange={(e) =>
+                        update(n, { ...item, [c.key]: { ...item[c.key], value: Number(e.target.value), source: 'manual' } } as InvoiceItem)
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {invoice.items.length === 0 && (
+              <tr>
+                <td colSpan={COLUMNS.length + 1} className="dx-empty">
+                  No line items were detected. Totals above were still read; check them against the PDF.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}

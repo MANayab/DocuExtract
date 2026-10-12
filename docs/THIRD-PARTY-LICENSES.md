@@ -8,6 +8,8 @@ Direct dependencies used by this project:
 | react-dom | 18.3.1 | MIT |
 | pdfjs-dist | 4.10.38 | Apache-2.0 |
 | tesseract.js | 5.1.1 | Apache-2.0 |
+| tesseract.js-core (transitive, bundled for OCR) | 5.1.1 | Apache-2.0 |
+| @tesseract.js-data/eng (optional, added for OCR) | see `package.json` after install | Apache-2.0 |
 | exceljs | 4.4.0 | MIT |
 | file-saver | 2.0.5 | MIT |
 | zod | 3.23.8 | MIT |

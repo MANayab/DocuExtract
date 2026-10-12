@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseInvoice } from '../../features/extraction/invoiceParser';
 import { spansToLines } from '../../features/pdf/textLines';
+import { splitInvoices } from '../../features/extraction/splitInvoices';
+import { markAsOcr, OCR_CONFIDENCE_CAP } from '../../features/extraction/ocrMarking';
+import { validateInvoice } from '../../features/validation/invoiceValidator';
 import type { PdfExtraction, TextSpan } from '../../types/extraction';
 
 /** Builds a PdfExtraction the same way the real extractor does: positioned spans -> lines. */
@@ -172,5 +175,112 @@ describe('invoice parser', () => {
 
     expect(i.currency.confidence).toBeLessThan(70);
     expect(i.currency.warning).toBeTruthy();
+  });
+
+  it('reads values printed below their labels (label-above layout)', () => {
+    const i = parseInvoice(
+      pdfFrom([
+        [['Northwind Stationers Pvt Ltd', 50]],
+        [['Invoice No.', 50], ['Invoice Date', 230], ['Due Date', 400]],
+        [['NW/2026/0815', 50], ['08/10/2026', 230], ['22/10/2026', 400]],
+        [['Grand Total: 9,322.00', 50]],
+      ]),
+    );
+
+    expect(i.invoiceNumber.value).toBe('NW/2026/0815');
+    expect(i.invoiceDate.value).toBe('2026-10-08');
+    expect(i.dueDate.value).toBe('2026-10-22');
+    expect(i.seller.name.value).toBe('Northwind Stationers Pvt Ltd');
+    // Found below the label, so slightly less certain than a same-line value.
+    expect(i.invoiceNumber.confidence).toBeLessThan(90);
+  });
+
+  it('does not return another label as a value when a header row has no values', () => {
+    const i = parseInvoice(pdfFrom([[['Invoice No', 50], ['Invoice Date', 230]], [['Grand Total: 10.00', 50]]]));
+
+    expect(i.invoiceNumber.value).toBe('');
+    expect(i.invoiceDate.value).toBe('');
+  });
+
+  it('reads per-line GST columns (CGST % + SGST % -> rate, amounts summed)', () => {
+    const cols = [40, 66, 200, 250, 285, 330, 405, 445, 495, 530];
+    const row = (cells: string[]): Array<[string, number]> => cells.map((c, n) => [c, cols[n]]);
+    const i = parseInvoice(
+      pdfFrom([
+        row(['Sr', 'Description', 'HSN', 'Qty', 'Rate', 'Taxable Value', 'CGST %', 'CGST Amt', 'SGST %', 'SGST Amt']),
+        row(['1', 'Cotton Fabric 40s', '5208', '100', '250.00', '25,000.00', '2.5', '625.00', '2.5', '625.00']),
+        row(['2', 'Stitching Service', '9988', '40', '125.00', '5,000.00', '2.5', '125.00', '2.5', '125.00']),
+        [['Subtotal: 30,000.00', 50]],
+        [['CGST: 750.00', 50]],
+        [['SGST: 750.00', 50]],
+        [['Grand Total: 31,500.00', 50]],
+      ]),
+    );
+
+    expect(i.items).toHaveLength(2);
+    expect(i.items[0].description.value).toBe('Cotton Fabric 40s');
+    expect(i.items[0].quantity.value).toBe(100);
+    expect(i.items[0].unitPrice.value).toBe(250);
+    expect(i.items[0].lineTotal.value).toBe(25000);
+    expect(i.items[0].taxRate.value).toBe(5);
+    expect(i.items[0].taxAmount.value).toBe(1250);
+    expect(i.taxTotal.value).toBe(1500);
+    expect(validateInvoice(i).checks.every((c) => c.status === 'PASS')).toBe(true);
+  });
+
+  it('accepts line totals that include tax', () => {
+    const cols = [50, 300, 360, 420, 480];
+    const row = (cells: string[]): Array<[string, number]> => cells.map((c, n) => [c, cols[n]]);
+    const i = parseInvoice(
+      pdfFrom([
+        row(['Description', 'Qty', 'Rate', 'Tax Amount', 'Amount']),
+        row(['Widget', '2', '500.00', '180.00', '1,180.00']),
+        [['Subtotal: 1,000.00', 50]],
+        [['Tax: 180.00', 50]],
+        [['Grand Total: 1,180.00', 50]],
+      ]),
+    );
+
+    expect(validateInvoice(i).checks.every((c) => c.status === 'PASS')).toBe(true);
+  });
+
+  it('splits a PDF that holds several invoices, keeping multi-page invoices together', () => {
+    const pageTexts = [
+      'Invoice No: A-1\nGrand Total: 10.00',
+      'Invoice No: B-2\nGrand Total: 20.00',
+      'Invoice No: B-2\nItem  1  5.00  5.00',
+      'Notes only, no number',
+      'Invoice No: C-3\nGrand Total: 30.00',
+    ];
+    const spans: TextSpan[] = pageTexts.flatMap((t, p) =>
+      t.split('\n').map((line, k) => ({ text: line, x: 50, y: 700 - k * 18, width: line.length * 5, height: 10, page: p + 1 })),
+    );
+
+    const segments = splitInvoices({
+      fileName: 'bundle.pdf', pageCount: 5, spans, text: pageTexts.join('\n'), pageTexts, kind: 'text-based',
+    });
+
+    expect(segments.map((s) => [s.firstPage, s.lastPage])).toEqual([[1, 1], [2, 4], [5, 5]]);
+    expect(segments[1].raw.pageCount).toBe(3);
+    expect(segments[1].raw.spans.every((s) => s.page >= 2 && s.page <= 4)).toBe(true);
+  });
+
+  it('does not split a normal multi-page invoice whose pages repeat the same number', () => {
+    const pageTexts = ['Invoice No: X-9\nItem 1', 'Invoice No: X-9\nItem 2', 'Invoice No: x-9\nTotal'];
+    const spans: TextSpan[] = [];
+    const segments = splitInvoices({
+      fileName: 'one.pdf', pageCount: 3, spans, text: pageTexts.join('\n'), pageTexts, kind: 'text-based',
+    });
+
+    expect(segments).toHaveLength(1);
+  });
+
+  it('marks OCR output as OCR and caps its confidence below the HIGH band', () => {
+    const i = markAsOcr(parseInvoice(pdfFrom([[['Invoice No: INV-1', 50]], [['Grand Total: 10.00', 50]]])));
+
+    expect(i.extraction.sourceType).toBe('ocr');
+    expect(i.invoiceNumber.source).toBe('ocr');
+    expect(i.invoiceNumber.confidence).toBeLessThanOrEqual(OCR_CONFIDENCE_CAP);
+    expect(i.extraction.warnings.join(' ')).toMatch(/OCR/);
   });
 });

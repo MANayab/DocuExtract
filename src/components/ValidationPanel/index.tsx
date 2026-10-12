@@ -1,1 +1,30 @@
-import type { ValidationCheck } from '../../features/validation/totalsValidator'; export function ValidationPanel({checks}:{checks:ValidationCheck[]}){return <section className="mt-6 rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-semibold">Validation</h2><div className="mt-4 space-y-3">{checks.map((x,i)=><div key={i} className={`rounded-lg border p-3 ${x.status==='PASS'?'border-emerald-200 bg-emerald-50':'border-red-200 bg-red-50'}`}><div className="flex justify-between gap-4"><strong>{x.check}</strong><span>{x.status}</span></div><p className="mt-1 text-sm">Expected {x.expected.toFixed(2)}, actual {x.actual.toFixed(2)}. {x.message}</p></div>)}</div></section>}
+import type { ValidationCheck } from '../../features/validation/totalsValidator';
+
+export function ValidationPanel({ checks }: { checks: ValidationCheck[] }) {
+  const failed = checks.filter((c) => c.status === 'FAIL').length;
+
+  return (
+    <section className="dx-card" aria-labelledby="validation-title">
+      <div className="dx-card__head">
+        <h2 id="validation-title">Validation</h2>
+        <span className={`dx-badge ${failed ? 'dx-badge--warn' : 'dx-badge--good'}`}>
+          {failed ? `${failed} to review` : 'All checks passed'}
+        </span>
+      </div>
+
+      <ul className="dx-checks">
+        {checks.map((c, i) => (
+          <li key={i} className={`dx-check dx-check--${c.status === 'PASS' ? 'pass' : 'fail'}`}>
+            <div className="dx-check__head">
+              <strong>{c.check}</strong>
+              <span>{c.status}</span>
+            </div>
+            <p>
+              Expected {c.expected.toFixed(2)}, actual {c.actual.toFixed(2)}. {c.message}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

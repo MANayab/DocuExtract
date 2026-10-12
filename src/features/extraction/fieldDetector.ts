@@ -1,6 +1,7 @@
 import type { ExtractedField, Party } from '../../types/invoice';
 import { emptyField } from '../../types/invoice';
 import { normalizeNumber } from '../normalization/normalizeNumbers';
+import type { LayoutCell, LayoutRow } from '../pdf/textLines';
 
 const f = (
   value: string,
@@ -32,6 +33,46 @@ function labelled(text: string, labels: string[]): string {
   );
 
   return firstColumn(text.match(r)?.[1] ?? '');
+}
+
+
+/** Text that is itself a field label ("Invoice Date"), so it cannot be a value. */
+const LABEL_LIKE =
+  /^(?:invoice\s*(?:no|number|date|#)|date\b|due\s*date|payment\s*due|bill(?:ed)?\s*to|ship(?:ped)?\s*to|gstin|tax\s*id|total\b|sub\s*total|grand\s*total|amount\b|qty\b|quantity\b|description\b|item\b|seller\b|buyer\b|customer\b|vendor\b)/i;
+
+const looksLikeLabel = (value: string) => LABEL_LIKE.test(value.trim());
+
+/**
+ * Value printed directly below a label cell ("Invoice No." above "INV-77").
+ * The value is the cell on the next row that overlaps the label horizontally.
+ */
+function valueBelow(rows: LayoutRow[] | undefined, labels: string[]): string {
+  if (!rows) return '';
+
+  const exact = new RegExp(`^(?:${alternation(labels)})\\s*[:#.]*$`, 'i');
+
+  for (let i = 0; i < rows.length - 1; i++) {
+    const label = rows[i].cells.find((c) => exact.test(c.text.trim()));
+    const next = rows[i + 1];
+
+    if (!label || next.page !== rows[i].page || rows[i].y - next.y > 45) continue;
+
+    let best: LayoutCell | undefined;
+    let bestOverlap = 0;
+
+    for (const cell of next.cells) {
+      const overlap = Math.min(cell.x1, label.x1 + 20) - Math.max(cell.x0, label.x0 - 20);
+
+      if (overlap > bestOverlap) {
+        best = cell;
+        bestOverlap = overlap;
+      }
+    }
+
+    if (best && !looksLikeLabel(best.text)) return best.text.trim();
+  }
+
+  return '';
 }
 
 const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
@@ -66,22 +107,35 @@ const amountField = (raw: string, hit: number, miss: number) => ({
   source: 'text' as const,
 });
 
-export function detectHeaderFields(text: string) {
-  const invoiceNumber = firstColumn(
+export function detectHeaderFields(text: string, rows?: LayoutRow[]) {
+  const sameLineNumber = firstColumn(
     text.match(/\binvoice\s+(?:no(?:\.|\b)|number|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
       text.match(/\binv(?:oice)?\s*(?:no\.?|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
       '',
   );
+  const invoiceNumberSame = looksLikeLabel(sameLineNumber) ? '' : sameLineNumber;
+  const invoiceNumberBelow = invoiceNumberSame
+    ? ''
+    : valueBelow(rows, ['invoice no', 'invoice number', 'invoice #', 'inv no', 'bill no', 'bill number']);
+  const invoiceNumber = invoiceNumberSame || invoiceNumberBelow;
 
-  const invoiceDate =
+  const sameLineDate =
     labelled(text, ['invoice date', 'date of issue', 'issue date']) ||
     firstColumn(
       text.match(
         /(?<!due |payment |ship |delivery )\bdate\b[ \t]*[:#-]?[ \t]*([^\n]+)/i,
       )?.[1] ?? '',
     );
+  const invoiceDateSame = looksLikeLabel(sameLineDate) ? '' : sameLineDate;
+  const invoiceDateBelow = invoiceDateSame
+    ? ''
+    : valueBelow(rows, ['invoice date', 'date', 'date of issue', 'issue date']);
+  const invoiceDate = invoiceDateSame || invoiceDateBelow;
 
-  const dueDate = labelled(text, ['due date', 'payment due']);
+  const sameLineDue = labelled(text, ['due date', 'payment due']);
+  const dueDateSame = looksLikeLabel(sameLineDue) ? '' : sameLineDue;
+  const dueDateBelow = dueDateSame ? '' : valueBelow(rows, ['due date', 'payment due', 'due on']);
+  const dueDate = dueDateSame || dueDateBelow;
 
   const currencyMatch = text.match(/₹|\$|€|£|\b(?:INR|USD|EUR|GBP)\b/i)?.[0];
 
@@ -132,11 +186,11 @@ export function detectHeaderFields(text: string) {
   if (taxTotalValue !== undefined) taxTotal.value = taxTotalValue;
 
   return {
-    invoiceNumber: f(invoiceNumber, invoiceNumber ? 96 : 45),
+    invoiceNumber: f(invoiceNumber, invoiceNumberSame ? 96 : invoiceNumberBelow ? 84 : 45),
 
-    invoiceDate: f(invoiceDate, invoiceDate ? 90 : 40),
+    invoiceDate: f(invoiceDate, invoiceDateSame ? 90 : invoiceDateBelow ? 80 : 40),
 
-    dueDate: f(dueDate, dueDate ? 90 : 35),
+    dueDate: f(dueDate, dueDateSame ? 90 : dueDateBelow ? 80 : 35),
 
     currency: currencyMatch
       ? f(currencyMatch, 95)

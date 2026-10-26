@@ -13,6 +13,33 @@ const round = (n: number) => Math.round(n * 100) / 100;
 const near = (a: number, b: number) => Math.abs(a - b) <= TOLERANCE;
 
 export function validateTotals(i: Invoice): ValidationCheck[] {
+  const numericFields = [
+    i.subtotal.value,
+    i.discountTotal.value,
+    i.taxTotal.value,
+    i.shipping.value,
+    i.otherCharges.value,
+    i.grandTotal.value,
+    ...i.items.flatMap((item) => [
+      item.quantity.value,
+      item.unitPrice.value,
+      item.discount.value,
+      item.taxRate.value,
+      item.taxAmount.value,
+      item.lineTotal.value,
+    ]),
+  ];
+  if (numericFields.some((value) => !Number.isFinite(value))) {
+    return [
+      {
+        check: 'Numeric extraction',
+        expected: 0,
+        actual: Number.NaN,
+        status: 'FAIL',
+        message: 'One or more amounts could not be parsed. Review the original extracted text before exporting.',
+      },
+    ];
+  }
   const lineSum = round(i.items.reduce((s, x) => s + x.lineTotal.value, 0));
   const taxColumn = round(i.items.reduce((s, x) => s + x.taxAmount.value, 0));
   const subtotal = round(i.subtotal.value);
@@ -49,6 +76,18 @@ export function validateTotals(i: Invoice): ValidationCheck[] {
 }
 
 export function validateLineItems(i: Invoice): ValidationCheck[] {
+  if (i.items.some((item) =>
+    [item.quantity.value, item.unitPrice.value, item.discount.value, item.taxRate.value, item.taxAmount.value, item.lineTotal.value]
+      .some((value) => !Number.isFinite(value)),
+  )) {
+    return [{
+      check: 'Line item numeric extraction',
+      expected: 0,
+      actual: Number.NaN,
+      status: 'FAIL',
+      message: 'One or more line-item amounts could not be parsed. Review the original extracted text.',
+    }];
+  }
   return i.items.map((x, n) => {
     const base = round(x.quantity.value * x.unitPrice.value - x.discount.value);
     const actual = round(x.lineTotal.value);

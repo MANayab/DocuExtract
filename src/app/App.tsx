@@ -95,6 +95,18 @@ export function App() {
                 : undefined
             }
             onChange={(next) => store.updateInvoice(reviewing.id, next)}
+            locale={locale}
+            onLocaleChange={(next) => {
+              setLocale(next);
+              store.setLocale(next);
+            }}
+            canReprocess={store.canReprocess(reviewing.id)}
+            onReprocess={() => {
+              if (!window.confirm('Reprocess this invoice using the selected locale? This will replace extracted values for this invoice. Manual edits are protected; edited invoices cannot be reprocessed.')) return;
+              void store.reprocessWithLocale(reviewing.id, locale).then((success) => {
+                setNotices((current) => [...current, success ? 'Invoice reprocessed with the selected locale.' : 'Reprocessing was not completed; the existing invoice was preserved.']);
+              });
+            }}
           />
         </main>
         <Footer />

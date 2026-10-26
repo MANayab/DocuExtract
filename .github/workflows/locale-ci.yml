@@ -49,3 +49,24 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run test:e2e
+
+  main-format-baseline:
+    name: Diagnostic — main formatting baseline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run main branch format check for baseline evidence
+        id: baseline
+        continue-on-error: true
+        run: npm run format:check
+      - name: Record baseline result
+        if: always()
+        run: |
+          echo "Main branch format:check outcome: ${{ steps.baseline.outcome }}" >> "$GITHUB_STEP_SUMMARY"

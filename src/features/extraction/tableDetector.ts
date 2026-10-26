@@ -1,11 +1,19 @@
 import type { TextSpan } from '../../types/extraction';
 import type { InvoiceItem } from '../../types/invoice';
 import { normalizeNumber } from '../normalization/normalizeNumbers';
+import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 import { spansToLines } from '../pdf/textLines';
 
 const CURRENCY = '(?:₹|\\$|€|£|Rs\\.?|INR)';
-const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d[\\d,]*(?:\\.\\d+)?\\s*\\)?%?$`, 'i');
-const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d[\d,]*(?:\.\d+)?\)?/g;
+const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d[\\d., ]*\\d\\s*\\)?%?import type { TextSpan } from '../../types/extraction';
+import type { InvoiceItem } from '../../types/invoice';
+import { normalizeNumber } from '../normalization/normalizeNumbers';
+import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
+import { spansToLines } from '../pdf/textLines';
+
+const CURRENCY = '(?:₹|\\$|€|£|Rs\\.?|INR)';
+, 'i');
+const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d[\d., ]*\d\)?/g;
 const HEADER =
   /(?:description|item|particulars|product).*(?:qty|quantity).*(?:price|rate|amount)|item.*qty/i;
 const STOP =
@@ -78,7 +86,7 @@ interface Row {
 }
 
 /** Column-aware parse: relies on wide gaps between table cells. */
-function parseByColumns(line: string, headerRoles: Role[] | null): Row | null {
+function parseByColumns(line: string, headerRoles: Role[] | null, locale: LocaleCode): Row | null {
   let cells = cellsOf(line);
   let roles = headerRoles;
 
@@ -94,7 +102,7 @@ function parseByColumns(line: string, headerRoles: Role[] | null): Row | null {
 
   if (tail < 2) return null;
 
-  const nums = cells.slice(cells.length - tail).map((c) => normalizeNumber(c));
+  const nums = cells.slice(cells.length - tail).map((c) => normalizeNumber(c, locale));
   const description = cells.slice(0, cells.length - tail).join(' ').trim();
 
   let qty: number | undefined;
@@ -160,8 +168,8 @@ function parseByColumns(line: string, headerRoles: Role[] | null): Row | null {
 }
 
 /** Fallback for single-spaced text where no column gaps exist. */
-function parseLoosely(line: string): Row | null {
-  const nums = [...line.matchAll(NUMBER_TOKEN)].map((m) => normalizeNumber(m[0]));
+function parseLoosely(line: string, locale: LocaleCode): Row | null {
+  const nums = [...line.matchAll(NUMBER_TOKEN)].map((m) => normalizeNumber(m[0], locale));
 
   if (nums.length < 2) return null;
 
@@ -186,7 +194,7 @@ const field = (value: number, confidence: number) => ({
   source: 'text' as const,
 });
 
-export function detectLineItems(spans: TextSpan[], text: string): InvoiceItem[] {
+export function detectLineItems(spans: TextSpan[], text: string, locale: LocaleCode = DEFAULT_LOCALE): InvoiceItem[] {
   const spanRows = spansToLines(spans);
   const lines = (spanRows.length ? spanRows : text.split(/\r?\n/))
     .map((x) => x.trim())
@@ -207,7 +215,7 @@ export function detectLineItems(spans: TextSpan[], text: string): InvoiceItem[] 
     if (STOP.test(line)) break;
     if (NOISE.test(line)) continue;
 
-    const row = parseByColumns(line, roles) ?? parseLoosely(line);
+    const row = parseByColumns(line, roles, locale) ?? parseLoosely(line, locale);
 
     if (!row) continue;
 

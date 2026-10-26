@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## Unreleased
+
+### Added
+- Initial locale configuration and strict date/number parsing primitives for en-IN, en-US, en-GB and de-DE. This feature remains in progress pending full integration and CI verification.
+
 ## [1.1.0] — 2026-10-10
 
 ### Added

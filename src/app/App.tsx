@@ -10,6 +10,7 @@ import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
 import { ReviewScreen } from '../components/review/ReviewScreen';
 import { OCR_BUNDLED } from '../config/build';
+import { DEFAULT_LOCALE, LOCALES, type LocaleCode } from '../config/locales';
 import { SITE } from '../content/site';
 import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
 import { findDuplicates, summarize } from '../features/batch/summary';
@@ -24,6 +25,7 @@ export function App() {
   const ocrAvailable = useOcrAvailable();
   const [view, setView] = useState<View>({ kind: 'dashboard' });
   const [notices, setNotices] = useState<string[]>([]);
+  const [locale, setLocale] = useState<LocaleCode>(() => store.getLocale());
   const autoOpen = useRef(false);
 
   const summary = useMemo(() => summarize(records), [records]);
@@ -116,6 +118,19 @@ export function App() {
               ))}
             </div>
           )}
+
+          <section className="dx-panel" aria-labelledby="locale-heading">
+            <h2 id="locale-heading">Number and date format</h2>
+            <label htmlFor="invoice-locale">Invoice locale</label>
+            <select id="invoice-locale" value={locale} onChange={(event) => {
+              const next = event.target.value as LocaleCode;
+              setLocale(next);
+              store.setLocale(next);
+            }}>
+              {Object.values(LOCALES).map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
+            </select>
+            <p className="dx-muted">Controls how ambiguous dates and number separators are interpreted. Review financial data before relying on it.</p>
+          </section>
 
           <FileUploader onFiles={handleFiles} />
 

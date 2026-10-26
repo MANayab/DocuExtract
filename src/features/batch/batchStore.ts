@@ -249,8 +249,8 @@ export class BatchStore {
       const next = [...this.records];
       next.splice(index, 1, ...ready);
       this.commit(next);
-      for (const item of ready) this.files.set(item.id, file);
       this.files.delete(record.id);
+      for (const item of ready) this.files.set(item.id, file);
       this.ocrRequested.delete(record.id);
     } catch (e) {
       this.patch(record.id, {

@@ -2,6 +2,7 @@ import { MAX_BATCH_FILES } from '../../config/limits';
 import type { BatchRecord, Processor } from '../../types/batch';
 import type { Invoice } from '../../types/invoice';
 import { validatePdfFile } from '../../utils/fileValidation';
+import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 
 export interface AddResult {
   accepted: number;
@@ -22,6 +23,15 @@ export class BatchStore {
   private ocrRequested = new Set<string>();
   private running = false;
   private seq = 0;
+  private locale: LocaleCode = DEFAULT_LOCALE;
+
+  setLocale(locale: LocaleCode) {
+    this.locale = locale;
+  }
+
+  getLocale() {
+    return this.locale;
+  }
 
   constructor(private processor: Processor) {}
 
@@ -143,7 +153,7 @@ export class BatchStore {
     this.patch(record.id, { status: 'processing', progress: 2, label: useOcr ? 'Starting OCR' : 'Opening PDF' });
 
     try {
-      const result = await this.processor(file, { ocr: useOcr }, (percent, label) =>
+      const result = await this.processor(file, { ocr: useOcr, locale: this.locale }, (percent, label) =>
         this.patch(record.id, { progress: clamp(percent), label }),
       );
 

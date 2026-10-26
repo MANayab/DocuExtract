@@ -1,6 +1,7 @@
 import type { ExtractedField, Party } from '../../types/invoice';
 import { emptyField } from '../../types/invoice';
 import { normalizeNumber } from '../normalization/normalizeNumbers';
+import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 import type { LayoutCell, LayoutRow } from '../pdf/textLines';
 
 const f = (
@@ -81,7 +82,7 @@ const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
 function labelledAmounts(text: string, labels: string[]): string[] {
   const r = new RegExp(
     `\\b(?:${alternation(labels)})\\b(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#-]?[ \\t]*${CURRENCY_TOKEN}?[ \\t]*` +
-      `(\\(?-?\\d[\\d,]*(?:\\.\\d+)?\\)?)(?![A-Za-z\\d,]|\\.\\d|\\s*%)`,
+      `(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)`,
     'gi',
   );
 
@@ -101,13 +102,17 @@ const lastLineAmount = (text: string, label: string) => {
   return all.length ? all[all.length - 1][1] : '';
 };
 
-const amountField = (raw: string, hit: number, miss: number) => ({
-  value: raw ? normalizeNumber(raw) : 0,
-  confidence: raw ? hit : miss,
-  source: 'text' as const,
-});
+const amountField = (raw: string, hit: number, miss: number, locale: LocaleCode) => {
+  const value = raw ? normalizeNumber(raw, locale) : 0;
+  return {
+    value,
+    confidence: raw ? (Number.isFinite(value) ? hit : Math.min(hit, 35)) : miss,
+    source: 'text' as const,
+    ...(raw && !Number.isFinite(value) ? { warning: `Could not parse amount \"${raw}\" using ${locale}; please review the original text.` } : {}),
+  };
+};
 
-export function detectHeaderFields(text: string, rows?: LayoutRow[]) {
+export function detectHeaderFields(text: string, rows?: LayoutRow[], locale: LocaleCode = DEFAULT_LOCALE) {
   const sameLineNumber = firstColumn(
     text.match(/\binvoice\s+(?:no(?:\.|\b)|number|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
       text.match(/\binv(?:oice)?\s*(?:no\.?|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
@@ -160,7 +165,7 @@ export function detectHeaderFields(text: string, rows?: LayoutRow[]) {
 
     if (parts.length) {
       taxTotalValue = Number(
-        parts.reduce((sum, raw) => sum + normalizeNumber(raw), 0).toFixed(2),
+        parts.reduce((sum, raw) => sum + normalizeNumber(raw, locale), 0).toFixed(2),
       );
       taxTotalRaw = parts.join('+');
     } else {
@@ -182,7 +187,7 @@ export function detectHeaderFields(text: string, rows?: LayoutRow[]) {
       'invoice total',
     ]) || lastLineAmount(text, 'total');
 
-  const taxTotal = amountField(taxTotalRaw, 90, 45);
+  const taxTotal = amountField(taxTotalRaw, 90, 45, locale);
   if (taxTotalValue !== undefined) taxTotal.value = taxTotalValue;
 
   return {
@@ -196,17 +201,17 @@ export function detectHeaderFields(text: string, rows?: LayoutRow[]) {
       ? f(currencyMatch, 95)
       : f('INR', 40, 'No currency symbol found; defaulted to INR. Please confirm.'),
 
-    subtotal: amountField(subtotal, 90, 35),
+    subtotal: amountField(subtotal, 90, 35, locale),
 
-    discountTotal: amountField(discountTotal, 90, 45),
+    discountTotal: amountField(discountTotal, 90, 45, locale),
 
     taxTotal,
 
-    shipping: amountField(shipping, 85, 50),
+    shipping: amountField(shipping, 85, 50, locale),
 
-    otherCharges: amountField(otherCharges, 85, 50),
+    otherCharges: amountField(otherCharges, 85, 50, locale),
 
-    grandTotal: amountField(grandTotal, 96, 35),
+    grandTotal: amountField(grandTotal, 96, 35, locale),
   };
 }
 

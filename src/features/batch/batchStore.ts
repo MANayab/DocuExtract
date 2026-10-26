@@ -139,7 +139,7 @@ export class BatchStore {
     this.patch(id, { label: 'Reprocessing with selected locale', error: undefined });
     try {
       const result = await this.processor(file, { ocr: this.ocrRequested.has(id), locale }, () => {});
-      if (result.kind !== 'ready') {
+      if (result.kind !== 'invoices') {
         this.patch(id, { label: record.label, status: previousStatus });
         return false;
       }

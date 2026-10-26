@@ -10,7 +10,7 @@ import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
 import { ReviewScreen } from '../components/review/ReviewScreen';
 import { OCR_BUNDLED } from '../config/build';
-import { DEFAULT_LOCALE, LOCALES, type LocaleCode } from '../config/locales';
+import { LOCALES, type LocaleCode } from '../config/locales';
 import { SITE } from '../content/site';
 import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
 import { findDuplicates, summarize } from '../features/batch/summary';

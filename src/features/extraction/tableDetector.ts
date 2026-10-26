@@ -5,8 +5,8 @@ import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 import { spansToLines } from '../pdf/textLines';
 
 const CURRENCY = '(?:₹|\\$|€|£|Rs\\.?|INR)';
-const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d[\\d., ]*\\d\\s*\\)?%?$`, 'i');
-const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d[\d., ]*\d\)?/g;
+const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d(?:[\\d., ]*\\d)?\\s*\\)?%?$`, 'i');
+const NUMBER_TOKEN = /-?\\(?[₹$€£]?\\s*\\d(?:[\\d., ]*\\d)?\\)?/g;
 const HEADER =
   /(?:description|item|particulars|product).*(?:qty|quantity).*(?:price|rate|amount)|item.*qty/i;
 const STOP =

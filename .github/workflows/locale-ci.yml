@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
           if [ "${#files[@]}" -gt 0 ]; then
             npx prettier --write "${files[@]}"
             git add -- "${files[@]}"
@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
           if [ "${#files[@]}" -eq 0 ]; then
             echo 'No changed files supported by Prettier.'
           else

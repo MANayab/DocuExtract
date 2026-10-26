@@ -7,7 +7,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: locale-ci-\${{ github.ref }}
+  group: locale-ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   checks:
@@ -29,10 +29,10 @@ jobs:
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
-          if [ "\${#files[@]}" -gt 0 ]; then
-            npx prettier --write "\${files[@]}"
-            git add -- "\${files[@]}"
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          if [ "${#files[@]}" -gt 0 ]; then
+            npx prettier --write "${files[@]}"
+            git add -- "${files[@]}"
             if ! git diff --cached --quiet; then
               git config user.name 'github-actions[bot]'
               git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -44,11 +44,11 @@ jobs:
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
-          if [ "\${#files[@]}" -eq 0 ]; then
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
             echo 'No changed files supported by Prettier.'
           else
-            npx prettier --check "\${files[@]}"
+            npx prettier --check "${files[@]}"
           fi
       - run: npm run test
       - run: npm run build

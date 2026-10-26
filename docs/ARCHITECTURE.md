@@ -4,7 +4,11 @@ The application is a static Vite bundle. React owns the UI. PDF parsing is done 
 
 ## Pipeline
 
-`file selection -> validation -> BatchStore queue (one file at a time) -> pdf.js text spans -> visual rows and cells -> [OCR when requested] -> split invoices -> header fields (same line or label above) -> line items (header-aligned columns, tax roles) -> normalization -> Zod and arithmetic validation -> review status -> dashboard / review -> export`
+`file selection -> validation -> BatchStore queue (one file at a time) -> pdf.js text spans -> visual rows and cells -> [OCR when requested] -> split invoices -> header fields (same line or label above) -> line items (header-aligned columns, tax roles) -> locale-aware normalization (selected locale) -> Zod and arithmetic validation -> review status -> dashboard / review -> export`
+
+## Locale handling
+
+`config/locales.ts` defines supported locale codes, date order, decimal separator, grouping separator and grouping pattern. The selected locale is passed into header and line-item numeric parsing and invoice date normalization. Locale does not determine currency. Invalid or ambiguous values must be surfaced for human review; reprocessing and export integration remain incomplete until the locale parsing work is fully verified.
 
 ## Modules
 

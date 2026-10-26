@@ -1,80 +1,75 @@
-const months: Record<string, string> = {
-  jan: '01',
-  january: '01',
-  feb: '02',
-  february: '02',
-  mar: '03',
-  march: '03',
-  apr: '04',
-  april: '04',
-  may: '05',
-  jun: '06',
-  june: '06',
-  jul: '07',
-  july: '07',
-  aug: '08',
-  august: '08',
-  sep: '09',
-  sept: '09',
-  september: '09',
-  oct: '10',
-  october: '10',
-  nov: '11',
-  november: '11',
-  dec: '12',
-  december: '12',
-};
+import { DEFAULT_LOCALE, getLocaleConfig, type LocaleCode } from '../../config/locales';
 
-export function normalizeDate(input: string): string {
-  const s = input.trim();
-
-  if (!s) {
-    return '';
-  }
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    return s;
-  }
-
-  let m = s.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
-
-  if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
-    const y = m[3];
-
-    // DD/MM/YYYY is the default (India and most of the world). Only when the
-    // second number cannot be a month (> 12) is it read as MM/DD/YYYY.
-    const day = b > 12 ? b : a;
-    const month = b > 12 ? a : b;
-
-    if (month < 1 || month > 12 || day < 1 || day > 31) {
-      return '';
-    }
-
-    return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-
-  m = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-
-  if (m) {
-    const month = months[m[2].toLowerCase()];
-
-    if (month) {
-      return `${m[3]}-${month}-${m[1].padStart(2, '0')}`;
-    }
-  }
-
-  m = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
-
-  if (m) {
-    const month = months[m[1].toLowerCase()];
-
-    if (month) {
-      return `${m[3]}-${month}-${m[2].padStart(2, '0')}`;
-    }
-  }
-
-  return '';
+export interface DateParseResult {
+  value: string;
+  valid: boolean;
+  ambiguous: boolean;
+  warning?: string;
 }
 
+const months: Record<string, number> = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9,
+  september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+};
+
+const invalid = (warning?: string): DateParseResult => ({ value: '', valid: false, ambiguous: false, ...(warning ? { warning } : {}) });
+
+function canonical(year: number, month: number, day: number): string | null {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** Parse a date without rolling impossible calendar dates into another month. */
+export function parseDate(input: string, locale: LocaleCode = DEFAULT_LOCALE): DateParseResult {
+  const s = input.trim();
+  if (!s) return invalid();
+  const config = getLocaleConfig(locale);
+  let match = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const value = canonical(Number(match[1]), Number(match[2]), Number(match[3]));
+    return value ? { value, valid: true, ambiguous: false } : invalid('Invalid calendar date.');
+  }
+
+  match = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (match) {
+    const month = months[match[2].toLowerCase()];
+    const value = month ? canonical(Number(match[3]), month, Number(match[1])) : null;
+    return value ? { value, valid: true, ambiguous: false } : invalid('Invalid or unrecognized month-name date.');
+  }
+  match = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (match) {
+    const month = months[match[1].toLowerCase()];
+    const value = month ? canonical(Number(match[3]), month, Number(match[2])) : null;
+    return value ? { value, valid: true, ambiguous: false } : invalid('Invalid or unrecognized month-name date.');
+  }
+
+  match = s.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
+  if (!match) return invalid('Unrecognized date format.');
+  const a = Number(match[1]);
+  const b = Number(match[2]);
+  const year = Number(match[3]);
+  const ambiguous = a <= 12 && b <= 12 && a !== b;
+  let day: number;
+  let month: number;
+  if (a > 12 && b > 12) return invalid('Both date components exceed 12.');
+  if (a > 12) { day = a; month = b; }
+  else if (b > 12) { day = b; month = a; }
+  else if (config.dateOrder === 'MDY') { month = a; day = b; }
+  else { day = a; month = b; }
+  const value = canonical(year, month, day);
+  if (!value) return invalid('Invalid calendar date.');
+  return {
+    value,
+    valid: true,
+    ambiguous,
+    ...(ambiguous ? { warning: `Ambiguous numeric date interpreted as ${config.dateOrder === 'MDY' ? 'MM/DD/YYYY' : 'DD/MM/YYYY'} for ${config.code}; please confirm. This interpretation is not verified.` } : {}),
+  };
+}
+
+/** Backwards-compatible string helper; omitted locale retains the en-IN default. */
+export function normalizeDate(input: string, locale: LocaleCode = DEFAULT_LOCALE): string {
+  return parseDate(input, locale).value;
+}

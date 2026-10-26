@@ -129,6 +129,10 @@ export class BatchStore {
     return this.manuallyEdited.has(id);
   }
 
+  canReprocess(id: string) {
+    return this.files.has(id) && !this.manuallyEdited.has(id);
+  }
+
   async reprocessWithLocale(id: string, locale: LocaleCode): Promise<boolean> {
     const record = this.records.find((item) => item.id === id);
     const file = this.files.get(id);

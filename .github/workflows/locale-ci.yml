@@ -1,0 +1,48 @@
+name: Locale Parsing CI
+on:
+  push:
+    branches: [feat/locale-aware-parsing]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'e2e/**'
+      - '*.json'
+      - '*.ts'
+      - '*.tsx'
+      - '.github/workflows/locale-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: locale-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    name: Typecheck, lint, format, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test
+      - run: npm run build
+  playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e

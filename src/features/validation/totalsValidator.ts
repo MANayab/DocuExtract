@@ -36,7 +36,8 @@ export function validateTotals(i: Invoice): ValidationCheck[] {
         expected: 0,
         actual: Number.NaN,
         status: 'FAIL',
-        message: 'One or more amounts could not be parsed. Review the original extracted text before exporting.',
+        message:
+          'One or more amounts could not be parsed. Review the original extracted text before exporting.',
       },
     ];
   }
@@ -47,7 +48,8 @@ export function validateTotals(i: Invoice): ValidationCheck[] {
   // Some invoices print line totals including tax; accept that reading too.
   const lineExTax = round(lineSum - taxColumn);
   const subtotalMatches = near(lineSum, subtotal) || (taxColumn > 0 && near(lineExTax, subtotal));
-  const subtotalExpected = taxColumn > 0 && !near(lineSum, subtotal) && near(lineExTax, subtotal) ? lineExTax : lineSum;
+  const subtotalExpected =
+    taxColumn > 0 && !near(lineSum, subtotal) && near(lineExTax, subtotal) ? lineExTax : lineSum;
 
   const grandExpected = round(
     subtotal - i.discountTotal.value + i.taxTotal.value + i.shipping.value + i.otherCharges.value,
@@ -70,23 +72,36 @@ export function validateTotals(i: Invoice): ValidationCheck[] {
       expected: grandExpected,
       actual: grand,
       status: grandOk ? 'PASS' : 'FAIL',
-      message: grandOk ? 'Header totals reconcile.' : `Difference: ${round(grand - grandExpected).toFixed(2)}`,
+      message: grandOk
+        ? 'Header totals reconcile.'
+        : `Difference: ${round(grand - grandExpected).toFixed(2)}`,
     },
   ];
 }
 
 export function validateLineItems(i: Invoice): ValidationCheck[] {
-  if (i.items.some((item) =>
-    [item.quantity.value, item.unitPrice.value, item.discount.value, item.taxRate.value, item.taxAmount.value, item.lineTotal.value]
-      .some((value) => !Number.isFinite(value)),
-  )) {
-    return [{
-      check: 'Line item numeric extraction',
-      expected: 0,
-      actual: Number.NaN,
-      status: 'FAIL',
-      message: 'One or more line-item amounts could not be parsed. Review the original extracted text.',
-    }];
+  if (
+    i.items.some((item) =>
+      [
+        item.quantity.value,
+        item.unitPrice.value,
+        item.discount.value,
+        item.taxRate.value,
+        item.taxAmount.value,
+        item.lineTotal.value,
+      ].some((value) => !Number.isFinite(value)),
+    )
+  ) {
+    return [
+      {
+        check: 'Line item numeric extraction',
+        expected: 0,
+        actual: Number.NaN,
+        status: 'FAIL',
+        message:
+          'One or more line-item amounts could not be parsed. Review the original extracted text.',
+      },
+    ];
   }
   return i.items.map((x, n) => {
     const base = round(x.quantity.value * x.unitPrice.value - x.discount.value);

@@ -40,14 +40,22 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
 
   let normalized = s;
   if (s.includes(' ')) {
-    if (s.includes(',') || s.includes('.')) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Mixed whitespace and punctuation grouping is not supported.' };
-    const parts = s.split(' ');
-    if (parts.length < 2 || !/^\d{1,3}$/.test(parts[0]) || parts.slice(1).some((p) => !/^\d{3}$/.test(p))) {
+    const decimalIndex = s.lastIndexOf(config.decimalSeparator);
+    const hasLocaleDecimal = decimalIndex >= 0 && s.indexOf(config.decimalSeparator) === decimalIndex;
+    const integerPart = hasLocaleDecimal ? s.slice(0, decimalIndex) : s;
+    const fractionPart = hasLocaleDecimal ? s.slice(decimalIndex + 1) : '';
+    const groups = integerPart.split(' ');
+    if (
+      groups.length < 2 ||
+      groups.some((group) => !/^\d+$/.test(group)) ||
+      !/^\d{1,3}$/.test(groups[0]) ||
+      groups.slice(1).some((group) => group.length !== 3) ||
+      (hasLocaleDecimal && (!/^\d+$/.test(fractionPart) || fractionPart.length > 8))
+    ) {
       return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid space grouping.' };
     }
-    normalized = parts.join('');
+    normalized = groups.join('') + (hasLocaleDecimal ? config.decimalSeparator + fractionPart : '');
   }
-
   const commas = (normalized.match(/,/g) ?? []).length;
   const dots = (normalized.match(/\./g) ?? []).length;
   const ambiguous =

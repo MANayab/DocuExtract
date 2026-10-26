@@ -142,7 +142,11 @@ export class BatchStore {
     this.setLocale(locale);
     this.patch(id, { label: 'Reprocessing with selected locale', error: undefined });
     try {
-      const result = await this.processor(file, { ocr: this.ocrRequested.has(id), locale }, () => {});
+      const result = await this.processor(
+        file,
+        { ocr: this.ocrRequested.has(id), locale },
+        () => {},
+      );
       if (result.kind !== 'invoices') {
         this.patch(id, { label: record.label, status: previousStatus });
         return false;
@@ -153,10 +157,20 @@ export class BatchStore {
         this.patch(id, { label: record.label, status: previousStatus });
         return false;
       }
-      this.patch(id, { invoice, pageCount: result.pageCount, label: 'Reprocessed with selected locale', status: 'ready', progress: 100 });
+      this.patch(id, {
+        invoice,
+        pageCount: result.pageCount,
+        label: 'Reprocessed with selected locale',
+        status: 'ready',
+        progress: 100,
+      });
       return true;
     } catch (error) {
-      this.patch(id, { label: record.label, status: previousStatus, error: error instanceof Error ? error.message : 'Reprocessing failed.' });
+      this.patch(id, {
+        label: record.label,
+        status: previousStatus,
+        error: error instanceof Error ? error.message : 'Reprocessing failed.',
+      });
       return false;
     }
   }

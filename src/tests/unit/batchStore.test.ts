@@ -6,27 +6,53 @@ import { emptyField, type Invoice } from '../../types/invoice';
 const pdf = (name: string, size = 1000) =>
   new File([new Uint8Array(size)], name, { type: 'application/pdf' });
 
-const field = <T,>(value: T) => ({ value, confidence: 90, source: 'text' as const });
+const field = <T>(value: T) => ({ value, confidence: 90, source: 'text' as const });
 const party = () => ({
-  name: field(''), address: field(''), taxId: field(''), email: field(''), phone: field(''),
+  name: field(''),
+  address: field(''),
+  taxId: field(''),
+  email: field(''),
+  phone: field(''),
 });
 
 const invoice = (number: string): Invoice => ({
-  invoiceNumber: field(number), invoiceDate: field('2026-10-01'), dueDate: field(''), currency: field('INR'),
-  seller: party(), buyer: party(), items: [],
-  subtotal: field(0), discountTotal: field(0), taxTotal: field(0), shipping: field(0), otherCharges: field(0),
+  invoiceNumber: field(number),
+  invoiceDate: field('2026-10-01'),
+  dueDate: field(''),
+  currency: field('INR'),
+  seller: party(),
+  buyer: party(),
+  items: [],
+  subtotal: field(0),
+  discountTotal: field(0),
+  taxTotal: field(0),
+  shipping: field(0),
+  otherCharges: field(0),
   grandTotal: field(100),
   payment: { method: emptyField(''), reference: emptyField(''), terms: emptyField('') },
-  extraction: { sourceType: 'text', confidence: 90, warnings: [], sourceFile: 'x.pdf', pageCount: 1 },
+  extraction: {
+    sourceType: 'text',
+    confidence: 90,
+    warnings: [],
+    sourceFile: 'x.pdf',
+    pageCount: 1,
+  },
 });
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20));
 
 describe('BatchStore', () => {
   it('rejects non-PDF files and duplicates, and accepts the rest', () => {
-    const store = new BatchStore(async () => ({ kind: 'invoices', invoices: [invoice('A')], pageCount: 1 }));
+    const store = new BatchStore(async () => ({
+      kind: 'invoices',
+      invoices: [invoice('A')],
+      pageCount: 1,
+    }));
 
-    const first = store.addFiles([pdf('a.pdf'), new File(['x'], 'note.txt', { type: 'text/plain' })]);
+    const first = store.addFiles([
+      pdf('a.pdf'),
+      new File(['x'], 'note.txt', { type: 'text/plain' }),
+    ]);
     expect(first.accepted).toBe(1);
     expect(first.rejected).toHaveLength(1);
 
@@ -115,7 +141,11 @@ describe('BatchStore', () => {
   });
 
   it('applies edits, removal and clear', async () => {
-    const store = new BatchStore(async () => ({ kind: 'invoices', invoices: [invoice('A')], pageCount: 1 }));
+    const store = new BatchStore(async () => ({
+      kind: 'invoices',
+      invoices: [invoice('A')],
+      pageCount: 1,
+    }));
     store.addFiles([pdf('a.pdf'), pdf('b.pdf')]);
     await settle();
 
@@ -149,7 +179,11 @@ describe('BatchStore', () => {
   });
 
   it('notifies subscribers on every change', async () => {
-    const store = new BatchStore(async () => ({ kind: 'invoices', invoices: [invoice('A')], pageCount: 1 }));
+    const store = new BatchStore(async () => ({
+      kind: 'invoices',
+      invoices: [invoice('A')],
+      pageCount: 1,
+    }));
     let notifications = 0;
     const unsubscribe = store.subscribe(() => notifications++);
 
@@ -195,5 +229,4 @@ describe('BatchStore', () => {
     expect(await store.reprocessWithLocale(record.id, 'de-DE')).toBe(false);
     expect(store.getSnapshot()[0].invoice?.invoiceNumber.value).toBe('MANUAL-EDIT');
   });
-
 });

@@ -24,7 +24,20 @@ interface Props {
   onReprocess: () => void;
 }
 
-export function ReviewScreen({ record, invoice, analysis, position, onBack, onPrev, onNext, onChange, locale, onLocaleChange, canReprocess, onReprocess }: Props) {
+export function ReviewScreen({
+  record,
+  invoice,
+  analysis,
+  position,
+  onBack,
+  onPrev,
+  onNext,
+  onChange,
+  locale,
+  onLocaleChange,
+  canReprocess,
+  onReprocess,
+}: Props) {
   const entry: ExportEntry = { invoice, checks: analysis.checks };
 
   return (
@@ -37,10 +50,20 @@ export function ReviewScreen({ record, invoice, analysis, position, onBack, onPr
           <span className="dx-muted dx-small">
             {position.index} of {position.total}
           </span>
-          <button type="button" className="dx-btn dx-btn--small" onClick={onPrev} disabled={!onPrev}>
+          <button
+            type="button"
+            className="dx-btn dx-btn--small"
+            onClick={onPrev}
+            disabled={!onPrev}
+          >
             Previous
           </button>
-          <button type="button" className="dx-btn dx-btn--small" onClick={onNext} disabled={!onNext}>
+          <button
+            type="button"
+            className="dx-btn dx-btn--small"
+            onClick={onNext}
+            disabled={!onNext}
+          >
             Next
           </button>
         </div>
@@ -49,13 +72,17 @@ export function ReviewScreen({ record, invoice, analysis, position, onBack, onPr
       <header className="dx-review__title">
         <h1>
           {invoice.invoiceNumber.value || 'Invoice'}
-          <span className={`dx-badge ${analysis.status === 'PASS' ? 'dx-badge--good' : 'dx-badge--warn'}`}>
+          <span
+            className={`dx-badge ${analysis.status === 'PASS' ? 'dx-badge--good' : 'dx-badge--warn'}`}
+          >
             {analysis.status === 'PASS' ? 'Validated' : 'Review'}
           </span>
         </h1>
         <p className="dx-muted">
           {record.fileName}
-          {record.segment ? ` · invoice ${record.segment.index} of ${record.segment.total} in this PDF` : ''}
+          {record.segment
+            ? ` · invoice ${record.segment.index} of ${record.segment.total} in this PDF`
+            : ''}
           {invoice.extraction.sourceType === 'ocr' ? ' · read with OCR' : ''}
         </p>
       </header>
@@ -77,12 +104,30 @@ export function ReviewScreen({ record, invoice, analysis, position, onBack, onPr
       <section className="dx-panel" aria-labelledby="review-locale-heading">
         <h2 id="review-locale-heading">Number and date format</h2>
         <label htmlFor="review-invoice-locale">Invoice locale</label>
-        <select id="review-invoice-locale" value={locale} onChange={(event) => onLocaleChange(event.target.value as LocaleCode)}>
-          {Object.values(LOCALES).map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
+        <select
+          id="review-invoice-locale"
+          value={locale}
+          onChange={(event) => onLocaleChange(event.target.value as LocaleCode)}
+        >
+          {Object.values(LOCALES).map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.label}
+            </option>
+          ))}
         </select>
-        <p className="dx-muted">Controls ambiguous dates and number separators. Review financial data before relying on it.</p>
-        <button type="button" className="dx-btn" onClick={onReprocess} disabled={!canReprocess}>Reprocess with this locale</button>
-        {!canReprocess && <p className="dx-muted" role="status">This invoice has manual edits or its source PDF is unavailable. Reprocessing is disabled to protect your changes.</p>}
+        <p className="dx-muted">
+          Controls ambiguous dates and number separators. Review financial data before relying on
+          it.
+        </p>
+        <button type="button" className="dx-btn" onClick={onReprocess} disabled={!canReprocess}>
+          Reprocess with this locale
+        </button>
+        {!canReprocess && (
+          <p className="dx-muted" role="status">
+            This invoice has manual edits or its source PDF is unavailable. Reprocessing is disabled
+            to protect your changes.
+          </p>
+        )}
       </section>
 
       <div className="dx-stack">

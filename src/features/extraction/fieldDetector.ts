@@ -108,7 +108,7 @@ const amountField = (raw: string, hit: number, miss: number, locale: LocaleCode)
     value,
     confidence: raw ? (Number.isFinite(value) ? hit : Math.min(hit, 35)) : miss,
     source: 'text' as const,
-    ...(raw && !Number.isFinite(value) ? { warning: `Could not parse amount \"${raw}\" using ${locale}; please review the original text.` } : {}),
+    ...(raw && !Number.isFinite(value) ? { warning: `Could not parse amount "${raw}" using ${locale}; please review the original text.` } : {}),
   };
 };
 

@@ -63,13 +63,13 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 | **Optional local OCR** | Scanned PDFs can be read with Tesseract running in your browser, from files served by this site (no CDN). Always marked lower confidence. |
 | **Combined exports** | One Excel workbook (one row per invoice plus line items, parties, taxes, validation, metadata), CSV for invoices or line items, JSON. |
 | **Review before export** | Edit every field and line item; confidence bands highlight what to check; checks re-run as you type. |
-| **Date safety** | Ambiguous numeric dates such as `05/09/2026` are read as DD/MM/YYYY and flagged on the field. |
+| **Locale-aware dates and numbers** | Select India (en-IN), United States (en-US), United Kingdom (en-GB), or Germany (de-DE). Numeric dates and separator interpretation depend on the selected locale; ambiguous values require review. |
 | **Safe spreadsheets** | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly. |
 | **No persistence** | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. Memory is released after each file. |
 | **SEO and AI-ready** | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md). |
 | **Tested** | Unit, integration and end-to-end tests; type checking and linting in CI. |
 
-## How it works
+## Locale-aware parsing\n\nThe locale selector controls date order and number separators; it does not infer or change invoice currency. Numeric dates whose day and month are both 12 or less are flagged as ambiguous even when a locale-specific interpretation is displayed. Review extracted financial data before relying on it.\n\n| Locale | Numeric date order | Decimal separator | Grouping separator | Ambiguity handling |\n|---|---|---|---|---|\n| India (en-IN) | DD/MM/YYYY | `.` | `,` (Indian grouping, e.g. `1,23,456.78`) | Plausible day/month pairs are interpreted as DD/MM and flagged. |\n| United States (en-US) | MM/DD/YYYY | `.` | `,` (western grouping, e.g. `123,456.78`) | Plausible day/month pairs are interpreted as MM/DD and flagged. |\n| United Kingdom (en-GB) | DD/MM/YYYY | `.` | `,` (western grouping) | Plausible day/month pairs are interpreted as DD/MM and flagged. |\n| Germany (de-DE) | DD/MM/YYYY | `,` | `.` (western grouping, e.g. `123.456,78`) | Plausible day/month pairs are interpreted as DD/MM and flagged. |\n\n## How it works
 
 ```mermaid
 flowchart LR

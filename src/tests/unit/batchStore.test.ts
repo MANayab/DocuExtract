@@ -162,4 +162,38 @@ describe('BatchStore', () => {
     expect(seen).toBeGreaterThan(1);
     expect(notifications).toBe(seen);
   });
+  it('reprocesses an unedited invoice with the selected locale', async () => {
+    const locales: string[] = [];
+    const processor: Processor = async (_file, options) => {
+      const locale = options.locale ?? 'en-IN';
+      locales.push(locale);
+      return { kind: 'invoices', invoices: [invoice(locale)], pageCount: 1 };
+    };
+    const store = new BatchStore(processor);
+    store.addFiles([pdf('locale.pdf')]);
+    await settle();
+
+    const record = store.getSnapshot()[0];
+    expect(store.canReprocess(record.id)).toBe(true);
+    expect(await store.reprocessWithLocale(record.id, 'de-DE')).toBe(true);
+    expect(locales).toEqual(['en-IN', 'de-DE']);
+    expect(store.getSnapshot()[0].invoice?.invoiceNumber.value).toBe('de-DE');
+  });
+
+  it('never overwrites a manually edited invoice during locale reprocessing', async () => {
+    const store = new BatchStore(async () => ({
+      kind: 'invoices',
+      invoices: [invoice('EXTRACTED')],
+      pageCount: 1,
+    }));
+    store.addFiles([pdf('edited.pdf')]);
+    await settle();
+
+    const record = store.getSnapshot()[0];
+    store.updateInvoice(record.id, invoice('MANUAL-EDIT'));
+    expect(store.canReprocess(record.id)).toBe(false);
+    expect(await store.reprocessWithLocale(record.id, 'de-DE')).toBe(false);
+    expect(store.getSnapshot()[0].invoice?.invoiceNumber.value).toBe('MANUAL-EDIT');
+  });
+
 });

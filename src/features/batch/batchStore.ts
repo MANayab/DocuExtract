@@ -24,6 +24,7 @@ export class BatchStore {
   private running = false;
   private seq = 0;
   private locale: LocaleCode = DEFAULT_LOCALE;
+  private manuallyEdited = new Set<string>();
 
   setLocale(locale: LocaleCode) {
     this.locale = locale;
@@ -120,18 +121,53 @@ export class BatchStore {
   }
 
   updateInvoice(id: string, invoice: Invoice) {
+    this.manuallyEdited.add(id);
     this.patch(id, { invoice });
+  }
+
+  isManuallyEdited(id: string) {
+    return this.manuallyEdited.has(id);
+  }
+
+  async reprocessWithLocale(id: string, locale: LocaleCode): Promise<boolean> {
+    const record = this.records.find((item) => item.id === id);
+    const file = this.files.get(id);
+    if (!record || !file || !record.invoice || this.manuallyEdited.has(id)) return false;
+
+    const previousStatus = record.status;
+    this.setLocale(locale);
+    this.patch(id, { label: 'Reprocessing with selected locale', error: undefined });
+    try {
+      const result = await this.processor(file, { ocr: this.ocrRequested.has(id), locale }, () => {});
+      if (result.kind !== 'ready') {
+        this.patch(id, { label: record.label, status: previousStatus });
+        return false;
+      }
+      const index = Math.max(0, (record.segment?.index ?? 1) - 1);
+      const invoice = result.invoices[index];
+      if (!invoice || this.manuallyEdited.has(id)) {
+        this.patch(id, { label: record.label, status: previousStatus });
+        return false;
+      }
+      this.patch(id, { invoice, pageCount: result.pageCount, label: 'Reprocessed with selected locale', status: 'ready', progress: 100 });
+      return true;
+    } catch (error) {
+      this.patch(id, { label: record.label, status: previousStatus, error: error instanceof Error ? error.message : 'Reprocessing failed.' });
+      return false;
+    }
   }
 
   remove(id: string) {
     this.files.delete(id);
     this.ocrRequested.delete(id);
+    this.manuallyEdited.delete(id);
     this.commit(this.records.filter((r) => r.id !== id));
   }
 
   clear() {
     this.files.clear();
     this.ocrRequested.clear();
+    this.manuallyEdited.clear();
     this.commit([]);
   }
 
@@ -209,6 +245,7 @@ export class BatchStore {
       const next = [...this.records];
       next.splice(index, 1, ...ready);
       this.commit(next);
+      for (const item of ready) this.files.set(item.id, file);
       this.files.delete(record.id);
       this.ocrRequested.delete(record.id);
     } catch (e) {

@@ -1,4 +1,5 @@
 import type { Invoice } from './invoice';
+import type { LocaleCode } from '../config/locales';
 
 export type RecordStatus = 'queued' | 'processing' | 'ready' | 'needs-ocr' | 'error';
 
@@ -23,6 +24,6 @@ export type ProcessResult =
 
 export type Processor = (
   file: File,
-  options: { ocr: boolean },
+  options: { ocr: boolean; locale?: LocaleCode },
   onProgress: (percent: number, label: string) => void,
 ) => Promise<ProcessResult>;

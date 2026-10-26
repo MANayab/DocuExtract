@@ -58,7 +58,8 @@ export class BatchStore {
   addFiles(files: File[]): AddResult {
     const rejected: AddResult['rejected'] = [];
     const added: BatchRecord[] = [];
-    const fileCount = () => new Set(this.records.map((r) => r.id.split('#')[0])).size + added.length;
+    const fileCount = () =>
+      new Set(this.records.map((r) => r.id.split('#')[0])).size + added.length;
 
     for (const file of files) {
       try {
@@ -69,7 +70,10 @@ export class BatchStore {
       }
 
       if (fileCount() >= MAX_BATCH_FILES) {
-        rejected.push({ name: file.name, reason: `Batch limit of ${MAX_BATCH_FILES} files reached.` });
+        rejected.push({
+          name: file.name,
+          reason: `Batch limit of ${MAX_BATCH_FILES} files reached.`,
+        });
         continue;
       }
 
@@ -106,7 +110,12 @@ export class BatchStore {
     if (!record || record.status !== 'needs-ocr') return;
 
     this.ocrRequested.add(id);
-    this.patch(id, { status: 'queued', progress: 0, label: 'Waiting in queue (OCR)', error: undefined });
+    this.patch(id, {
+      status: 'queued',
+      progress: 0,
+      label: 'Waiting in queue (OCR)',
+      error: undefined,
+    });
     void this.pump();
   }
 
@@ -150,11 +159,17 @@ export class BatchStore {
     }
 
     const useOcr = this.ocrRequested.has(record.id);
-    this.patch(record.id, { status: 'processing', progress: 2, label: useOcr ? 'Starting OCR' : 'Opening PDF' });
+    this.patch(record.id, {
+      status: 'processing',
+      progress: 2,
+      label: useOcr ? 'Starting OCR' : 'Opening PDF',
+    });
 
     try {
-      const result = await this.processor(file, { ocr: useOcr, locale: this.locale }, (percent, label) =>
-        this.patch(record.id, { progress: clamp(percent), label }),
+      const result = await this.processor(
+        file,
+        { ocr: useOcr, locale: this.locale },
+        (percent, label) => this.patch(record.id, { progress: clamp(percent), label }),
       );
 
       const index = this.records.findIndex((r) => r.id === record.id);
@@ -184,7 +199,10 @@ export class BatchStore {
       }));
 
       if (ready.length === 0) {
-        this.patch(record.id, { status: 'error', error: 'No invoice could be read from this PDF.' });
+        this.patch(record.id, {
+          status: 'error',
+          error: 'No invoice could be read from this PDF.',
+        });
         return;
       }
 

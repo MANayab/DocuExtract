@@ -4,19 +4,14 @@ import { normalizeNumber } from '../normalization/normalizeNumbers';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 import type { LayoutCell, LayoutRow } from '../pdf/textLines';
 
-const f = (
-  value: string,
-  confidence = 85,
-  warning?: string,
-): ExtractedField<string> => ({
+const f = (value: string, confidence = 85, warning?: string): ExtractedField<string> => ({
   value: value.trim(),
   confidence,
   source: 'text',
   ...(warning ? { warning } : {}),
 });
 
-const escapeRegex = (label: string) =>
-  label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (label: string) => label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const alternation = (labels: string[]) => labels.map(escapeRegex).join('|');
 
@@ -28,14 +23,10 @@ const firstColumn = (value: string) => value.split(/\s{2,}/)[0]?.trim() ?? '';
 
 /** Text value following a label on the same line. */
 function labelled(text: string, labels: string[]): string {
-  const r = new RegExp(
-    `\\b(?:${alternation(labels)})\\b[ \\t]*[:#-]?[ \\t]*([^\\n]+)`,
-    'i',
-  );
+  const r = new RegExp(`\\b(?:${alternation(labels)})\\b[ \\t]*[:#-]?[ \\t]*([^\\n]+)`, 'i');
 
   return firstColumn(text.match(r)?.[1] ?? '');
 }
-
 
 /** Text that is itself a field label ("Invoice Date"), so it cannot be a value. */
 const LABEL_LIKE =
@@ -89,8 +80,7 @@ function labelledAmounts(text: string, labels: string[]): string[] {
   return [...text.matchAll(r)].map((m) => m[1]);
 }
 
-const firstAmount = (text: string, labels: string[]) =>
-  labelledAmounts(text, labels)[0] ?? '';
+const firstAmount = (text: string, labels: string[]) => labelledAmounts(text, labels)[0] ?? '';
 
 const lastLineAmount = (text: string, label: string) => {
   const r = new RegExp(
@@ -108,11 +98,19 @@ const amountField = (raw: string, hit: number, miss: number, locale: LocaleCode)
     value,
     confidence: raw ? (Number.isFinite(value) ? hit : Math.min(hit, 35)) : miss,
     source: 'text' as const,
-    ...(raw && !Number.isFinite(value) ? { warning: `Could not parse amount "${raw}" using ${locale}; please review the original text.` } : {}),
+    ...(raw && !Number.isFinite(value)
+      ? {
+          warning: `Could not parse amount "${raw}" using ${locale}; please review the original text.`,
+        }
+      : {}),
   };
 };
 
-export function detectHeaderFields(text: string, rows?: LayoutRow[], locale: LocaleCode = DEFAULT_LOCALE) {
+export function detectHeaderFields(
+  text: string,
+  rows?: LayoutRow[],
+  locale: LocaleCode = DEFAULT_LOCALE,
+) {
   const sameLineNumber = firstColumn(
     text.match(/\binvoice\s+(?:no(?:\.|\b)|number|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
       text.match(/\binv(?:oice)?\s*(?:no\.?|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
@@ -121,15 +119,21 @@ export function detectHeaderFields(text: string, rows?: LayoutRow[], locale: Loc
   const invoiceNumberSame = looksLikeLabel(sameLineNumber) ? '' : sameLineNumber;
   const invoiceNumberBelow = invoiceNumberSame
     ? ''
-    : valueBelow(rows, ['invoice no', 'invoice number', 'invoice #', 'inv no', 'bill no', 'bill number']);
+    : valueBelow(rows, [
+        'invoice no',
+        'invoice number',
+        'invoice #',
+        'inv no',
+        'bill no',
+        'bill number',
+      ]);
   const invoiceNumber = invoiceNumberSame || invoiceNumberBelow;
 
   const sameLineDate =
     labelled(text, ['invoice date', 'date of issue', 'issue date']) ||
     firstColumn(
-      text.match(
-        /(?<!due |payment |ship |delivery )\bdate\b[ \t]*[:#-]?[ \t]*([^\n]+)/i,
-      )?.[1] ?? '',
+      text.match(/(?<!due |payment |ship |delivery )\bdate\b[ \t]*[:#-]?[ \t]*([^\n]+)/i)?.[1] ??
+        '',
     );
   const invoiceDateSame = looksLikeLabel(sameLineDate) ? '' : sameLineDate;
   const invoiceDateBelow = invoiceDateSame
@@ -224,12 +228,21 @@ const nth = (matches: string[], n: number) => matches[n] ?? '';
 
 /** Issuer name guess: one of the first 3 lines, never a label, title or table-header line. */
 function firstHeadingLine(text: string): string {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).slice(0, 3);
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, 3);
 
   for (const raw of lines) {
     const line = firstColumn(raw);
     if (!line || line.includes(':')) continue;
-    if (/invoice|bill|ship|date|description|item|qty|quantity|total|original|duplicate|page\s+\d|^\d+$/i.test(line)) continue;
+    if (
+      /invoice|bill|ship|date|description|item|qty|quantity|total|original|duplicate|page\s+\d|^\d+$/i.test(
+        line,
+      )
+    )
+      continue;
     return line;
   }
   return '';

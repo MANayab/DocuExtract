@@ -9,7 +9,11 @@ describe('locale-aware date parsing', () => {
     ['en-US', '2026-03-04'],
     ['de-DE', '2026-04-03'],
   ] as const)('interprets 03/04/2026 using %s date order', (locale, expected) => {
-    expect(parseDate('03/04/2026', locale)).toMatchObject({ value: expected, valid: true, ambiguous: true });
+    expect(parseDate('03/04/2026', locale)).toMatchObject({
+      value: expected,
+      valid: true,
+      ambiguous: true,
+    });
   });
 
   it('accepts ISO and month-name dates and validates the calendar', () => {
@@ -30,7 +34,10 @@ describe('locale-aware date parsing', () => {
 
 describe('locale-aware number parsing', () => {
   it('parses locale grouping and decimal separators', () => {
-    expect(parseNumber('1,23,456.78', 'en-IN')).toMatchObject({ status: 'valid', value: 123456.78 });
+    expect(parseNumber('1,23,456.78', 'en-IN')).toMatchObject({
+      status: 'valid',
+      value: 123456.78,
+    });
     expect(parseNumber('123,456.78', 'en-US')).toMatchObject({ status: 'valid', value: 123456.78 });
     expect(parseNumber('123,456.78', 'en-GB')).toMatchObject({ status: 'valid', value: 123456.78 });
     expect(parseNumber('123.456,78', 'de-DE')).toMatchObject({ status: 'valid', value: 123456.78 });
@@ -39,9 +46,19 @@ describe('locale-aware number parsing', () => {
 
   it('supports accounting negatives, currency markers, percentages and real zero', () => {
     expect(parseNumber('(1,234.56)', 'en-US')).toMatchObject({ status: 'valid', value: -1234.56 });
-    expect(parseNumber('₹1,23,456.78', 'en-IN')).toMatchObject({ status: 'valid', value: 123456.78 });
-    expect(parseNumber('EUR 123.456,78', 'de-DE')).toMatchObject({ status: 'valid', value: 123456.78 });
-    expect(parseNumber('12.5%', 'en-IN')).toMatchObject({ status: 'valid', value: 12.5, percentage: true });
+    expect(parseNumber('₹1,23,456.78', 'en-IN')).toMatchObject({
+      status: 'valid',
+      value: 123456.78,
+    });
+    expect(parseNumber('EUR 123.456,78', 'de-DE')).toMatchObject({
+      status: 'valid',
+      value: 123456.78,
+    });
+    expect(parseNumber('12.5%', 'en-IN')).toMatchObject({
+      status: 'valid',
+      value: 12.5,
+      percentage: true,
+    });
     expect(parseNumber('0', 'en-IN')).toMatchObject({ status: 'valid', value: 0 });
     expect(parseNumber('', 'en-IN').status).toBe('empty');
     expect(parseNumber('not numeric', 'en-IN').status).toBe('invalid');

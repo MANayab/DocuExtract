@@ -33,7 +33,11 @@ export function App() {
 
   const ready = useMemo(() => records.filter((r) => r.status === 'ready' && r.invoice), [records]);
   const entries: ExportEntry[] = useMemo(
-    () => ready.map((r) => ({ invoice: r.invoice as Invoice, checks: analyzeInvoice(r.invoice as Invoice).checks })),
+    () =>
+      ready.map((r) => ({
+        invoice: r.invoice as Invoice,
+        checks: analyzeInvoice(r.invoice as Invoice).checks,
+      })),
     [ready],
   );
 
@@ -52,7 +56,10 @@ export function App() {
     if (records.length === 1 && records[0].status === 'ready') {
       autoOpen.current = false;
       setView({ kind: 'review', id: records[0].id });
-    } else if (records.some((r) => r.status === 'error' || r.status === 'needs-ocr') || records.length > 1) {
+    } else if (
+      records.some((r) => r.status === 'error' || r.status === 'needs-ocr') ||
+      records.length > 1
+    ) {
       autoOpen.current = false;
     }
   }, [records]);
@@ -77,8 +84,16 @@ export function App() {
             analysis={analyzeInvoice(invoice)}
             position={{ index: position + 1, total: readyIds.length }}
             onBack={goHome}
-            onPrev={position > 0 ? () => setView({ kind: 'review', id: readyIds[position - 1] }) : undefined}
-            onNext={position < readyIds.length - 1 ? () => setView({ kind: 'review', id: readyIds[position + 1] }) : undefined}
+            onPrev={
+              position > 0
+                ? () => setView({ kind: 'review', id: readyIds[position - 1] })
+                : undefined
+            }
+            onNext={
+              position < readyIds.length - 1
+                ? () => setView({ kind: 'review', id: readyIds[position + 1] })
+                : undefined
+            }
             onChange={(next) => store.updateInvoice(reviewing.id, next)}
           />
         </main>
@@ -91,21 +106,33 @@ export function App() {
 
   return (
     <div className="dx-app">
-      <a className="dx-skip" href="#main">Skip to content</a>
+      <a className="dx-skip" href="#main">
+        Skip to content
+      </a>
       <Header onHome={goHome} />
 
       <main id="main">
         <section className="dx-hero">
           <div className="dx-container dx-hero__inner">
-            <p className="dx-eyebrow"><IconSparkle /> v{SITE.version} · batch, GST{OCR_BUNDLED ? ' and OCR' : ' and multi-invoice PDFs'}</p>
+            <p className="dx-eyebrow">
+              <IconSparkle /> v{SITE.version} · batch, GST
+              {OCR_BUNDLED ? ' and OCR' : ' and multi-invoice PDFs'}
+            </p>
             <h1 className="dx-hero__title">{SITE.h1}</h1>
             <p className="dx-hero__lead">
-              {SITE.tagline}. Drop invoices, check what was flagged and download Excel, CSV or JSON. Nothing is uploaded.
+              {SITE.tagline}. Drop invoices, check what was flagged and download Excel, CSV or JSON.
+              Nothing is uploaded.
             </p>
             <ul className="dx-trust" aria-label="Highlights">
-              <li><IconShield /> No upload, no account</li>
-              <li><IconCheck /> Totals and tax validated</li>
-              <li><IconCheck /> Free and open source</li>
+              <li>
+                <IconShield /> No upload, no account
+              </li>
+              <li>
+                <IconCheck /> Totals and tax validated
+              </li>
+              <li>
+                <IconCheck /> Free and open source
+              </li>
             </ul>
           </div>
         </section>
@@ -114,7 +141,11 @@ export function App() {
           {notices.length > 0 && (
             <div className="dx-notices">
               {notices.map((message) => (
-                <ErrorPanel key={message} message={message} onDismiss={() => setNotices((all) => all.filter((m) => m !== message))} />
+                <ErrorPanel
+                  key={message}
+                  message={message}
+                  onDismiss={() => setNotices((all) => all.filter((m) => m !== message))}
+                />
               ))}
             </div>
           )}
@@ -122,14 +153,25 @@ export function App() {
           <section className="dx-panel" aria-labelledby="locale-heading">
             <h2 id="locale-heading">Number and date format</h2>
             <label htmlFor="invoice-locale">Invoice locale</label>
-            <select id="invoice-locale" value={locale} onChange={(event) => {
-              const next = event.target.value as LocaleCode;
-              setLocale(next);
-              store.setLocale(next);
-            }}>
-              {Object.values(LOCALES).map((option) => <option key={option.code} value={option.code}>{option.label}</option>)}
+            <select
+              id="invoice-locale"
+              value={locale}
+              onChange={(event) => {
+                const next = event.target.value as LocaleCode;
+                setLocale(next);
+                store.setLocale(next);
+              }}
+            >
+              {Object.values(LOCALES).map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
             </select>
-            <p className="dx-muted">Controls how ambiguous dates and number separators are interpreted. Review financial data before relying on it.</p>
+            <p className="dx-muted">
+              Controls how ambiguous dates and number separators are interpreted. Review financial
+              data before relying on it.
+            </p>
           </section>
 
           <FileUploader onFiles={handleFiles} />

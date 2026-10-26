@@ -4,7 +4,14 @@ export type NumberParseResult =
   | { status: 'valid'; value: number; raw: string; ambiguous: false; percentage: boolean }
   | { status: 'empty'; value: null; raw: string; ambiguous: false; percentage: false }
   | { status: 'invalid'; value: null; raw: string; ambiguous: false; warning: string }
-  | { status: 'ambiguous'; value: number; raw: string; ambiguous: true; warning: string; percentage: boolean };
+  | {
+      status: 'ambiguous';
+      value: number;
+      raw: string;
+      ambiguous: true;
+      warning: string;
+      percentage: boolean;
+    };
 
 const CURRENCY = /(?:₹|\$|€|£|\b(?:INR|USD|EUR|GBP|AUD|CAD|AED|SAR|SGD)\b)/gi;
 
@@ -13,10 +20,16 @@ function validGrouping(integer: string, separator: string, indian: boolean): boo
   const groups = integer.split(separator);
   if (groups.some((g) => !/^\d+$/.test(g))) return false;
   if (indian) {
-    return groups[0].length >= 1 && groups[0].length <= 2 &&
-      groups.slice(1, -1).every((g) => g.length === 2) && groups[groups.length - 1].length === 3;
+    return (
+      groups[0].length >= 1 &&
+      groups[0].length <= 2 &&
+      groups.slice(1, -1).every((g) => g.length === 2) &&
+      groups[groups.length - 1].length === 3
+    );
   }
-  return groups[0].length >= 1 && groups[0].length <= 3 && groups.slice(1).every((g) => g.length === 3);
+  return (
+    groups[0].length >= 1 && groups[0].length <= 3 && groups.slice(1).every((g) => g.length === 3)
+  );
 }
 
 /** Strict locale-aware number parser. Raw text is retained for review/audit. */
@@ -26,22 +39,50 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
   if (!s) return { status: 'empty', value: null, raw, ambiguous: false, percentage: false };
   const config = getLocaleConfig(locale);
   let negative = false;
-  if (/^\(.*\)$/.test(s)) { negative = true; s = s.slice(1, -1).trim(); }
+  if (/^\(.*\)$/.test(s)) {
+    negative = true;
+    s = s.slice(1, -1).trim();
+  }
   if (s.startsWith('-')) {
-    if (negative) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Conflicting negative notation.' };
+    if (negative)
+      return {
+        status: 'invalid',
+        value: null,
+        raw,
+        ambiguous: false,
+        warning: 'Conflicting negative notation.',
+      };
     negative = true;
     s = s.slice(1);
   } else if (s.startsWith('+')) s = s.slice(1);
   const percentage = /%\s*$/.test(s);
   if (percentage) s = s.replace(/%\s*$/, '').trim();
-  s = s.replace(CURRENCY, '').trim().replace(/\u00a0/g, ' ');
-  if (!s || /[^\d.,\s]/.test(s)) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Contains unsupported characters.' };
-  if (/\s{2,}/.test(s)) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid whitespace grouping.' };
+  s = s
+    .replace(CURRENCY, '')
+    .trim()
+    .replace(/\u00a0/g, ' ');
+  if (!s || /[^\d.,\s]/.test(s))
+    return {
+      status: 'invalid',
+      value: null,
+      raw,
+      ambiguous: false,
+      warning: 'Contains unsupported characters.',
+    };
+  if (/\s{2,}/.test(s))
+    return {
+      status: 'invalid',
+      value: null,
+      raw,
+      ambiguous: false,
+      warning: 'Invalid whitespace grouping.',
+    };
 
   let normalized = s;
   if (s.includes(' ')) {
     const decimalIndex = s.lastIndexOf(config.decimalSeparator);
-    const hasLocaleDecimal = decimalIndex >= 0 && s.indexOf(config.decimalSeparator) === decimalIndex;
+    const hasLocaleDecimal =
+      decimalIndex >= 0 && s.indexOf(config.decimalSeparator) === decimalIndex;
     const integerPart = hasLocaleDecimal ? s.slice(0, decimalIndex) : s;
     const fractionPart = hasLocaleDecimal ? s.slice(decimalIndex + 1) : '';
     const groups = integerPart.split(' ');
@@ -52,7 +93,13 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
       groups.slice(1).some((group) => group.length !== 3) ||
       (hasLocaleDecimal && (!/^\d+$/.test(fractionPart) || fractionPart.length > 8))
     ) {
-      return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid space grouping.' };
+      return {
+        status: 'invalid',
+        value: null,
+        raw,
+        ambiguous: false,
+        warning: 'Invalid space grouping.',
+      };
     }
     normalized = groups.join('') + (hasLocaleDecimal ? config.decimalSeparator + fractionPart : '');
   }
@@ -68,15 +115,33 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
     const decimal = normalized.lastIndexOf(config.decimalSeparator);
     const grouping = config.groupingSeparator;
     if (decimal < 0 || normalized.indexOf(config.decimalSeparator) !== decimal) {
-      return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Separators do not match the selected locale.' };
+      return {
+        status: 'invalid',
+        value: null,
+        raw,
+        ambiguous: false,
+        warning: 'Separators do not match the selected locale.',
+      };
     }
     integer = normalized.slice(0, decimal);
     fraction = normalized.slice(decimal + 1);
     if (!fraction || !/^\d+$/.test(fraction) || fraction.length > 8) {
-      return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid decimal fraction.' };
+      return {
+        status: 'invalid',
+        value: null,
+        raw,
+        ambiguous: false,
+        warning: 'Invalid decimal fraction.',
+      };
     }
     if (!validGrouping(integer, grouping, config.groupingPattern === 'indian')) {
-      return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid digit grouping for selected locale.' };
+      return {
+        status: 'invalid',
+        value: null,
+        raw,
+        ambiguous: false,
+        warning: 'Invalid digit grouping for selected locale.',
+      };
     }
     // Validate grouping before removing it; Number() cannot parse grouped digits.
     integer = integer.split(grouping).join('');
@@ -86,29 +151,62 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
     const isDecimal = separator === config.decimalSeparator;
     if (count > 1) {
       if (isDecimal || !validGrouping(normalized, separator, config.groupingPattern === 'indian')) {
-        return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid separator placement.' };
+        return {
+          status: 'invalid',
+          value: null,
+          raw,
+          ambiguous: false,
+          warning: 'Invalid separator placement.',
+        };
       }
       integer = normalized.split(separator).join('');
     } else {
       const [left, right] = normalized.split(separator);
-      if (!left || !right) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid separator placement.' };
+      if (!left || !right)
+        return {
+          status: 'invalid',
+          value: null,
+          raw,
+          ambiguous: false,
+          warning: 'Invalid separator placement.',
+        };
       if (ambiguous) {
-        if (isDecimal) { integer = left; fraction = right; }
-        else {
+        if (isDecimal) {
+          integer = left;
+          fraction = right;
+        } else {
           if (!validGrouping(normalized, separator, config.groupingPattern === 'indian')) {
-            return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid grouping for selected locale.' };
+            return {
+              status: 'invalid',
+              value: null,
+              raw,
+              ambiguous: false,
+              warning: 'Invalid grouping for selected locale.',
+            };
           }
           integer = left + right;
         }
       } else if (isDecimal) {
         if (!/^\d+$/.test(left) || !/^\d{1,8}$/.test(right)) {
-          return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid decimal format.' };
+          return {
+            status: 'invalid',
+            value: null,
+            raw,
+            ambiguous: false,
+            warning: 'Invalid decimal format.',
+          };
         }
         integer = left;
         fraction = right;
       } else {
         if (!validGrouping(normalized, separator, config.groupingPattern === 'indian')) {
-          return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid grouping for selected locale.' };
+          return {
+            status: 'invalid',
+            value: null,
+            raw,
+            ambiguous: false,
+            warning: 'Invalid grouping for selected locale.',
+          };
         }
         integer = normalized.split(separator).join('');
       }
@@ -116,13 +214,33 @@ export function parseNumber(input: string, locale: LocaleCode = DEFAULT_LOCALE):
   }
 
   if (!/^\d+$/.test(integer) || (fraction && !/^\d+$/.test(fraction))) {
-    return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Invalid numeric format.' };
+    return {
+      status: 'invalid',
+      value: null,
+      raw,
+      ambiguous: false,
+      warning: 'Invalid numeric format.',
+    };
   }
   const value = Number(`${integer}${fraction ? '.' + fraction : ''}`);
-  if (!Number.isFinite(value)) return { status: 'invalid', value: null, raw, ambiguous: false, warning: 'Number is outside the supported range.' };
+  if (!Number.isFinite(value))
+    return {
+      status: 'invalid',
+      value: null,
+      raw,
+      ambiguous: false,
+      warning: 'Number is outside the supported range.',
+    };
   const signed = negative ? -value : value;
   if (ambiguous) {
-    return { status: 'ambiguous', value: signed, raw, ambiguous: true, percentage, warning: `Ambiguous separator interpreted using ${config.code} rules; please confirm. This interpretation is not verified.` };
+    return {
+      status: 'ambiguous',
+      value: signed,
+      raw,
+      ambiguous: true,
+      percentage,
+      warning: `Ambiguous separator interpreted using ${config.code} rules; please confirm. This interpretation is not verified.`,
+    };
   }
   return { status: 'valid', value: signed, raw, ambiguous: false, percentage };
 }

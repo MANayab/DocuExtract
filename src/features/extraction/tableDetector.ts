@@ -96,7 +96,10 @@ function parseByColumns(line: string, headerRoles: Role[] | null, locale: Locale
   if (tail < 2) return null;
 
   const nums = cells.slice(cells.length - tail).map((c) => normalizeNumber(c, locale));
-  const description = cells.slice(0, cells.length - tail).join(' ').trim();
+  const description = cells
+    .slice(0, cells.length - tail)
+    .join(' ')
+    .trim();
 
   let qty: number | undefined;
   let rate: number | undefined;
@@ -187,7 +190,11 @@ const field = (value: number, confidence: number) => ({
   source: 'text' as const,
 });
 
-export function detectLineItems(spans: TextSpan[], text: string, locale: LocaleCode = DEFAULT_LOCALE): InvoiceItem[] {
+export function detectLineItems(
+  spans: TextSpan[],
+  text: string,
+  locale: LocaleCode = DEFAULT_LOCALE,
+): InvoiceItem[] {
   const spanRows = spansToLines(spans);
   const lines = (spanRows.length ? spanRows : text.split(/\r?\n/))
     .map((x) => x.trim())

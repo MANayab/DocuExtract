@@ -21,7 +21,7 @@ export interface SheetModel {
 
 /** Every cell goes through the formula-injection sanitizer exactly once, here. */
 const clean = (value: unknown): Cell => {
-  const safe = sanitizeCell(value);
+  const safe = typeof value === 'number' && !Number.isFinite(value) ? null : sanitizeCell(value);
   if (safe === null || safe === undefined) return null;
   if (typeof safe === 'boolean') return safe ? 'TRUE' : 'FALSE';
   return safe;

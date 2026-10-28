@@ -28,7 +28,28 @@ jobs:
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '[.](astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo 'No changed files supported by Prettier.'
+          else
+            npx prettier --check "${files[@]}"
+          fi
+      - run: npm run test
+      - run: npm run build
+  playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+ || true)
           if [ "${#files[@]}" -eq 0 ]; then
             echo 'No changed files supported by Prettier.'
           else

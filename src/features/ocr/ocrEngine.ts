@@ -35,7 +35,12 @@ export function collectWords(data: OcrPageData): OcrWord[] {
  * Converts OCR words (canvas pixels, origin top-left) into text spans in PDF
  * points with the origin bottom-left, so the normal extractor can read them.
  */
-export function wordsToSpans(words: OcrWord[], page: number, pageHeightPoints: number, scale: number): TextSpan[] {
+export function wordsToSpans(
+  words: OcrWord[],
+  page: number,
+  pageHeightPoints: number,
+  scale: number,
+): TextSpan[] {
   const spans: TextSpan[] = [];
 
   for (const word of words) {
@@ -79,7 +84,10 @@ export async function ocrPdf(
   }
 
   if (!manifest.languages.includes(language)) {
-    throw new AppError('OCR_UNAVAILABLE', `OCR language "${language}" is not bundled in this build.`);
+    throw new AppError(
+      'OCR_UNAVAILABLE',
+      `OCR language "${language}" is not bundled in this build.`,
+    );
   }
 
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {
@@ -117,7 +125,11 @@ export async function ocrPdf(
   let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
 
   try {
-    worker = await createWorker(language, 1, options as unknown as Parameters<typeof createWorker>[2]);
+    worker = await createWorker(
+      language,
+      1,
+      options as unknown as Parameters<typeof createWorker>[2],
+    );
 
     try {
       await worker.setParameters({ preserve_interword_spaces: '1' } as never);
@@ -133,7 +145,10 @@ export async function ocrPdf(
 
       const page = await pdf.getPage(pageIndex + 1);
       const base = page.getViewport({ scale: 1 });
-      const scale = Math.min(OCR_RENDER_SCALE, Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)));
+      const scale = Math.min(
+        OCR_RENDER_SCALE,
+        Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)),
+      );
       const viewport = page.getViewport({ scale });
 
       const canvas = document.createElement('canvas');
@@ -141,7 +156,9 @@ export async function ocrPdf(
       canvas.height = Math.ceil(viewport.height);
 
       const context = canvas.getContext('2d');
-      if (!context) throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+      if (!context) {
+        throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+      }
 
       await page.render({ canvasContext: context, viewport }).promise;
 
@@ -164,10 +181,21 @@ export async function ocrPdf(
 
     onProgress(100, 'OCR complete');
 
-    return { fileName: file.name, pageCount, spans, text, pageTexts, kind: 'text-based', ocr: true };
+    return {
+      fileName: file.name,
+      pageCount,
+      spans,
+      text,
+      pageTexts,
+      kind: 'text-based',
+      ocr: true,
+    };
   } catch (e) {
     if (e instanceof AppError) throw e;
-    throw new AppError('OCR_UNAVAILABLE', `OCR failed: ${e instanceof Error ? e.message : String(e)}`);
+    throw new AppError(
+      'OCR_UNAVAILABLE',
+      `OCR failed: ${e instanceof Error ? e.message : String(e)}`,
+    );
   } finally {
     await worker?.terminate();
     await pdf.destroy();

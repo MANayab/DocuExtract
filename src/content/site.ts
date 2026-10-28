@@ -14,7 +14,7 @@ export const SITE = {
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',
-  version: '1.1.0',
+  version: '1.2.0',
   themeColor: '#2563eb',
   keywords:
     'pdf invoice to excel, invoice data extraction, gst invoice to excel, invoice ocr, convert invoice pdf to csv, private invoice parser',

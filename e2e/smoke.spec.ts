@@ -59,7 +59,6 @@ test('serves the SEO essentials', async ({ page, request }) => {
   }
 });
 
-
 test('invoice locale panel stays visible and keyboard operable at responsive widths', async ({ page }) => {
   for (const width of [320, 375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });

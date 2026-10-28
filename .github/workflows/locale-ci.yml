@@ -1,11 +1,11 @@
 name: Locale Parsing CI
 on:
   push:
-    branches: [feat/locale-aware-parsing]
+    branches: [fix/locale-production-hardening]
   pull_request:
     branches: [main]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: locale-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -24,27 +24,11 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - name: Format changed files on feature branch pushes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feat/locale-aware-parsing'
-        shell: bash
-        run: |
-          git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
-          if [ "${#files[@]}" -gt 0 ]; then
-            npx prettier --write "${files[@]}"
-            git add -- "${files[@]}"
-            if ! git diff --cached --quiet; then
-              git config user.name 'github-actions[bot]'
-              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-              git commit -m 'style: format locale feature files'
-              git push origin HEAD:feat/locale-aware-parsing
-            fi
-          fi
       - name: Check formatting of changed files only
         shell: bash
         run: |
           git fetch origin main --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR origin/main...HEAD | grep -E '\\.(astro|css|html|js|jsx|json|md|mdx|scss|ts|tsx|yaml|yml)$' || true)
           if [ "${#files[@]}" -eq 0 ]; then
             echo 'No changed files supported by Prettier.'
           else

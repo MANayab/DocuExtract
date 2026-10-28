@@ -15,7 +15,12 @@ interface Props {
   onClear: () => void;
 }
 
-function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: { record: BatchRecord; ocrAvailable: boolean | null; onOcr: (id: string, language: OcrLanguage) => void; ocrLanguage: OcrLanguage }) {
+function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: {
+  record: BatchRecord;
+  ocrAvailable: boolean | null;
+  onOcr: (id: string, language: OcrLanguage) => void;
+  ocrLanguage: OcrLanguage;
+}) {
   switch (record.status) {
     case 'queued':
       return <span className="dx-badge dx-badge--idle">Queued</span>;
@@ -39,7 +44,11 @@ function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: { record: Batc
             className="dx-btn dx-btn--small"
             onClick={() => onOcr(record.id, ocrLanguage)}
             disabled={ocrAvailable === false}
-            title={ocrAvailable === false ? 'OCR files are not bundled in this build (see docs/OCR.md)' : 'Read this scan with OCR'}
+            title={
+              ocrAvailable === false
+                ? 'OCR files are not bundled in this build (see docs/OCR.md)'
+                : 'Read this scan with OCR'
+            }
           >
             <IconScan /> Run OCR
           </button>
@@ -70,7 +79,16 @@ function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: { record: Batc
   }
 }
 
-export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemove, onOcr, ocrLanguage, onClear }: Props) {
+export function ResultsTable({
+  records,
+  duplicates,
+  ocrAvailable,
+  onOpen,
+  onRemove,
+  onOcr,
+  ocrLanguage,
+  onClear,
+}: Props) {
   return (
     <section className="dx-card" aria-labelledby="results-title">
       <div className="dx-card__head">
@@ -105,7 +123,9 @@ export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemo
                     <div className="dx-filecell">
                       <span className="dx-filecell__icon"><IconFile /></span>
                       <div>
-                        <p className="dx-filecell__name" title={record.fileName}>{record.fileName}</p>
+                        <p className="dx-filecell__name" title={record.fileName}>
+                          {record.fileName}
+                        </p>
                         <p className="dx-filecell__meta">
                           {record.segment ? `Invoice ${record.segment.index} of ${record.segment.total} · ` : ''}
                           {formatBytes(record.size)}
@@ -128,16 +148,30 @@ export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemo
                     )}
                   </td>
 
-                  <td>{ready ? invoice.seller.name.value || <span className="dx-muted">—</span> : <span className="dx-muted">—</span>}</td>
+                  <td>
+                    {ready ? (
+                      invoice.seller.name.value || <span className="dx-muted">—</span>
+                    ) : (
+                      <span className="dx-muted">—</span>
+                    )}
+                  </td>
 
                   <td className="dx-num dx-strong">
-                    {ready ? formatMoney(invoice.grandTotal.value, invoice.currency.value) : <span className="dx-muted">—</span>}
+                    {ready ? (
+                      formatMoney(invoice.grandTotal.value, invoice.currency.value)
+                    ) : (
+                      <span className="dx-muted">—</span>
+                    )}
                   </td>
 
                   <td>
                     {ready ? (
-                      <div className={`dx-conf dx-conf--${confidenceBand(invoice.extraction.confidence).toLowerCase()}`}>
-                        <div className="dx-conf__track"><span style={{ width: `${invoice.extraction.confidence}%` }} /></div>
+                      <div
+                        className={`dx-conf dx-conf--${confidenceBand(invoice.extraction.confidence).toLowerCase()}`}
+                      >
+                        <div className="dx-conf__track">
+                          <span style={{ width: `${invoice.extraction.confidence}%` }} />
+                        </div>
                         <span>{invoice.extraction.confidence}%</span>
                       </div>
                     ) : (
@@ -145,16 +179,33 @@ export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemo
                     )}
                   </td>
 
-                  <td><StatusCell record={record} ocrAvailable={ocrAvailable} onOcr={onOcr} ocrLanguage={ocrLanguage} /></td>
+                  <td>
+                    <StatusCell
+                      record={record}
+                      ocrAvailable={ocrAvailable}
+                      onOcr={onOcr}
+                      ocrLanguage={ocrLanguage}
+                    />
+                  </td>
 
                   <td>
                     <div className="dx-actions">
                       {ready && (
-                        <button type="button" className="dx-btn dx-btn--small dx-btn--ghost" onClick={() => onOpen(record.id)} aria-label={`Review ${record.fileName}`}>
+                        <button
+                          type="button"
+                          className="dx-btn dx-btn--small dx-btn--ghost"
+                          onClick={() => onOpen(record.id)}
+                          aria-label={`Review ${record.fileName}`}
+                        >
                           Review
                         </button>
                       )}
-                      <button type="button" className="dx-iconbtn" onClick={() => onRemove(record.id)} aria-label={`Remove ${record.fileName}`}>
+                      <button
+                        type="button"
+                        className="dx-iconbtn"
+                        onClick={() => onRemove(record.id)}
+                        aria-label={`Remove ${record.fileName}`}
+                      >
                         <IconTrash />
                       </button>
                     </div>

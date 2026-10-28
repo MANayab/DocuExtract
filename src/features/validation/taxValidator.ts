@@ -11,7 +11,7 @@ export function validateTax(i: Invoice): ValidationCheck[] {
       {
         check: 'Tax arithmetic',
         expected: 0,
-        actual: Number.NaN,
+        actual: null,
         status: 'FAIL',
         message: 'Tax could not be validated because an extracted numeric value is invalid.',
       },

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Invoice } from '../../types/invoice';
 import { validateInvoice } from '../../features/validation/invoiceValidator';
+import { validateTotals, validateLineItems } from '../../features/validation/totalsValidator';
+import { validateTax } from '../../features/validation/taxValidator';
 
 const base = (): Invoice => ({
   invoiceNumber: {
@@ -180,6 +182,27 @@ const base = (): Invoice => ({
 describe('validation', () => {
   it('passes reconciled invoice', () => {
     expect(validateInvoice(base()).valid).toBe(true);
+  });
+
+  it('reports invalid numeric extraction without leaking NaN into validation checks', () => {
+    const invoice = base();
+    invoice.grandTotal.value = Number.NaN;
+    invoice.items[0].lineTotal.value = Number.POSITIVE_INFINITY;
+    invoice.taxTotal.value = Number.NaN;
+
+    const checks = [
+      ...validateTotals(invoice),
+      ...validateLineItems(invoice),
+      ...validateTax(invoice),
+    ];
+
+    expect(checks.some((check) => check.status === 'FAIL')).toBe(true);
+    expect(checks.every((check) => check.actual === null || Number.isFinite(check.actual))).toBe(
+      true,
+    );
+    expect(checks.every((check) => check.expected === null || Number.isFinite(check.expected))).toBe(
+      true,
+    );
   });
 
   it('fails arithmetic mismatch', () => {

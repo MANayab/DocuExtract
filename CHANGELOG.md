@@ -2,11 +2,19 @@
 
 All notable changes to this project are documented here.
 
-## Unreleased
+## [1.2.0] — Release candidate
 
 ### Added
 
-- Initial locale configuration and strict date/number parsing primitives for en-IN, en-US, en-GB and de-DE. This feature remains in progress pending full integration and CI verification.
+- **Locale-aware reprocessing.** Choose India (en-IN), United States (en-US), United Kingdom (en-GB), or Germany (de-DE) in the review screen and reprocess the source PDF using that locale's date and number conventions.
+- **Strict date parsing.** Supports ISO and English month-name dates, validates real calendar dates, flags ambiguous numeric dates, and preserves the en-IN default when no locale is selected.
+- **Strict number parsing.** Handles locale-specific grouping and decimal separators, accounting negatives, currency markers, percentages, and real zero; ambiguous separators and malformed input are flagged for review rather than silently guessed.
+- **Regression coverage.** Adds locale parser coverage and retains the production-hardening regression tests for split-invoice reprocessing, invalid numeric validation and export review notes.
+
+### Changed
+
+- Locale selection is connected to the extraction pipeline and can reprocess an invoice from its original PDF. Manual edits remain protected from reprocessing.
+- The release includes the merged CI and validation hardening from PR #2; workflow permissions remain read-only.
 
 ## [1.1.0] — 2026-10-10
 

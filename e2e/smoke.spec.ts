@@ -83,20 +83,20 @@ test(
     for (const width of [320, 375, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/');
-  
+
       const panel = page.locator('.dx-locale-panel');
       const dropzone = page.locator('.dx-drop__zone');
       const hint = page.getByText(
         /Controls how ambiguous dates and number separators are interpreted/,
       );
-  
+
       await expect(panel).toBeVisible();
       await expect(hint).toBeVisible();
-  
+
       const panelBox = await panel.boundingBox();
       const dropBox = await dropzone.boundingBox();
       const hintBox = await hint.boundingBox();
-  
+
       expect(panelBox).not.toBeNull();
       expect(dropBox).not.toBeNull();
       expect(hintBox).not.toBeNull();
@@ -107,10 +107,10 @@ test(
         width,
       );
     }
-  
+
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto('/');
-  
+
     const select = page.getByLabel('Invoice locale');
     await page.getByRole('link', { name: 'GitHub' }).focus();
     await page.keyboard.press('Tab');

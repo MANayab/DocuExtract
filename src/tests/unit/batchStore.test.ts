@@ -136,7 +136,10 @@ describe('BatchStore', () => {
     store.requestOcr(parked.id, 'deu');
     await settle();
 
-    expect(calls).toEqual([{ ocr: false, language: undefined }, { ocr: true, language: 'deu' }]);
+    expect(calls).toEqual([
+      { ocr: false, language: undefined },
+      { ocr: true, language: 'deu' },
+    ]);
     expect(store.getSnapshot()[0].status).toBe('ready');
   });
 

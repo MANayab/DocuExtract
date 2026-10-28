@@ -96,7 +96,7 @@ export function validateLineItems(i: Invoice): ValidationCheck[] {
       {
         check: 'Line item numeric extraction',
         expected: 0,
-        actual: Number.NaN,
+        actual: null,
         status: 'FAIL',
         message:
           'One or more line-item amounts could not be parsed. Review the original extracted text.',

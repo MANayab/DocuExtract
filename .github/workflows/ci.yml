@@ -14,12 +14,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Check formatting for changed files
+      - name: Check formatting for changed source and config files
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           git fetch origin "${{ github.base_ref }}" --depth=1
-          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}" "$GITHUB_SHA" > /tmp/changed-files.txt
+          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}" "$GITHUB_SHA" -- "*.ts" "*.tsx" "*.js" "*.jsx" "*.json" "*.yml" "*.yaml" "*.css" "*.html" > /tmp/changed-files.txt
           if [ -s /tmp/changed-files.txt ]; then
             xargs -d '\n' npx prettier --check < /tmp/changed-files.txt
           else

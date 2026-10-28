@@ -270,8 +270,11 @@ export class BatchStore {
       next.splice(index, 1, ...ready);
       this.commit(next);
       this.files.delete(record.id);
-      for (const item of ready) this.files.set(item.id, file);
-      this.ocrRequested.delete(record.id);
+      for (const item of ready) {
+        this.files.set(item.id, file);
+        if (useOcr) this.ocrRequested.set(item.id, this.ocrRequested.get(record.id) ?? 'eng');
+      }
+      if (ready.length > 1) this.ocrRequested.delete(record.id);
     } catch (e) {
       this.patch(record.id, {
         status: 'error',

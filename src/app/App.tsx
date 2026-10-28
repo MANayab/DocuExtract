@@ -202,7 +202,11 @@ export function App() {
                 <div className="dx-locale-panel__copy">
                   <label htmlFor="ocr-language">Scanned PDF language</label>
                 </div>
-                <select id="ocr-language" value={ocrLanguage} onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}>
+                <select
+                  id="ocr-language"
+                  value={ocrLanguage}
+                  onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
+                >
                   <option value="eng">English</option>
                   <option value="deu">German</option>
                 </select>

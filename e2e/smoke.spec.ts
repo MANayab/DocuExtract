@@ -118,5 +118,5 @@ test(
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await expect(select).toBeVisible();
-    },
+  },
 );

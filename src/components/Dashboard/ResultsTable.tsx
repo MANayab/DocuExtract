@@ -110,10 +110,14 @@ export function ResultsTable({
               <th scope="col">File</th>
               <th scope="col">Invoice</th>
               <th scope="col">Seller</th>
-              <th scope="col" className="dx-num">Total</th>
+              <th scope="col" className="dx-num">
+                Total
+              </th>
               <th scope="col">Confidence</th>
               <th scope="col">Status</th>
-              <th scope="col"><span className="dx-sr-only">Actions</span></th>
+              <th scope="col">
+                <span className="dx-sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -126,7 +130,9 @@ export function ResultsTable({
                 <tr key={record.id} className={record.status === 'error' ? 'is-error' : undefined}>
                   <td>
                     <div className="dx-filecell">
-                      <span className="dx-filecell__icon"><IconFile /></span>
+                      <span className="dx-filecell__icon">
+                        <IconFile />
+                      </span>
                       <div>
                         <p className="dx-filecell__name" title={record.fileName}>
                           {record.fileName}

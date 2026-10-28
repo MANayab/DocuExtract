@@ -11,7 +11,7 @@ OCR is **optional at build time**. A build without the OCR files works normally;
 ```bash
 npm ci
 git add package.json package-lock.json
-git commit -m "chore: bundle English OCR data"
+git commit -m "chore: bundle English and German OCR data"
 npm run build
 ```
 

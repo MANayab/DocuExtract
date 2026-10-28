@@ -1,4 +1,4 @@
-import type { BatchRecord } from '../../types/batch';
+import type { BatchRecord, OcrLanguage } from '../../types/batch';
 import { analyzeInvoice } from '../../features/validation/analysis';
 import { confidenceBand, formatBytes, formatMoney } from '../../utils/formatting';
 import { IconFile, IconScan, IconTrash } from '../layout/Icons';
@@ -10,11 +10,12 @@ interface Props {
   ocrAvailable: boolean | null;
   onOpen: (id: string) => void;
   onRemove: (id: string) => void;
-  onOcr: (id: string) => void;
+  onOcr: (id: string, language: OcrLanguage) => void;
+  ocrLanguage: OcrLanguage;
   onClear: () => void;
 }
 
-function StatusCell({ record, ocrAvailable, onOcr }: { record: BatchRecord; ocrAvailable: boolean | null; onOcr: (id: string) => void }) {
+function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: { record: BatchRecord; ocrAvailable: boolean | null; onOcr: (id: string, language: OcrLanguage) => void; ocrLanguage: OcrLanguage }) {
   switch (record.status) {
     case 'queued':
       return <span className="dx-badge dx-badge--idle">Queued</span>;
@@ -36,7 +37,7 @@ function StatusCell({ record, ocrAvailable, onOcr }: { record: BatchRecord; ocrA
           <button
             type="button"
             className="dx-btn dx-btn--small"
-            onClick={() => onOcr(record.id)}
+            onClick={() => onOcr(record.id, ocrLanguage)}
             disabled={ocrAvailable === false}
             title={ocrAvailable === false ? 'OCR files are not bundled in this build (see docs/OCR.md)' : 'Read this scan with OCR'}
           >
@@ -69,7 +70,7 @@ function StatusCell({ record, ocrAvailable, onOcr }: { record: BatchRecord; ocrA
   }
 }
 
-export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemove, onOcr, onClear }: Props) {
+export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemove, onOcr, ocrLanguage, onClear }: Props) {
   return (
     <section className="dx-card" aria-labelledby="results-title">
       <div className="dx-card__head">
@@ -144,7 +145,7 @@ export function ResultsTable({ records, duplicates, ocrAvailable, onOpen, onRemo
                     )}
                   </td>
 
-                  <td><StatusCell record={record} ocrAvailable={ocrAvailable} onOcr={onOcr} /></td>
+                  <td><StatusCell record={record} ocrAvailable={ocrAvailable} onOcr={onOcr} ocrLanguage={ocrLanguage} /></td>
 
                   <td>
                     <div className="dx-actions">

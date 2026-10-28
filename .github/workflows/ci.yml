@@ -19,28 +19,11 @@ jobs:
         shell: bash
         run: |
           git fetch origin "${{ github.base_ref }}" --depth=1
-          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" | grep -E '\\.(ts|tsx|js|jsx|json|md|yml|yaml|css|html)
-      - run: npm run lint
-      - run: npm run test
-      - run: npm run build
-  playwright:
-    name: Playwright E2E
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run build
-      - run: npm run test:e2e
- || true)
-          if (("${#files[@]}" > 0)); then
-            npx prettier --check "${files[@]}"
+          git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" > /tmp/changed-files.txt
+          if [ -s /tmp/changed-files.txt ]; then
+            xargs -d '\n' npx prettier --check < /tmp/changed-files.txt
           else
-            echo "No changed files supported by Prettier."
+            echo "No changed files to format-check."
           fi
       - run: npm run typecheck
       - run: npm run lint

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import '../styles/locale-panel.css';
 import { ErrorPanel } from '../components/ErrorPanel';
 import { ExportPanel } from '../components/ExportPanel';
 import { FileUploader } from '../components/FileUploader';

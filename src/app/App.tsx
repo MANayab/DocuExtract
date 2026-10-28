@@ -10,6 +10,7 @@ import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
 import { ReviewScreen } from '../components/review/ReviewScreen';
 import { OCR_BUNDLED } from '../config/build';
+import { LOCALES, type LocaleCode } from '../config/locales';
 import { SITE } from '../content/site';
 import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
 import { findDuplicates, summarize } from '../features/batch/summary';
@@ -24,6 +25,7 @@ export function App() {
   const ocrAvailable = useOcrAvailable();
   const [view, setView] = useState<View>({ kind: 'dashboard' });
   const [notices, setNotices] = useState<string[]>([]);
+  const [locale, setLocale] = useState<LocaleCode>(() => store.getLocale());
   const autoOpen = useRef(false);
 
   const summary = useMemo(() => summarize(records), [records]);
@@ -31,7 +33,11 @@ export function App() {
 
   const ready = useMemo(() => records.filter((r) => r.status === 'ready' && r.invoice), [records]);
   const entries: ExportEntry[] = useMemo(
-    () => ready.map((r) => ({ invoice: r.invoice as Invoice, checks: analyzeInvoice(r.invoice as Invoice).checks })),
+    () =>
+      ready.map((r) => ({
+        invoice: r.invoice as Invoice,
+        checks: analyzeInvoice(r.invoice as Invoice).checks,
+      })),
     [ready],
   );
 
@@ -50,7 +56,10 @@ export function App() {
     if (records.length === 1 && records[0].status === 'ready') {
       autoOpen.current = false;
       setView({ kind: 'review', id: records[0].id });
-    } else if (records.some((r) => r.status === 'error' || r.status === 'needs-ocr') || records.length > 1) {
+    } else if (
+      records.some((r) => r.status === 'error' || r.status === 'needs-ocr') ||
+      records.length > 1
+    ) {
       autoOpen.current = false;
     }
   }, [records]);
@@ -75,9 +84,39 @@ export function App() {
             analysis={analyzeInvoice(invoice)}
             position={{ index: position + 1, total: readyIds.length }}
             onBack={goHome}
-            onPrev={position > 0 ? () => setView({ kind: 'review', id: readyIds[position - 1] }) : undefined}
-            onNext={position < readyIds.length - 1 ? () => setView({ kind: 'review', id: readyIds[position + 1] }) : undefined}
+            onPrev={
+              position > 0
+                ? () => setView({ kind: 'review', id: readyIds[position - 1] })
+                : undefined
+            }
+            onNext={
+              position < readyIds.length - 1
+                ? () => setView({ kind: 'review', id: readyIds[position + 1] })
+                : undefined
+            }
             onChange={(next) => store.updateInvoice(reviewing.id, next)}
+            locale={locale}
+            onLocaleChange={(next) => {
+              setLocale(next);
+              store.setLocale(next);
+            }}
+            canReprocess={store.canReprocess(reviewing.id)}
+            onReprocess={() => {
+              if (
+                !window.confirm(
+                  'Reprocess this invoice using the selected locale? This will replace extracted values for this invoice. Manual edits are protected; edited invoices cannot be reprocessed.',
+                )
+              )
+                return;
+              void store.reprocessWithLocale(reviewing.id, locale).then((success) => {
+                setNotices((current) => [
+                  ...current,
+                  success
+                    ? 'Invoice reprocessed with the selected locale.'
+                    : 'Reprocessing was not completed; the existing invoice was preserved.',
+                ]);
+              });
+            }}
           />
         </main>
         <Footer />
@@ -89,21 +128,33 @@ export function App() {
 
   return (
     <div className="dx-app">
-      <a className="dx-skip" href="#main">Skip to content</a>
+      <a className="dx-skip" href="#main">
+        Skip to content
+      </a>
       <Header onHome={goHome} />
 
       <main id="main">
         <section className="dx-hero">
           <div className="dx-container dx-hero__inner">
-            <p className="dx-eyebrow"><IconSparkle /> v{SITE.version} · batch, GST{OCR_BUNDLED ? ' and OCR' : ' and multi-invoice PDFs'}</p>
+            <p className="dx-eyebrow">
+              <IconSparkle /> v{SITE.version} · batch, GST
+              {OCR_BUNDLED ? ' and OCR' : ' and multi-invoice PDFs'}
+            </p>
             <h1 className="dx-hero__title">{SITE.h1}</h1>
             <p className="dx-hero__lead">
-              {SITE.tagline}. Drop invoices, check what was flagged and download Excel, CSV or JSON. Nothing is uploaded.
+              {SITE.tagline}. Drop invoices, check what was flagged and download Excel, CSV or JSON.
+              Nothing is uploaded.
             </p>
             <ul className="dx-trust" aria-label="Highlights">
-              <li><IconShield /> No upload, no account</li>
-              <li><IconCheck /> Totals and tax validated</li>
-              <li><IconCheck /> Free and open source</li>
+              <li>
+                <IconShield /> No upload, no account
+              </li>
+              <li>
+                <IconCheck /> Totals and tax validated
+              </li>
+              <li>
+                <IconCheck /> Free and open source
+              </li>
             </ul>
           </div>
         </section>
@@ -112,10 +163,38 @@ export function App() {
           {notices.length > 0 && (
             <div className="dx-notices">
               {notices.map((message) => (
-                <ErrorPanel key={message} message={message} onDismiss={() => setNotices((all) => all.filter((m) => m !== message))} />
+                <ErrorPanel
+                  key={message}
+                  message={message}
+                  onDismiss={() => setNotices((all) => all.filter((m) => m !== message))}
+                />
               ))}
             </div>
           )}
+
+          <section className="dx-panel" aria-labelledby="locale-heading">
+            <h2 id="locale-heading">Number and date format</h2>
+            <label htmlFor="invoice-locale">Invoice locale</label>
+            <select
+              id="invoice-locale"
+              value={locale}
+              onChange={(event) => {
+                const next = event.target.value as LocaleCode;
+                setLocale(next);
+                store.setLocale(next);
+              }}
+            >
+              {Object.values(LOCALES).map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="dx-muted">
+              Controls how ambiguous dates and number separators are interpreted. Review financial
+              data before relying on it.
+            </p>
+          </section>
 
           <FileUploader onFiles={handleFiles} />
 

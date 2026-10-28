@@ -53,21 +53,32 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 
 ## Features
 
-| | |
-|---|---|
-| **Local-only processing** | PDFs are parsed in the browser with pdf.js. No upload, no server round trip. |
-| **Batch dashboard** | Drop up to 50 PDFs at once. Live queue, KPI cards, per-invoice status (Validated, Review, Failed, Scanned) and duplicate detection. |
-| **Multi-invoice PDFs** | A PDF that holds several invoices is split automatically; multi-page invoices stay together. |
-| **GST-aware** | GSTIN per party, CGST / SGST / IGST, and per-line HSN, taxable value, tax rate and tax amount columns. |
-| **Labels above values** | Reads layouts where "Invoice No." sits above its value, not just `Label: value` lines. |
-| **Optional local OCR** | Scanned PDFs can be read with Tesseract running in your browser, from files served by this site (no CDN). Always marked lower confidence. |
-| **Combined exports** | One Excel workbook (one row per invoice plus line items, parties, taxes, validation, metadata), CSV for invoices or line items, JSON. |
-| **Review before export** | Edit every field and line item; confidence bands highlight what to check; checks re-run as you type. |
-| **Date safety** | Ambiguous numeric dates such as `05/09/2026` are read as DD/MM/YYYY and flagged on the field. |
-| **Safe spreadsheets** | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly. |
-| **No persistence** | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. Memory is released after each file. |
-| **SEO and AI-ready** | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md). |
-| **Tested** | Unit, integration and end-to-end tests; type checking and linting in CI. |
+|                                    |                                                                                                                                                                                                     |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Local-only processing**          | PDFs are parsed in the browser with pdf.js. No upload, no server round trip.                                                                                                                        |
+| **Batch dashboard**                | Drop up to 50 PDFs at once. Live queue, KPI cards, per-invoice status (Validated, Review, Failed, Scanned) and duplicate detection.                                                                 |
+| **Multi-invoice PDFs**             | A PDF that holds several invoices is split automatically; multi-page invoices stay together.                                                                                                        |
+| **GST-aware**                      | GSTIN per party, CGST / SGST / IGST, and per-line HSN, taxable value, tax rate and tax amount columns.                                                                                              |
+| **Labels above values**            | Reads layouts where "Invoice No." sits above its value, not just `Label: value` lines.                                                                                                              |
+| **Optional local OCR**             | Scanned PDFs can be read with Tesseract running in your browser, from files served by this site (no CDN). Always marked lower confidence.                                                           |
+| **Combined exports**               | One Excel workbook (one row per invoice plus line items, parties, taxes, validation, metadata), CSV for invoices or line items, JSON.                                                               |
+| **Review before export**           | Edit every field and line item; confidence bands highlight what to check; checks re-run as you type.                                                                                                |
+| **Locale-aware dates and numbers** | Select India (en-IN), United States (en-US), United Kingdom (en-GB), or Germany (de-DE). Numeric dates and separator interpretation depend on the selected locale; ambiguous values require review. |
+| **Safe spreadsheets**              | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly.                                                                                                  |
+| **No persistence**                 | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. Memory is released after each file.                                                                                      |
+| **SEO and AI-ready**               | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md).                                                                                                         |
+| **Tested**                         | Unit, integration and end-to-end tests; type checking and linting in CI.                                                                                                                            |
+
+## Locale-aware parsing
+
+The locale selector controls date order and number separators; it does not infer or change invoice currency. Numeric dates whose day and month are both 12 or less are flagged as ambiguous even when a locale-specific interpretation is displayed. Review extracted financial data before relying on it.
+
+| Locale                 | Numeric date order | Decimal separator | Grouping separator                        | Ambiguity handling                                              |
+| ---------------------- | ------------------ | ----------------- | ----------------------------------------- | --------------------------------------------------------------- |
+| India (en-IN)          | DD/MM/YYYY         | `.`               | `,` (Indian grouping, e.g. `1,23,456.78`) | Plausible day/month pairs are interpreted as DD/MM and flagged. |
+| United States (en-US)  | MM/DD/YYYY         | `.`               | `,` (western grouping, e.g. `123,456.78`) | Plausible day/month pairs are interpreted as MM/DD and flagged. |
+| United Kingdom (en-GB) | DD/MM/YYYY         | `.`               | `,` (western grouping)                    | Plausible day/month pairs are interpreted as DD/MM and flagged. |
+| Germany (de-DE)        | DD/MM/YYYY         | `,`               | `.` (western grouping, e.g. `123.456,78`) | Plausible day/month pairs are interpreted as DD/MM and flagged. |
 
 ## How it works
 
@@ -148,16 +159,16 @@ stateDiagram-v2
 
 ## Support matrix
 
-| PDF type | Support |
-| --- | --- |
-| Text-based | **Yes.** Reliably supported. |
-| Scanned PDF | **Optional.** Local OCR when the build bundles it ([docs/OCR.md](docs/OCR.md)); otherwise listed as "Scanned PDF". Always lower confidence. |
-| Image-only | **Optional.** Same as scanned PDFs. |
-| Password-protected | **Limited.** Encrypted files are rejected unless provided as an already-decrypted PDF. |
-| Corrupt | No. |
-| Handwritten | Not guaranteed. |
-| Multi-page | **Yes**, up to 100 pages. |
-| Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together. |
+| PDF type                  | Support                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text-based                | **Yes.** Reliably supported.                                                                                                                |
+| Scanned PDF               | **Optional.** Local OCR when the build bundles it ([docs/OCR.md](docs/OCR.md)); otherwise listed as "Scanned PDF". Always lower confidence. |
+| Image-only                | **Optional.** Same as scanned PDFs.                                                                                                         |
+| Password-protected        | **Limited.** Encrypted files are rejected unless provided as an already-decrypted PDF.                                                      |
+| Corrupt                   | No.                                                                                                                                         |
+| Handwritten               | Not guaranteed.                                                                                                                             |
+| Multi-page                | **Yes**, up to 100 pages.                                                                                                                   |
+| Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together.                                                                 |
 
 ## Known limitations (v1.1.0)
 
@@ -192,18 +203,18 @@ npm run preview
 
 ## Scripts
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Start the Vite dev server with hot reload (runs `prepare:ocr` first). |
-| `npm run prepare:ocr` | Copy the Tesseract worker, WASM core and language data into `public/ocr/` (also runs before `dev` and `build`). |
-| `npm run build` | Produce a production build in `dist/`. |
-| `npm run preview` | Serve the production build locally. |
-| `npm run typecheck` | Run `tsc --noEmit`. |
-| `npm run lint` | Run ESLint with zero warnings allowed. |
-| `npm run format:check` | Check formatting with Prettier. |
-| `npm run test` | Run unit and component tests once (Vitest). |
-| `npm run test:watch` | Run Vitest in watch mode. |
-| `npm run test:e2e` | Run Playwright end-to-end tests. |
+| Command                | What it does                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`          | Start the Vite dev server with hot reload (runs `prepare:ocr` first).                                           |
+| `npm run prepare:ocr`  | Copy the Tesseract worker, WASM core and language data into `public/ocr/` (also runs before `dev` and `build`). |
+| `npm run build`        | Produce a production build in `dist/`.                                                                          |
+| `npm run preview`      | Serve the production build locally.                                                                             |
+| `npm run typecheck`    | Run `tsc --noEmit`.                                                                                             |
+| `npm run lint`         | Run ESLint with zero warnings allowed.                                                                          |
+| `npm run format:check` | Check formatting with Prettier.                                                                                 |
+| `npm run test`         | Run unit and component tests once (Vitest).                                                                     |
+| `npm run test:watch`   | Run Vitest in watch mode.                                                                                       |
+| `npm run test:e2e`     | Run Playwright end-to-end tests.                                                                                |
 
 ## Testing
 
@@ -314,13 +325,13 @@ flowchart TB
 
 Files are processed locally by this application and are not uploaded by application code. Verify your own browser network activity (DevTools → Network) if your environment requires independent confirmation. See [PRIVACY.md](PRIVACY.md).
 
-| Area | Behaviour |
-| --- | --- |
-| Network | No upload of invoice data. No analytics or telemetry. |
-| Storage | Invoice data is not written to URLs, `localStorage` or `sessionStorage`. |
-| Memory | PDF buffers are released and PDF documents are destroyed after processing. |
+| Area                | Behaviour                                                                    |
+| ------------------- | ---------------------------------------------------------------------------- |
+| Network             | No upload of invoice data. No analytics or telemetry.                        |
+| Storage             | Invoice data is not written to URLs, `localStorage` or `sessionStorage`.     |
+| Memory              | PDF buffers are released and PDF documents are destroyed after processing.   |
 | Spreadsheet exports | Cells that could trigger formulas are sanitized (CSV and formula injection). |
-| Rendering | React rendering does not use `dangerouslySetInnerHTML`. |
+| Rendering           | React rendering does not use `dangerouslySetInnerHTML`.                      |
 
 To report a vulnerability, follow [SECURITY.md](SECURITY.md). Please do not open a public issue for security problems.
 
@@ -348,16 +359,16 @@ gantt
 
 ## Tech stack
 
-| Layer | Tools |
-| --- | --- |
-| UI | React 18.3, hand-written CSS design system (Tailwind CSS 3.4 in the toolchain) |
-| Language and build | TypeScript 5.6, Vite 5.4 |
-| PDF parsing | pdfjs-dist 4.10 |
-| OCR (optional, bundled locally) | tesseract.js 5.1 + tesseract.js-core |
-| Validation | Zod 3.23 |
-| Export | ExcelJS 4.4, file-saver 2.0 |
-| Quality | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.48 |
-| Hosting | GitHub Pages via GitHub Actions |
+| Layer                           | Tools                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| UI                              | React 18.3, hand-written CSS design system (Tailwind CSS 3.4 in the toolchain) |
+| Language and build              | TypeScript 5.6, Vite 5.4                                                       |
+| PDF parsing                     | pdfjs-dist 4.10                                                                |
+| OCR (optional, bundled locally) | tesseract.js 5.1 + tesseract.js-core                                           |
+| Validation                      | Zod 3.23                                                                       |
+| Export                          | ExcelJS 4.4, file-saver 2.0                                                    |
+| Quality                         | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.48               |
+| Hosting                         | GitHub Pages via GitHub Actions                                                |
 
 ## Contributing
 

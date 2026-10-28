@@ -2,12 +2,29 @@ import type { Invoice } from '../../types/invoice';
 import type { ValidationCheck } from './totalsValidator';
 
 export function validateTax(i: Invoice): ValidationCheck[] {
+  const values = [
+    i.taxTotal.value,
+    ...i.items.flatMap((item) => [item.taxRate.value, item.taxAmount.value, item.lineTotal.value]),
+  ];
+  if (values.some((value) => !Number.isFinite(value))) {
+    return [
+      {
+        check: 'Tax arithmetic',
+        expected: 0,
+        actual: Number.NaN,
+        status: 'FAIL',
+        message: 'Tax could not be validated because an extracted numeric value is invalid.',
+      },
+    ];
+  }
   const columnTax = Number(i.items.reduce((s, x) => s + x.taxAmount.value, 0).toFixed(2));
   const hasColumn = columnTax > 0;
 
   const expected = hasColumn
     ? columnTax
-    : Number(i.items.reduce((s, x) => s + (x.lineTotal.value * x.taxRate.value) / 100, 0).toFixed(2));
+    : Number(
+        i.items.reduce((s, x) => s + (x.lineTotal.value * x.taxRate.value) / 100, 0).toFixed(2),
+      );
   const actual = Number(i.taxTotal.value.toFixed(2));
 
   const noTaxData = !hasColumn && i.items.every((x) => x.taxRate.value === 0);

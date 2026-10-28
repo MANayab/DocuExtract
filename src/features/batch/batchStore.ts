@@ -2,6 +2,7 @@ import { MAX_BATCH_FILES } from '../../config/limits';
 import type { BatchRecord, Processor } from '../../types/batch';
 import type { Invoice } from '../../types/invoice';
 import { validatePdfFile } from '../../utils/fileValidation';
+import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 
 export interface AddResult {
   accepted: number;
@@ -22,6 +23,16 @@ export class BatchStore {
   private ocrRequested = new Set<string>();
   private running = false;
   private seq = 0;
+  private locale: LocaleCode = DEFAULT_LOCALE;
+  private manuallyEdited = new Set<string>();
+
+  setLocale(locale: LocaleCode) {
+    this.locale = locale;
+  }
+
+  getLocale() {
+    return this.locale;
+  }
 
   constructor(private processor: Processor) {}
 
@@ -48,7 +59,8 @@ export class BatchStore {
   addFiles(files: File[]): AddResult {
     const rejected: AddResult['rejected'] = [];
     const added: BatchRecord[] = [];
-    const fileCount = () => new Set(this.records.map((r) => r.id.split('#')[0])).size + added.length;
+    const fileCount = () =>
+      new Set(this.records.map((r) => r.id.split('#')[0])).size + added.length;
 
     for (const file of files) {
       try {
@@ -59,7 +71,10 @@ export class BatchStore {
       }
 
       if (fileCount() >= MAX_BATCH_FILES) {
-        rejected.push({ name: file.name, reason: `Batch limit of ${MAX_BATCH_FILES} files reached.` });
+        rejected.push({
+          name: file.name,
+          reason: `Batch limit of ${MAX_BATCH_FILES} files reached.`,
+        });
         continue;
       }
 
@@ -96,23 +111,81 @@ export class BatchStore {
     if (!record || record.status !== 'needs-ocr') return;
 
     this.ocrRequested.add(id);
-    this.patch(id, { status: 'queued', progress: 0, label: 'Waiting in queue (OCR)', error: undefined });
+    this.patch(id, {
+      status: 'queued',
+      progress: 0,
+      label: 'Waiting in queue (OCR)',
+      error: undefined,
+    });
     void this.pump();
   }
 
   updateInvoice(id: string, invoice: Invoice) {
+    this.manuallyEdited.add(id);
     this.patch(id, { invoice });
+  }
+
+  isManuallyEdited(id: string) {
+    return this.manuallyEdited.has(id);
+  }
+
+  canReprocess(id: string) {
+    return this.files.has(id) && !this.manuallyEdited.has(id);
+  }
+
+  async reprocessWithLocale(id: string, locale: LocaleCode): Promise<boolean> {
+    const record = this.records.find((item) => item.id === id);
+    const file = this.files.get(id);
+    if (!record || !file || !record.invoice || this.manuallyEdited.has(id)) return false;
+
+    const previousStatus = record.status;
+    this.setLocale(locale);
+    this.patch(id, { label: 'Reprocessing with selected locale', error: undefined });
+    try {
+      const result = await this.processor(
+        file,
+        { ocr: this.ocrRequested.has(id), locale },
+        () => {},
+      );
+      if (result.kind !== 'invoices') {
+        this.patch(id, { label: record.label, status: previousStatus });
+        return false;
+      }
+      const index = Math.max(0, (record.segment?.index ?? 1) - 1);
+      const invoice = result.invoices[index];
+      if (!invoice || this.manuallyEdited.has(id)) {
+        this.patch(id, { label: record.label, status: previousStatus });
+        return false;
+      }
+      this.patch(id, {
+        invoice,
+        pageCount: result.pageCount,
+        label: 'Reprocessed with selected locale',
+        status: 'ready',
+        progress: 100,
+      });
+      return true;
+    } catch (error) {
+      this.patch(id, {
+        label: record.label,
+        status: previousStatus,
+        error: error instanceof Error ? error.message : 'Reprocessing failed.',
+      });
+      return false;
+    }
   }
 
   remove(id: string) {
     this.files.delete(id);
     this.ocrRequested.delete(id);
+    this.manuallyEdited.delete(id);
     this.commit(this.records.filter((r) => r.id !== id));
   }
 
   clear() {
     this.files.clear();
     this.ocrRequested.clear();
+    this.manuallyEdited.clear();
     this.commit([]);
   }
 
@@ -140,11 +213,17 @@ export class BatchStore {
     }
 
     const useOcr = this.ocrRequested.has(record.id);
-    this.patch(record.id, { status: 'processing', progress: 2, label: useOcr ? 'Starting OCR' : 'Opening PDF' });
+    this.patch(record.id, {
+      status: 'processing',
+      progress: 2,
+      label: useOcr ? 'Starting OCR' : 'Opening PDF',
+    });
 
     try {
-      const result = await this.processor(file, { ocr: useOcr }, (percent, label) =>
-        this.patch(record.id, { progress: clamp(percent), label }),
+      const result = await this.processor(
+        file,
+        { ocr: useOcr, locale: this.locale },
+        (percent, label) => this.patch(record.id, { progress: clamp(percent), label }),
       );
 
       const index = this.records.findIndex((r) => r.id === record.id);
@@ -174,7 +253,10 @@ export class BatchStore {
       }));
 
       if (ready.length === 0) {
-        this.patch(record.id, { status: 'error', error: 'No invoice could be read from this PDF.' });
+        this.patch(record.id, {
+          status: 'error',
+          error: 'No invoice could be read from this PDF.',
+        });
         return;
       }
 
@@ -182,6 +264,7 @@ export class BatchStore {
       next.splice(index, 1, ...ready);
       this.commit(next);
       this.files.delete(record.id);
+      for (const item of ready) this.files.set(item.id, file);
       this.ocrRequested.delete(record.id);
     } catch (e) {
       this.patch(record.id, {

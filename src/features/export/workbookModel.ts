@@ -21,7 +21,7 @@ export interface SheetModel {
 
 /** Every cell goes through the formula-injection sanitizer exactly once, here. */
 const clean = (value: unknown): Cell => {
-  const safe = sanitizeCell(value);
+  const safe = typeof value === 'number' && !Number.isFinite(value) ? null : sanitizeCell(value);
   if (safe === null || safe === undefined) return null;
   if (typeof safe === 'boolean') return safe ? 'TRUE' : 'FALSE';
   return safe;
@@ -44,7 +44,12 @@ function widthsFor(headers: string[], rows: Cell[][]): number[] {
   });
 }
 
-function sheet(name: string, headers: string[], rows: Cell[][], numberColumns: number[] = []): SheetModel {
+function sheet(
+  name: string,
+  headers: string[],
+  rows: Cell[][],
+  numberColumns: number[] = [],
+): SheetModel {
   return { name, headers, rows, numberColumns, widths: widthsFor(headers, rows) };
 }
 
@@ -57,20 +62,51 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
   const invoices = sheet(
     'Invoices',
     [
-      'Invoice Number', 'Invoice Date', 'Due Date', 'Seller', 'Seller Tax ID', 'Buyer', 'Buyer Tax ID',
-      'Currency', 'Subtotal', 'Discount', 'Tax', 'Shipping', 'Other Charges', 'Grand Total',
-      'Payment Method', 'Source File', 'Source', 'Confidence', 'Status', 'Review Notes',
+      'Invoice Number',
+      'Invoice Date',
+      'Due Date',
+      'Seller',
+      'Seller Tax ID',
+      'Buyer',
+      'Buyer Tax ID',
+      'Currency',
+      'Subtotal',
+      'Discount',
+      'Tax',
+      'Shipping',
+      'Other Charges',
+      'Grand Total',
+      'Payment Method',
+      'Source File',
+      'Source',
+      'Confidence',
+      'Status',
+      'Review Notes',
     ],
     entries.map(({ invoice: i }) => {
       const analysis = analyzeInvoice(i);
 
       return cleanRow([
-        i.invoiceNumber.value, i.invoiceDate.value, i.dueDate.value, i.seller.name.value,
-        i.seller.taxId.value, i.buyer.name.value, i.buyer.taxId.value, i.currency.value,
-        i.subtotal.value, i.discountTotal.value, i.taxTotal.value, i.shipping.value,
-        i.otherCharges.value, i.grandTotal.value, i.payment.method.value, i.extraction.sourceFile,
-        i.extraction.sourceType === 'ocr' ? 'OCR' : 'PDF text', i.extraction.confidence,
-        analysis.status, analysis.reasons.join('; '),
+        i.invoiceNumber.value,
+        i.invoiceDate.value,
+        i.dueDate.value,
+        i.seller.name.value,
+        i.seller.taxId.value,
+        i.buyer.name.value,
+        i.buyer.taxId.value,
+        i.currency.value,
+        i.subtotal.value,
+        i.discountTotal.value,
+        i.taxTotal.value,
+        i.shipping.value,
+        i.otherCharges.value,
+        i.grandTotal.value,
+        i.payment.method.value,
+        i.extraction.sourceFile,
+        i.extraction.sourceType === 'ocr' ? 'OCR' : 'PDF text',
+        i.extraction.confidence,
+        analysis.status,
+        analysis.reasons.join('; '),
       ]);
     }),
     [8, 9, 10, 11, 12, 13],
@@ -79,14 +115,31 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
   const lineItems = sheet(
     'Line Items',
     [
-      'Invoice Number', 'Line Number', 'Description', 'Quantity', 'Unit', 'Unit Price', 'Discount',
-      'Tax Rate', 'Tax Amount', 'Line Total', 'Source File',
+      'Invoice Number',
+      'Line Number',
+      'Description',
+      'Quantity',
+      'Unit',
+      'Unit Price',
+      'Discount',
+      'Tax Rate',
+      'Tax Amount',
+      'Line Total',
+      'Source File',
     ],
     entries.flatMap(({ invoice: i }) =>
       i.items.map((x, n) =>
         cleanRow([
-          i.invoiceNumber.value, n + 1, x.description.value, x.quantity.value, x.unit.value,
-          x.unitPrice.value, x.discount.value, x.taxRate.value, x.taxAmount.value, x.lineTotal.value,
+          i.invoiceNumber.value,
+          n + 1,
+          x.description.value,
+          x.quantity.value,
+          x.unit.value,
+          x.unitPrice.value,
+          x.discount.value,
+          x.taxRate.value,
+          x.taxAmount.value,
+          x.lineTotal.value,
           i.extraction.sourceFile,
         ]),
       ),
@@ -105,8 +158,14 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
         ] as const
       ).map(([role, p]) =>
         cleanRow([
-          i.invoiceNumber.value, role, p.name.value, p.address.value, p.taxId.value, p.email.value,
-          p.phone.value, i.extraction.sourceFile,
+          i.invoiceNumber.value,
+          role,
+          p.name.value,
+          p.address.value,
+          p.taxId.value,
+          p.email.value,
+          p.phone.value,
+          i.extraction.sourceFile,
         ]),
       ),
     ),
@@ -123,17 +182,34 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
 
       const entry = byRate.get(x.taxRate.value) ?? { taxable: 0, tax: 0 };
       entry.taxable += lineBase(x);
-      entry.tax += x.taxAmount.value > 0 ? x.taxAmount.value : (lineBase(x) * x.taxRate.value) / 100;
+      entry.tax +=
+        x.taxAmount.value > 0 ? x.taxAmount.value : (lineBase(x) * x.taxRate.value) / 100;
       byRate.set(x.taxRate.value, entry);
     }
 
     if (byRate.size === 0 && i.taxTotal.value > 0) {
-      taxRows.push(cleanRow([i.invoiceNumber.value, null, round2(i.subtotal.value), round2(i.taxTotal.value), i.extraction.sourceFile]));
+      taxRows.push(
+        cleanRow([
+          i.invoiceNumber.value,
+          null,
+          round2(i.subtotal.value),
+          round2(i.taxTotal.value),
+          i.extraction.sourceFile,
+        ]),
+      );
       continue;
     }
 
     for (const [rate, v] of [...byRate.entries()].sort((a, b) => a[0] - b[0])) {
-      taxRows.push(cleanRow([i.invoiceNumber.value, rate, round2(v.taxable), round2(v.tax), i.extraction.sourceFile]));
+      taxRows.push(
+        cleanRow([
+          i.invoiceNumber.value,
+          rate,
+          round2(v.taxable),
+          round2(v.tax),
+          i.extraction.sourceFile,
+        ]),
+      );
     }
   }
 
@@ -148,7 +224,9 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
     'Validation',
     ['Invoice Number', 'Check', 'Expected', 'Actual', 'Status', 'Message'],
     entries.flatMap(({ invoice: i, checks }) =>
-      checks.map((c) => cleanRow([i.invoiceNumber.value, c.check, c.expected, c.actual, c.status, c.message])),
+      checks.map((c) =>
+        cleanRow([i.invoiceNumber.value, c.check, c.expected, c.actual, c.status, c.message]),
+      ),
     ),
     [2, 3],
   );
@@ -158,8 +236,12 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
     ['Invoice Number', 'Source Type', 'Source File', 'Page Count', 'Confidence', 'Warnings'],
     entries.map(({ invoice: i }) =>
       cleanRow([
-        i.invoiceNumber.value, i.extraction.sourceType, i.extraction.sourceFile, i.extraction.pageCount,
-        i.extraction.confidence, i.extraction.warnings.join('; '),
+        i.invoiceNumber.value,
+        i.extraction.sourceType,
+        i.extraction.sourceFile,
+        i.extraction.pageCount,
+        i.extraction.confidence,
+        i.extraction.warnings.join('; '),
       ]),
     ),
   );

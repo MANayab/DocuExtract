@@ -6,10 +6,10 @@ OCR is **optional at build time**. A build without the OCR files works normally;
 
 ## Enable it (one time)
 
-`tesseract.js` and its WASM core are already dependencies. Only the English language data is added:
+`tesseract.js` and its WASM core are already dependencies. English and German language data are bundled locally:
 
 ```bash
-npm install --save-exact '@tesseract.js-data/eng'
+npm install --save-exact '@tesseract.js-data/eng' '@tesseract.js-data/deu'
 git add package.json package-lock.json
 git commit -m "chore: bundle English OCR data"
 npm run build
@@ -43,7 +43,8 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 
 ## Limits
 
-- English only. Other languages need their own `*.traineddata` and a small change to the script and manifest.
+- English and German are selectable when their model files are bundled. Additional languages require an explicitly reviewed allowlist entry, a pinned data package, license documentation, and regression tests.
+- OCR language is independent of invoice locale: OCR language controls text recognition; invoice locale controls date and number interpretation.
 - At most 20 pages per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`). OCR runs at roughly 5 to 20 seconds per page depending on the device.
 - Handwriting, photos taken at an angle and low-resolution faxes are not reliable.
 - Tables with no visible column gaps may merge cells; review line items.
@@ -59,7 +60,7 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 | Symptom | Cause and fix |
 | --- | --- |
 | **Run OCR** is disabled | The build has no `public/ocr/manifest.json`. Follow "Enable it" and rebuild. |
-| Build log says `English language data not found` | Install `@tesseract.js-data/eng` or add `ocr-data/eng.traineddata.gz`. |
+| Build log says a language model is missing | Install `@tesseract.js-data/eng` or add `ocr-data/eng.traineddata.gz`. |
 | `OCR failed: ...` on a row | Open DevTools → Console/Network. A 404 under `/DocuExtract/ocr/` means the files were not deployed; check `dist/ocr/`. |
 | Garbled numbers | Scan quality. Re-scan at 300 dpi, straight, high contrast. |
 

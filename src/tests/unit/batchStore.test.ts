@@ -214,6 +214,29 @@ describe('BatchStore', () => {
     expect(store.getSnapshot()[0].invoice?.invoiceNumber.value).toBe('de-DE');
   });
 
+  it('reprocesses the correct segment from a multi-invoice source PDF', async () => {
+    const calls: string[] = [];
+    const store = new BatchStore(async (_file, options) => {
+      const locale = options.locale ?? 'en-IN';
+      calls.push(locale);
+      return {
+        kind: 'invoices',
+        invoices: [invoice(`${locale}-A`), invoice(`${locale}-B`), invoice(`${locale}-C`)],
+        pageCount: 4,
+      };
+    });
+
+    store.addFiles([pdf('bundle.pdf')]);
+    await settle();
+
+    const second = store.getSnapshot()[1];
+    expect(second.id).toBe('f1#2');
+    expect(store.canReprocess(second.id)).toBe(true);
+    expect(await store.reprocessWithLocale(second.id, 'de-DE')).toBe(true);
+    expect(store.getSnapshot()[1].invoice?.invoiceNumber.value).toBe('de-DE-B');
+    expect(calls).toEqual(['en-IN', 'de-DE']);
+  });
+
   it('never overwrites a manually edited invoice during locale reprocessing', async () => {
     const store = new BatchStore(async () => ({
       kind: 'invoices',

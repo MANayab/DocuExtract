@@ -38,6 +38,11 @@ jobs:
 
           git diff --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- "*.ts" "*.tsx" "*.js" "*.jsx" "*.json" "*.yml" "*.yaml" "*.css" "*.html" > /tmp/changed-files.txt
           if [ -s /tmp/changed-files.txt ]; then
+            while IFS= read -r file; do
+              echo "::group::Prettier diff $file"
+              npx prettier "$file" | diff -u "$file" - || true
+              echo "::endgroup::"
+            done < /tmp/changed-files.txt
             xargs -d '\n' npx prettier --check < /tmp/changed-files.txt
           else
             echo "No changed files to format-check."

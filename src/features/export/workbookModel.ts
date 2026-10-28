@@ -141,6 +141,7 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
       'Tax Amount',
       'Line Total',
       'Source File',
+      'Review Notes',
     ],
     entries.flatMap(({ invoice: i }) =>
       i.items.map((x, n) =>
@@ -156,6 +157,7 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
           x.taxAmount.value,
           x.lineTotal.value,
           i.extraction.sourceFile,
+          [...new Set([x.description.warning, x.quantity.warning, x.unit.warning, x.unitPrice.warning, x.discount.warning, x.taxRate.warning, x.taxAmount.warning, x.lineTotal.warning].filter((warning): warning is string => Boolean(warning)))].join('; '),
         ]),
       ),
     ),

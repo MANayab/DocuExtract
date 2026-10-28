@@ -75,9 +75,18 @@ export interface Step {
 }
 
 export const STEPS: Step[] = [
-  { title: 'Drop your PDFs', body: 'Drag in one invoice or a whole folder of up to 50. Text PDFs are read instantly.' },
-  { title: 'Review what was flagged', body: 'Every field shows its confidence. Fix anything marked Review and watch the checks update.' },
-  { title: 'Download Excel, CSV or JSON', body: 'Export all invoices together, one row per invoice, with line items, taxes and validation sheets.' },
+  {
+    title: 'Drop your PDFs',
+    body: 'Drag in one invoice or a whole folder of up to 50. Text PDFs are read instantly.',
+  },
+  {
+    title: 'Review what was flagged',
+    body: 'Every field shows its confidence. Fix anything marked Review and watch the checks update.',
+  },
+  {
+    title: 'Download Excel, CSV or JSON',
+    body: 'Export all invoices together, one row per invoice, with line items, taxes and validation sheets.',
+  },
 ];
 
 export interface FaqItem {
@@ -130,5 +139,8 @@ export const FOOTER_LINKS = [
   { label: 'Privacy', href: `${SITE.repo}/blob/main/PRIVACY.md` },
   { label: 'Terms', href: `${SITE.repo}/blob/main/TERMS.md` },
   { label: 'Security', href: `${SITE.repo}/blob/main/SECURITY.md` },
-  { label: 'Report an extraction failure', href: `${SITE.repo}/issues/new?template=extraction-failure.md` },
+  {
+    label: 'Report an extraction failure',
+    href: `${SITE.repo}/issues/new?template=extraction-failure.md`,
+  },
 ] as const;

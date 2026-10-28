@@ -67,6 +67,7 @@ const MIN_OCR_CHARACTERS = 20;
 export async function ocrPdf(
   file: File,
   onProgress: (percent: number, label: string) => void,
+  language = 'eng',
 ): Promise<PdfExtraction> {
   const manifest = await getOcrManifest();
 
@@ -75,6 +76,10 @@ export async function ocrPdf(
       'OCR_UNAVAILABLE',
       'OCR is not installed in this build. See docs/OCR.md to bundle the Tesseract files (no CDN is used).',
     );
+  }
+
+  if (!manifest.languages.includes(language)) {
+    throw new AppError('OCR_UNAVAILABLE', `OCR language "${language}" is not bundled in this build.`);
   }
 
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {
@@ -112,7 +117,7 @@ export async function ocrPdf(
   let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
 
   try {
-    worker = await createWorker(manifest.lang, 1, options as unknown as Parameters<typeof createWorker>[2]);
+    worker = await createWorker(language, 1, options as unknown as Parameters<typeof createWorker>[2]);
 
     try {
       await worker.setParameters({ preserve_interword_spaces: '1' } as never);

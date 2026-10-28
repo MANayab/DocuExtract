@@ -22,4 +22,6 @@ export function buildJson(entries: ExportEntry[], exportedAt = new Date().toISOS
 }
 
 export const invoicesToJson = (entries: ExportEntry[]): Blob =>
-  new Blob([JSON.stringify(buildJson(entries), null, 2)], { type: 'application/json;charset=utf-8' });
+  new Blob([JSON.stringify(buildJson(entries), null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });

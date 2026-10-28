@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import '../styles/locale-panel.css';
 import { ErrorPanel } from '../components/ErrorPanel';
 import { ExportPanel } from '../components/ExportPanel';
 import { FileUploader } from '../components/FileUploader';
@@ -172,25 +173,29 @@ export function App() {
             </div>
           )}
 
-          <section className="dx-panel" aria-labelledby="locale-heading">
-            <h2 id="locale-heading">Number and date format</h2>
-            <label htmlFor="invoice-locale">Invoice locale</label>
-            <select
-              id="invoice-locale"
-              value={locale}
-              onChange={(event) => {
-                const next = event.target.value as LocaleCode;
-                setLocale(next);
-                store.setLocale(next);
-              }}
-            >
-              {Object.values(LOCALES).map((option) => (
-                <option key={option.code} value={option.code}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <p className="dx-muted">
+          <section className="dx-panel dx-locale-panel" aria-labelledby="locale-heading">
+            <div className="dx-locale-panel__field">
+              <div className="dx-locale-panel__copy">
+                <h2 id="locale-heading">Number and date format</h2>
+                <label htmlFor="invoice-locale">Invoice locale</label>
+              </div>
+              <select
+                id="invoice-locale"
+                value={locale}
+                onChange={(event) => {
+                  const next = event.target.value as LocaleCode;
+                  setLocale(next);
+                  store.setLocale(next);
+                }}
+              >
+                {Object.values(LOCALES).map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="dx-locale-panel__hint">
               Controls how ambiguous dates and number separators are interpreted. Review financial
               data before relying on it.
             </p>

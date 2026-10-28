@@ -1,6 +1,6 @@
 # Search, answer-engine and AI discoverability
 
-What ships in v1.1.0 and exactly how to get the deployed page
+What ships in v1.2.0 and exactly how to get the deployed page
 `https://manayab.github.io/DocuExtract/` indexed. Nobody can guarantee a search ranking; this makes the page easy to find, read, quote and index correctly.
 
 ## What is built in

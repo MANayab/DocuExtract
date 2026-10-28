@@ -59,7 +59,7 @@ for (const language of supportedLanguages) {
   const candidates = [
     path.join(root, 'ocr-data', `${language}.traineddata.gz`),
     path.join(root, 'ocr-data', `${language}.traineddata`),
-    ...walk(modules('@tesseract.js-data', language)).filter((f) => new RegExp(`${language}\\\\.traineddata(\\\\.gz)?$`).test(f)),
+    ...walk(modules('@tesseract.js-data', language)).filter((f) => new RegExp(`${language}\\.traineddata(\\.gz)?$`).test(f)),
   ];
   candidates.sort((a, b) => Number(b.includes('best_int')) - Number(a.includes('best_int')));
   const source = candidates.find((f) => fs.existsSync(f));

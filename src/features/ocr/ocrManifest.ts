@@ -5,6 +5,7 @@ export interface OcrManifest {
   engine: string;
   lang: string;
   gzip: boolean;
+  languages: string[];
 }
 
 /** Base URL of the OCR files served by this site (no trailing slash). */
@@ -24,7 +25,14 @@ export function getOcrManifest(): Promise<OcrManifest | null> {
 
       const json = (await response.json()) as Partial<OcrManifest>;
       return json && typeof json.lang === 'string'
-        ? { engine: String(json.engine ?? 'tesseract.js'), lang: json.lang, gzip: json.gzip !== false }
+        ? {
+            engine: String(json.engine ?? 'tesseract.js'),
+            lang: json.lang,
+            languages: Array.isArray(json.languages)
+              ? json.languages.filter((item): item is string => typeof item === 'string')
+              : [json.lang],
+            gzip: json.gzip !== false,
+          }
         : null;
     } catch {
       return null;

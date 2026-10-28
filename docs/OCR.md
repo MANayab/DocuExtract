@@ -9,13 +9,13 @@ OCR is **optional at build time**. A build without the OCR files works normally;
 `tesseract.js` and its WASM core are already dependencies. English and German language data are bundled locally:
 
 ```bash
-npm install --save-exact '@tesseract.js-data/eng' '@tesseract.js-data/deu'
+npm ci
 git add package.json package-lock.json
 git commit -m "chore: bundle English OCR data"
 npm run build
 ```
 
-`npm run build` (and `npm run dev`) first runs `scripts/prepare-ocr-assets.mjs`, which copies three things into `public/ocr/` (git-ignored, regenerated every build):
+`npm run build` (and `npm run dev`) first runs `scripts/prepare-ocr-assets.mjs`, which copies the worker, WASM core, and both language models into `public/ocr/` (git-ignored, regenerated every build):
 
 | File | From | Size (approx.) |
 | --- | --- | --- |
@@ -23,11 +23,11 @@ npm run build
 | `core/*lstm*.wasm.js` | `node_modules/tesseract.js-core/` | 3 to 4 MB each |
 | `lang/eng.traineddata.gz` | `node_modules/@tesseract.js-data/eng/` | ~ 10 MB |
 
-and writes `public/ocr/manifest.json`. The script prints a line such as `[ocr] bundled worker, 2 core file(s) and eng.traineddata.gz`.
+and writes `public/ocr/manifest.json`. The script prints a line such as `[ocr] bundled worker, 2 core file(s), languages: eng, deu`.
 
-**No npm access to the data package?** Download `eng.traineddata.gz` (or `eng.traineddata`) from the [tessdata_best](https://github.com/tesseract-ocr/tessdata_best) project and put it in `ocr-data/` at the repository root. The script uses it first.
+For reproducible builds, keep the pinned language packages in `package.json` and `package-lock.json`. If maintaining a custom local model, place the allowlisted `eng` or `deu` model in `ocr-data/` and verify its source and license before building.
 
-Users only download these files when they click **Run OCR**; nothing is fetched otherwise.
+Users only download the selected language model and OCR runtime files when they click **Run OCR**; all requests are same-origin static assets, not a CDN. The language selector is separate from invoice locale.
 
 ## How it works
 

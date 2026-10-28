@@ -170,7 +170,7 @@ stateDiagram-v2
 | Multi-page                | **Yes**, up to 100 pages.                                                                                                                   |
 | Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together.                                                                 |
 
-## Known limitations (v1.1.0)
+## Known limitations (v1.2.0)
 
 - **OCR is English only**, limited to 20 pages per PDF, and slower and less accurate than text PDFs. Every OCR'd invoice is marked **Review**.
 - OCR needs a one-time build step to bundle the Tesseract files ([docs/OCR.md](docs/OCR.md)). Without it, scanned PDFs are detected but not read.

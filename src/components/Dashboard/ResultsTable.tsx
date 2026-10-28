@@ -123,10 +123,7 @@ export function ResultsTable({
               const pages = invoice?.extraction.pageCount ?? record.pageCount;
 
               return (
-                <tr
-                  key={record.id}
-                  className={record.status === 'error' ? 'is-error' : undefined}
-                >
+                <tr key={record.id} className={record.status === 'error' ? 'is-error' : undefined}>
                   <td>
                     <div className="dx-filecell">
                       <span className="dx-filecell__icon"><IconFile /></span>
@@ -150,7 +147,9 @@ export function ResultsTable({
                     {ready ? (
                       <>
                         <p className="dx-strong">{invoice.invoiceNumber.value || '—'}</p>
-                        <p className="dx-muted dx-small">{invoice.invoiceDate.value || 'No date'}</p>
+                        <p className="dx-muted dx-small">
+                          {invoice.invoiceDate.value || 'No date'}
+                        </p>
                         {duplicates.has(record.id) && (
                           <span className="dx-chip">Possible duplicate</span>
                         )}

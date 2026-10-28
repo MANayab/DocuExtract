@@ -33,7 +33,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
   await page.goto('/');
 
   const select = page.getByLabel('Invoice locale');
-  await page.getByRole('link', { name: 'GitHub' }).focus();
+  await page.locator('.dx-header').getByRole('link', { name: 'GitHub' }).focus();
   await page.keyboard.press('Tab');
   await expect(select).toBeFocused();
   await page.keyboard.press('ArrowDown');

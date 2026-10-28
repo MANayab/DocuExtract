@@ -27,8 +27,6 @@ function walk(dir) {
   });
 }
 
-const mb = (file) => `${(fs.statSync(file).size / 1024 / 1024).toFixed(1)} MB`;
-
 function disable(reason) {
   fs.rmSync(out, { recursive: true, force: true });
   console.warn(`[ocr] OCR not bundled: ${reason}`);
@@ -68,8 +66,8 @@ for (const language of supportedLanguages) {
       disable('English language data not found. Run npm ci or add ocr-data/eng.traineddata.gz.');
       process.exit(0);
     }
-    console.warn(`[ocr] Optional language data missing: ${language}; that language will not be offered.`);
-    continue;
+    disable(`Required language data missing: ${language}. Run npm ci and verify the pinned language-data package.`);
+    process.exit(1);
   }
   bundled.push({ language, source, gzip: source.endsWith('.gz') });
 }

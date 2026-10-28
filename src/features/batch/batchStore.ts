@@ -129,13 +129,19 @@ export class BatchStore {
     return this.manuallyEdited.has(id);
   }
 
+  private sourceFileFor(id: string) {
+    // Split invoice rows use IDs like f1#2, while the original PDF is f1.
+    // Prefer the row mapping, then fall back to the original source ID.
+    return this.files.get(id) ?? this.files.get(id.split('#')[0]);
+  }
+
   canReprocess(id: string) {
-    return this.files.has(id) && !this.manuallyEdited.has(id);
+    return Boolean(this.sourceFileFor(id)) && !this.manuallyEdited.has(id);
   }
 
   async reprocessWithLocale(id: string, locale: LocaleCode): Promise<boolean> {
     const record = this.records.find((item) => item.id === id);
-    const file = this.files.get(id);
+    const file = this.sourceFileFor(id);
     if (!record || !file || !record.invoice || this.manuallyEdited.has(id)) return false;
 
     const previousStatus = record.status;

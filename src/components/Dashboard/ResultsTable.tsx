@@ -15,7 +15,12 @@ interface Props {
   onClear: () => void;
 }
 
-function StatusCell({ record, ocrAvailable, onOcr, ocrLanguage }: {
+function StatusCell({
+  record,
+  ocrAvailable,
+  onOcr,
+  ocrLanguage,
+}: {
   record: BatchRecord;
   ocrAvailable: boolean | null;
   onOcr: (id: string, language: OcrLanguage) => void;
@@ -118,7 +123,10 @@ export function ResultsTable({
               const pages = invoice?.extraction.pageCount ?? record.pageCount;
 
               return (
-                <tr key={record.id} className={record.status === 'error' ? 'is-error' : undefined}>
+                <tr
+                  key={record.id}
+                  className={record.status === 'error' ? 'is-error' : undefined}
+                >
                   <td>
                     <div className="dx-filecell">
                       <span className="dx-filecell__icon"><IconFile /></span>
@@ -127,7 +135,9 @@ export function ResultsTable({
                           {record.fileName}
                         </p>
                         <p className="dx-filecell__meta">
-                          {record.segment ? `Invoice ${record.segment.index} of ${record.segment.total} · ` : ''}
+                          {record.segment
+                            ? `Invoice ${record.segment.index} of ${record.segment.total} · `
+                            : ''}
                           {formatBytes(record.size)}
                           {pages ? ` · ${pages} page${pages === 1 ? '' : 's'}` : ''}
                           {invoice?.extraction.sourceType === 'ocr' ? ' · OCR' : ''}
@@ -141,7 +151,9 @@ export function ResultsTable({
                       <>
                         <p className="dx-strong">{invoice.invoiceNumber.value || '—'}</p>
                         <p className="dx-muted dx-small">{invoice.invoiceDate.value || 'No date'}</p>
-                        {duplicates.has(record.id) && <span className="dx-chip">Possible duplicate</span>}
+                        {duplicates.has(record.id) && (
+                          <span className="dx-chip">Possible duplicate</span>
+                        )}
                       </>
                     ) : (
                       <span className="dx-muted">—</span>

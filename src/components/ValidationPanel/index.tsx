@@ -20,7 +20,7 @@ export function ValidationPanel({ checks }: { checks: ValidationCheck[] }) {
               <span>{c.status}</span>
             </div>
             <p>
-              Expected {c.expected.toFixed(2)}, actual {c.actual.toFixed(2)}. {c.message}
+              Expected {c.expected === null ? 'unavailable' : c.expected.toFixed(2)}, actual {c.actual === null ? 'unavailable' : c.actual.toFixed(2)}. {c.message}
             </p>
           </li>
         ))}

@@ -31,6 +31,21 @@ const cleanRow = (values: unknown[]): Cell[] => values.map(clean);
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const fieldWarnings = (i: Invoice): string[] => {
+  const fields = [
+    i.invoiceNumber, i.invoiceDate, i.dueDate, i.currency,
+    i.seller.name, i.seller.address, i.seller.taxId, i.seller.email, i.seller.phone,
+    i.buyer.name, i.buyer.address, i.buyer.taxId, i.buyer.email, i.buyer.phone,
+    i.subtotal, i.discountTotal, i.taxTotal, i.shipping, i.otherCharges, i.grandTotal,
+    i.payment.method, i.payment.reference, i.payment.terms,
+    ...i.items.flatMap((item) => [
+      item.description, item.quantity, item.unit, item.unitPrice, item.discount,
+      item.taxRate, item.taxAmount, item.lineTotal,
+    ]),
+  ];
+  return fields.flatMap((field) => (field.warning ? [field.warning] : []));
+};
+
 function widthsFor(headers: string[], rows: Cell[][]): number[] {
   return headers.map((header, i) => {
     let max = header.length;
@@ -106,7 +121,7 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
         i.extraction.sourceType === 'ocr' ? 'OCR' : 'PDF text',
         i.extraction.confidence,
         analysis.status,
-        analysis.reasons.join('; '),
+        [...new Set([...i.extraction.warnings, ...fieldWarnings(i), ...analysis.reasons])].join('; '),
       ]);
     }),
     [8, 9, 10, 11, 12, 13],
@@ -126,6 +141,7 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
       'Tax Amount',
       'Line Total',
       'Source File',
+      'Review Notes',
     ],
     entries.flatMap(({ invoice: i }) =>
       i.items.map((x, n) =>
@@ -141,6 +157,7 @@ export function buildSheets(entries: ExportEntry[]): SheetModel[] {
           x.taxAmount.value,
           x.lineTotal.value,
           i.extraction.sourceFile,
+          [...new Set([x.description.warning, x.quantity.warning, x.unit.warning, x.unitPrice.warning, x.discount.warning, x.taxRate.warning, x.taxAmount.warning, x.lineTotal.warning].filter((warning): warning is string => Boolean(warning)))].join('; '),
         ]),
       ),
     ),

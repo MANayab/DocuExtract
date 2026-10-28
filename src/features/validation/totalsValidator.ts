@@ -2,8 +2,8 @@ import type { Invoice } from '../../types/invoice';
 
 export interface ValidationCheck {
   check: string;
-  expected: number;
-  actual: number;
+  expected: number | null;
+  actual: number | null;
   status: 'PASS' | 'FAIL';
   message: string;
 }
@@ -34,7 +34,7 @@ export function validateTotals(i: Invoice): ValidationCheck[] {
       {
         check: 'Numeric extraction',
         expected: 0,
-        actual: Number.NaN,
+        actual: null,
         status: 'FAIL',
         message:
           'One or more amounts could not be parsed. Review the original extracted text before exporting.',
@@ -96,7 +96,7 @@ export function validateLineItems(i: Invoice): ValidationCheck[] {
       {
         check: 'Line item numeric extraction',
         expected: 0,
-        actual: Number.NaN,
+        actual: null,
         status: 'FAIL',
         message:
           'One or more line-item amounts could not be parsed. Review the original extracted text.',

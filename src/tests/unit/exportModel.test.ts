@@ -59,6 +59,40 @@ describe('workbook model', () => {
     expect(String(model.rows[1][notes])).toMatch(/Invoice total arithmetic/);
   });
 
+  it('preserves extraction and field warnings in review notes', () => {
+    const warned = invoice('INV-WARN', {
+      invoiceDate: { ...field('01/02/2026'), warning: 'Ambiguous date; review locale.' },
+      extraction: {
+        sourceType: 'text',
+        confidence: 65,
+        warnings: ['Amount format was ambiguous.'],
+        sourceFile: 'warn.pdf',
+        pageCount: 1,
+      },
+    });
+    const model = buildSheets([entry(warned)]).find((s) => s.name === 'Invoices')!;
+    const notes = String(model.rows[0][model.headers.indexOf('Review Notes')]);
+
+    expect(notes).toContain('Amount format was ambiguous.');
+    expect(notes).toContain('Ambiguous date; review locale.');
+  });
+
+  it('preserves line-item warnings in workbook and line-item CSV model', () => {
+    const warned = invoice('INV-LINE', {
+      items: [
+        {
+          ...item('Widget', 1, 10),
+          unitPrice: { ...field(10), warning: 'Ambiguous number; review locale.' },
+        },
+      ],
+    });
+    const model = buildSheets([entry(warned)]).find((s) => s.name === 'Line Items')!;
+    expect(model.headers).toContain('Review Notes');
+    expect(String(model.rows[0][model.headers.indexOf('Review Notes')])).toContain(
+      'Ambiguous number; review locale.',
+    );
+  });
+
   it('groups taxes by rate with the taxable amount', () => {
     const taxes = byName('Taxes');
     expect(taxes.rows[0].slice(0, 4)).toEqual(['INV-1', 18, 2000, 360]);

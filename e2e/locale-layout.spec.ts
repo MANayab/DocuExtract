@@ -25,9 +25,7 @@ test(
       expect(hintBox).not.toBeNull();
       expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(dropBox!.y);
       expect(hintBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
-      expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(
-        panelBox!.y + panelBox!.height,
-      );
+      expect(hintBox!.y + hintBox!.height).toBeLessThanOrEqual(panelBox!.y + panelBox!.height);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(width);

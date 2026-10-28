@@ -1,7 +1,8 @@
 import { analyzeInvoice } from '../validation/analysis';
 import type { ExportEntry } from './workbookModel';
+import { SITE } from '../../content/site';
 
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = SITE.version;
 
 export function buildJson(entries: ExportEntry[], exportedAt = new Date().toISOString()) {
   return {
@@ -21,4 +22,6 @@ export function buildJson(entries: ExportEntry[], exportedAt = new Date().toISOS
 }
 
 export const invoicesToJson = (entries: ExportEntry[]): Blob =>
-  new Blob([JSON.stringify(buildJson(entries), null, 2)], { type: 'application/json;charset=utf-8' });
+  new Blob([JSON.stringify(buildJson(entries), null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });

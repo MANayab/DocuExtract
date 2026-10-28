@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## [1.3.0] — Prepared release
+
+### Fixed
+
+- **JSON export version metadata.** Exported JSON now uses the version from the site's single version source instead of a stale hard-coded `1.1.0` value. A regression test verifies that JSON metadata matches the application version.
+
+### QA notes
+
+- OCR rotation/deskew and invoice-boundary edge cases remain limitations or unverified behaviors; this release does not claim to fix them. See [the v1.3.0 QA audit](docs/audit/v1.3.0-audit.md).
+
 ## [1.2.0] — Release candidate
 
 ### Added

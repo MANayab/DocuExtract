@@ -14,7 +14,7 @@ export const SITE = {
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',
-  version: '1.2.0',
+  version: '1.3.0',
   themeColor: '#2563eb',
   keywords:
     'pdf invoice to excel, invoice data extraction, gst invoice to excel, invoice ocr, convert invoice pdf to csv, private invoice parser',
@@ -30,43 +30,43 @@ export interface Feature {
 
 export function features(ocrBundled: boolean): Feature[] {
   return [
-  {
-    id: 'private',
-    title: 'Private by design',
-    body: 'PDFs are read inside your browser tab. There is no server, account, database or analytics, so invoice data never leaves your device.',
-  },
-  {
-    id: 'batch',
-    title: 'Batch and multi-invoice',
-    body: 'Drop up to 50 PDFs at once. A single PDF that contains several invoices is split automatically, and everything exports as one workbook.',
-  },
-  {
-    id: 'gst',
-    title: 'GST-aware',
-    body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line tax columns such as HSN, taxable value and tax rate.',
-  },
-  {
-    id: 'validated',
-    title: 'Validated, not guessed',
-    body: 'Line totals, tax and grand total are cross-checked. Anything that does not add up is flagged for review instead of being silently corrected.',
-  },
-  ocrBundled
-    ? {
-        id: 'ocr',
-        title: 'Scanned invoices (OCR)',
-        body: 'Image-only PDFs can be read with OCR that also runs locally in your browser. OCR results are always marked as lower confidence.',
-      }
-    : {
-        id: 'ocr',
-        title: 'Scanned PDF detection',
-        body: 'Image-only PDFs are detected and listed as needing OCR instead of being guessed. Optional local OCR can be added to a build.',
-      },
-  {
-    id: 'export',
-    title: 'Excel-ready exports',
-    body: 'Download one Excel workbook with six sheets, CSV files for invoices or line items, or JSON. Spreadsheet formula injection is blocked.',
-  },
-];
+    {
+      id: 'private',
+      title: 'Private by design',
+      body: 'PDFs are read inside your browser tab. There is no server, account, database or analytics, so invoice data never leaves your device.',
+    },
+    {
+      id: 'batch',
+      title: 'Batch and multi-invoice',
+      body: 'Drop up to 50 PDFs at once. A single PDF that contains several invoices is split automatically, and everything exports as one workbook.',
+    },
+    {
+      id: 'gst',
+      title: 'GST-aware',
+      body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line tax columns such as HSN, taxable value and tax rate.',
+    },
+    {
+      id: 'validated',
+      title: 'Validated, not guessed',
+      body: 'Line totals, tax and grand total are cross-checked. Anything that does not add up is flagged for review instead of being silently corrected.',
+    },
+    ocrBundled
+      ? {
+          id: 'ocr',
+          title: 'Scanned invoices (OCR)',
+          body: 'Image-only PDFs can be read with OCR that also runs locally in your browser. OCR results are always marked as lower confidence.',
+        }
+      : {
+          id: 'ocr',
+          title: 'Scanned PDF detection',
+          body: 'Image-only PDFs are detected and listed as needing OCR instead of being guessed. Optional local OCR can be added to a build.',
+        },
+    {
+      id: 'export',
+      title: 'Excel-ready exports',
+      body: 'Download one Excel workbook with six sheets, CSV files for invoices or line items, or JSON. Spreadsheet formula injection is blocked.',
+    },
+  ];
 }
 
 export interface Step {
@@ -75,9 +75,18 @@ export interface Step {
 }
 
 export const STEPS: Step[] = [
-  { title: 'Drop your PDFs', body: 'Drag in one invoice or a whole folder of up to 50. Text PDFs are read instantly.' },
-  { title: 'Review what was flagged', body: 'Every field shows its confidence. Fix anything marked Review and watch the checks update.' },
-  { title: 'Download Excel, CSV or JSON', body: 'Export all invoices together, one row per invoice, with line items, taxes and validation sheets.' },
+  {
+    title: 'Drop your PDFs',
+    body: 'Drag in one invoice or a whole folder of up to 50. Text PDFs are read instantly.',
+  },
+  {
+    title: 'Review what was flagged',
+    body: 'Every field shows its confidence. Fix anything marked Review and watch the checks update.',
+  },
+  {
+    title: 'Download Excel, CSV or JSON',
+    body: 'Export all invoices together, one row per invoice, with line items, taxes and validation sheets.',
+  },
 ];
 
 export interface FaqItem {
@@ -130,5 +139,8 @@ export const FOOTER_LINKS = [
   { label: 'Privacy', href: `${SITE.repo}/blob/main/PRIVACY.md` },
   { label: 'Terms', href: `${SITE.repo}/blob/main/TERMS.md` },
   { label: 'Security', href: `${SITE.repo}/blob/main/SECURITY.md` },
-  { label: 'Report an extraction failure', href: `${SITE.repo}/issues/new?template=extraction-failure.md` },
+  {
+    label: 'Report an extraction failure',
+    href: `${SITE.repo}/issues/new?template=extraction-failure.md`,
+  },
 ] as const;

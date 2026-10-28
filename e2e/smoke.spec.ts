@@ -32,13 +32,13 @@ test('several PDFs build a batch dashboard with a combined export', async ({ pag
     await pdf('gst', 'b.pdf'),
   ]);
 
-  await expect(page.getByRole('heading', { name: 'Invoices', exact: true })).toBeVisible({
-    timeout: 30_000,
-  });
+  await expect(
+    page.getByRole('heading', { name: 'Invoices', exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('tbody tr')).toHaveCount(2, { timeout: 30_000 });
-  await expect(page.getByRole('button', { name: /Download Excel/ })).toBeEnabled({
-    timeout: 30_000,
-  });
+  await expect(
+    page.getByRole('button', { name: /Download Excel/ }),
+  ).toBeEnabled({ timeout: 30_000 });
 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: /Download Excel/ }).click();

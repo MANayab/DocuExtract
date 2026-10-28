@@ -1,5 +1,5 @@
 import { MAX_BATCH_FILES } from '../../config/limits';
-import type { BatchRecord, Processor } from '../../types/batch';
+import type { BatchRecord, OcrLanguage, Processor } from '../../types/batch';
 import type { Invoice } from '../../types/invoice';
 import { validatePdfFile } from '../../utils/fileValidation';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
@@ -20,7 +20,7 @@ export class BatchStore {
   private records: BatchRecord[] = [];
   private listeners = new Set<() => void>();
   private files = new Map<string, File>();
-  private ocrRequested = new Set<string>();
+  private ocrRequested = new Map<string, OcrLanguage>();
   private running = false;
   private seq = 0;
   private locale: LocaleCode = DEFAULT_LOCALE;
@@ -106,11 +106,11 @@ export class BatchStore {
   }
 
   /** Re-queues a scanned PDF to be read with OCR. */
-  requestOcr(id: string) {
+  requestOcr(id: string, language: OcrLanguage = 'eng') {
     const record = this.records.find((r) => r.id === id);
     if (!record || record.status !== 'needs-ocr') return;
 
-    this.ocrRequested.add(id);
+    this.ocrRequested.set(id, language);
     this.patch(id, {
       status: 'queued',
       progress: 0,
@@ -150,7 +150,7 @@ export class BatchStore {
     try {
       const result = await this.processor(
         file,
-        { ocr: this.ocrRequested.has(id), locale },
+        { ocr: this.ocrRequested.has(id), locale, ocrLanguage: this.ocrRequested.get(id) },
         () => {},
       );
       if (result.kind !== 'invoices') {
@@ -228,7 +228,7 @@ export class BatchStore {
     try {
       const result = await this.processor(
         file,
-        { ocr: useOcr, locale: this.locale },
+        { ocr: useOcr, locale: this.locale, ocrLanguage: this.ocrRequested.get(record.id) },
         (percent, label) => this.patch(record.id, { progress: clamp(percent), label }),
       );
 

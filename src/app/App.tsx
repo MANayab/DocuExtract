@@ -209,6 +209,7 @@ export function App() {
                 >
                   <option value="eng">English</option>
                   <option value="deu">German</option>
+                  <option value="hin">Hindi</option>
                 </select>
               </div>
             )}

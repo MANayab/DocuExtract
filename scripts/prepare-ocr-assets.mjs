@@ -6,10 +6,10 @@
  * Sources (all local):
  *   worker  node_modules/tesseract.js/dist/worker.min.js
  *   core    node_modules/tesseract.js-core/*lstm*.wasm.js
- *   lang    ocr-data/eng.traineddata[.gz]  or  node_modules/@tesseract.js-data/eng/**
+ *   lang    ocr-data/<lang>.traineddata[.gz] or node_modules/@tesseract.js-data/<lang>/**
  *
- * English is required for OCR. German is included when its pinned package/model is available.
- * Missing optional language data is reported in the manifest rather than silently substituted.
+ * English, German and Hindi models are required, pinned dependencies. A missing model fails the build.
+ * The script reports per-model and total compressed asset sizes for release review.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,7 +36,7 @@ function disable(reason) {
 const worker = modules('tesseract.js', 'dist', 'worker.min.js');
 if (!fs.existsSync(worker)) {
   disable('node_modules/tesseract.js/dist/worker.min.js not found (run npm ci).');
-  process.exit(0);
+  process.exit(1);
 }
 
 const coreDir = modules('tesseract.js-core');
@@ -47,10 +47,10 @@ const cores = allCores.some((f) => f.includes('lstm')) ? allCores.filter((f) => 
 
 if (cores.length === 0) {
   disable('tesseract.js-core WASM files not found (run npm ci).');
-  process.exit(0);
+  process.exit(1);
 }
 
-const supportedLanguages = ['eng', 'deu'];
+const supportedLanguages = ['eng', 'deu', 'hin'];
 const bundled = [];
 
 for (const language of supportedLanguages) {
@@ -62,14 +62,10 @@ for (const language of supportedLanguages) {
   candidates.sort((a, b) => Number(b.includes('best_int')) - Number(a.includes('best_int')));
   const source = candidates.find((f) => fs.existsSync(f));
   if (!source) {
-    if (language === 'eng') {
-      disable('English language data not found. Run npm ci or add ocr-data/eng.traineddata.gz.');
-      process.exit(0);
-    }
     disable(`Required language data missing: ${language}. Run npm ci and verify the pinned language-data package.`);
     process.exit(1);
   }
-  bundled.push({ language, source, gzip: source.endsWith('.gz') });
+  bundled.push({ language, source, gzip: source.endsWith('.gz'), bytes: fs.statSync(source).size });
 }
 
 if (new Set(bundled.map((item) => item.gzip)).size > 1) {
@@ -95,4 +91,8 @@ fs.writeFileSync(
   JSON.stringify({ engine: `tesseract.js@${version}`, lang: 'eng', languages: bundled.map((item) => item.language), gzip }, null, 2),
 );
 
-console.log(`[ocr] bundled worker, ${cores.length} core file(s), languages: ${bundled.map((item) => item.language).join(', ')} into public/ocr/`);
+for (const item of bundled) {
+  console.log(`[ocr] model ${item.language}: ${(item.bytes / 1024 / 1024).toFixed(2)} MiB`);
+}
+const totalModelBytes = bundled.reduce((total, item) => total + item.bytes, 0);
+console.log(`[ocr] bundled worker, ${cores.length} core file(s), languages: ${bundled.map((item) => item.language).join(', ')}; models total ${(totalModelBytes / 1024 / 1024).toFixed(2)} MiB in public/ocr/`);

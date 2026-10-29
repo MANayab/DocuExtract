@@ -9,8 +9,9 @@ Direct dependencies used by this project:
 | pdfjs-dist | 4.10.38 | Apache-2.0 |
 | tesseract.js | 5.1.1 | Apache-2.0 |
 | tesseract.js-core (transitive, bundled for OCR) | 5.1.1 | Apache-2.0 |
-| @tesseract.js-data/eng (bundled OCR model) | 1.0.0 | Apache-2.0 |
-| @tesseract.js-data/deu (bundled OCR model) | 1.0.0 | Apache-2.0 |
+| @tesseract.js-data/eng (bundled OCR model) | 1.0.0 | MIT |
+| @tesseract.js-data/deu (bundled OCR model) | 1.0.0 | MIT |
+| @tesseract.js-data/hin (bundled OCR model) | 1.0.0 | MIT |
 | exceljs | 4.4.0 | MIT |
 | file-saver | 2.0.5 | MIT |
 | zod | 3.23.8 | MIT |

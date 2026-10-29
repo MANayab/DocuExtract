@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copies the Tesseract worker, WASM core and English language data into
+ * Copies the Tesseract worker, WASM core and allowlisted language data into
  * public/ocr/ so OCR runs fully offline from this site (no CDN requests).
  *
  * Sources (all local):
@@ -8,8 +8,8 @@
  *   core    node_modules/tesseract.js-core/*lstm*.wasm.js
  *   lang    ocr-data/eng.traineddata[.gz]  or  node_modules/@tesseract.js-data/eng/**
  *
- * If anything is missing the build still succeeds; OCR is simply reported as
- * "not installed" in the app. See docs/OCR.md.
+ * English is required for OCR. German is included when its pinned package/model is available.
+ * Missing optional language data is reported in the manifest rather than silently substituted.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,8 +26,6 @@ function walk(dir) {
     return entry.isDirectory() ? walk(full) : [full];
   });
 }
-
-const mb = (file) => `${(fs.statSync(file).size / 1024 / 1024).toFixed(1)} MB`;
 
 function disable(reason) {
   fs.rmSync(out, { recursive: true, force: true });
@@ -52,34 +50,49 @@ if (cores.length === 0) {
   process.exit(0);
 }
 
-const candidates = [
-  path.join(root, 'ocr-data', 'eng.traineddata.gz'),
-  path.join(root, 'ocr-data', 'eng.traineddata'),
-  ...walk(modules('@tesseract.js-data', 'eng')).filter((f) => /eng\.traineddata(\.gz)?$/.test(f)),
-];
-// Prefer the "best, integer" model when the package ships several.
-candidates.sort((a, b) => Number(b.includes('best_int')) - Number(a.includes('best_int')));
-const lang = candidates.find((f) => fs.existsSync(f));
+const supportedLanguages = ['eng', 'deu'];
+const bundled = [];
 
-if (!lang) {
-  disable("English language data not found. Run: npm install --save-exact '@tesseract.js-data/eng'");
+for (const language of supportedLanguages) {
+  const candidates = [
+    path.join(root, 'ocr-data', `${language}.traineddata.gz`),
+    path.join(root, 'ocr-data', `${language}.traineddata`),
+    ...walk(modules('@tesseract.js-data', language)).filter((f) => new RegExp(`${language}\\.traineddata(\\.gz)?$`).test(f)),
+  ];
+  candidates.sort((a, b) => Number(b.includes('best_int')) - Number(a.includes('best_int')));
+  const source = candidates.find((f) => fs.existsSync(f));
+  if (!source) {
+    if (language === 'eng') {
+      disable('English language data not found. Run npm ci or add ocr-data/eng.traineddata.gz.');
+      process.exit(0);
+    }
+    disable(`Required language data missing: ${language}. Run npm ci and verify the pinned language-data package.`);
+    process.exit(1);
+  }
+  bundled.push({ language, source, gzip: source.endsWith('.gz') });
+}
+
+if (new Set(bundled.map((item) => item.gzip)).size > 1) {
+  disable('Bundled language models must use the same compression format.');
   process.exit(0);
 }
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'core'), { recursive: true });
 fs.mkdirSync(path.join(out, 'lang'), { recursive: true });
-
 fs.copyFileSync(worker, path.join(out, 'worker.min.js'));
 for (const file of cores) fs.copyFileSync(path.join(coreDir, file), path.join(out, 'core', file));
 
-const gzip = lang.endsWith('.gz');
-fs.copyFileSync(lang, path.join(out, 'lang', gzip ? 'eng.traineddata.gz' : 'eng.traineddata'));
+for (const item of bundled) {
+  const extension = item.gzip ? '.traineddata.gz' : '.traineddata';
+  fs.copyFileSync(item.source, path.join(out, 'lang', `${item.language}${extension}`));
+}
 
 const version = JSON.parse(fs.readFileSync(modules('tesseract.js', 'package.json'), 'utf8')).version;
+const gzip = bundled[0].gzip;
 fs.writeFileSync(
   path.join(out, 'manifest.json'),
-  JSON.stringify({ engine: `tesseract.js@${version}`, lang: 'eng', gzip }, null, 2),
+  JSON.stringify({ engine: `tesseract.js@${version}`, lang: 'eng', languages: bundled.map((item) => item.language), gzip }, null, 2),
 );
 
-console.log(`[ocr] bundled worker, ${cores.length} core file(s) and ${path.basename(lang)} (${mb(lang)}) into public/ocr/`);
+console.log(`[ocr] bundled worker, ${cores.length} core file(s), languages: ${bundled.map((item) => item.language).join(', ')} into public/ocr/`);

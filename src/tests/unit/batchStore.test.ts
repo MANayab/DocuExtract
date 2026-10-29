@@ -118,10 +118,10 @@ describe('BatchStore', () => {
   });
 
   it('parks scanned PDFs as needs-ocr, then OCRs them on request', async () => {
-    const calls: boolean[] = [];
+    const calls: { ocr: boolean; language?: string }[] = [];
 
     const store = new BatchStore(async (_file, options) => {
-      calls.push(options.ocr);
+      calls.push({ ocr: options.ocr, language: options.ocrLanguage });
       return options.ocr
         ? { kind: 'invoices', invoices: [invoice('SCAN-1')], pageCount: 1 }
         : { kind: 'needs-ocr', pageCount: 1 };
@@ -133,10 +133,13 @@ describe('BatchStore', () => {
     const parked = store.getSnapshot()[0];
     expect(parked.status).toBe('needs-ocr');
 
-    store.requestOcr(parked.id);
+    store.requestOcr(parked.id, 'deu');
     await settle();
 
-    expect(calls).toEqual([false, true]);
+    expect(calls).toEqual([
+      { ocr: false, language: undefined },
+      { ocr: true, language: 'deu' },
+    ]);
     expect(store.getSnapshot()[0].status).toBe('ready');
   });
 

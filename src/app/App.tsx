@@ -18,6 +18,7 @@ import { findDuplicates, summarize } from '../features/batch/summary';
 import type { ExportEntry } from '../features/export/workbookModel';
 import { analyzeInvoice } from '../features/validation/analysis';
 import type { Invoice } from '../types/invoice';
+import type { OcrLanguage } from '../types/batch';
 
 type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
 
@@ -27,6 +28,7 @@ export function App() {
   const [view, setView] = useState<View>({ kind: 'dashboard' });
   const [notices, setNotices] = useState<string[]>([]);
   const [locale, setLocale] = useState<LocaleCode>(() => store.getLocale());
+  const [ocrLanguage, setOcrLanguage] = useState<OcrLanguage>('eng');
   const autoOpen = useRef(false);
 
   const summary = useMemo(() => summarize(records), [records]);
@@ -195,6 +197,21 @@ export function App() {
                 ))}
               </select>
             </div>
+            {OCR_BUNDLED && (
+              <div className="dx-locale-panel__field">
+                <div className="dx-locale-panel__copy">
+                  <label htmlFor="ocr-language">Scanned PDF language</label>
+                </div>
+                <select
+                  id="ocr-language"
+                  value={ocrLanguage}
+                  onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
+                >
+                  <option value="eng">English</option>
+                  <option value="deu">German</option>
+                </select>
+              </div>
+            )}
             <p className="dx-locale-panel__hint">
               Controls how ambiguous dates and number separators are interpreted. Review financial
               data before relying on it.
@@ -212,7 +229,8 @@ export function App() {
                 ocrAvailable={ocrAvailable}
                 onOpen={(id) => setView({ kind: 'review', id })}
                 onRemove={(id) => store.remove(id)}
-                onOcr={(id) => store.requestOcr(id)}
+                onOcr={(id, language) => store.requestOcr(id, language)}
+                ocrLanguage={ocrLanguage}
                 onClear={() => store.clear()}
               />
               <ExportPanel entries={entries} scope="all" flagged={summary.needsReview} />

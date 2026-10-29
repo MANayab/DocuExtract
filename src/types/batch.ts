@@ -2,6 +2,7 @@ import type { Invoice } from './invoice';
 import type { LocaleCode } from '../config/locales';
 
 export type RecordStatus = 'queued' | 'processing' | 'ready' | 'needs-ocr' | 'error';
+export type OcrLanguage = 'eng' | 'deu';
 
 /** One row of the dashboard: a file being processed, or one invoice extracted from a file. */
 export interface BatchRecord {
@@ -24,6 +25,6 @@ export type ProcessResult =
 
 export type Processor = (
   file: File,
-  options: { ocr: boolean; locale?: LocaleCode },
+  options: { ocr: boolean; locale?: LocaleCode; ocrLanguage?: OcrLanguage },
   onProgress: (percent: number, label: string) => void,
 ) => Promise<ProcessResult>;

@@ -8,7 +8,7 @@ This document is not a promise about every network request made by a browser, ex
 
 ## OCR
 
-When OCR is used, the page images, the Tesseract worker, the WebAssembly engine and the language data are all handled and served from this application's own origin. Nothing is requested from a third-party CDN, and OCR language data is not cached in browser storage.
+When OCR is used, the page images, Tesseract worker, WebAssembly engine and selected language data are handled locally and served from this application's own origin. The selected model is requested only when OCR starts; text-only PDFs do not request OCR assets. Nothing is requested from a third-party CDN, and OCR language data is not cached in browser storage.
 
 ## Hosting
 

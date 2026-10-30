@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "prepare:ocr": "node scripts/prepare-ocr-assets.mjs",
+    "pretest": "npm run prepare:ocr",
     "predev": "node scripts/prepare-ocr-assets.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit",

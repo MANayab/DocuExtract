@@ -6,7 +6,7 @@ OCR is **optional at build time**. A build without the OCR files works normally;
 
 ## Enable it (one time)
 
-`tesseract.js` and its WASM core are already dependencies. English, German and Hindi language data are bundled locally:
+`tesseract.js` and its WASM core are already dependencies. English (`eng`), German (`deu`) and Hindi (`hin`) language data are bundled locally. English is the default. The selected model is fetched from the same-origin asset path only when OCR starts; text-only PDFs do not request OCR assets:
 
 ```bash
 npm ci
@@ -21,11 +21,11 @@ npm run build
 | --- | --- | --- |
 | `worker.min.js` | `node_modules/tesseract.js/dist/` | < 1 MB |
 | `core/*lstm*.wasm.js` | `node_modules/tesseract.js-core/` | 3 to 4 MB each |
-| `lang/eng.traineddata.gz` | `node_modules/@tesseract.js-data/eng/` | measured during build |
-| `lang/deu.traineddata.gz` | `node_modules/@tesseract.js-data/deu/` | measured during build |
-| `lang/hin.traineddata.gz` | `node_modules/@tesseract.js-data/hin/` | measured during build |
+| `lang/eng.traineddata.gz` | `@tesseract.js-data/eng@1.0.0` | 2,952,873 deployed bytes (5,199,098 raw bytes) |
+| `lang/deu.traineddata.gz` | `@tesseract.js-data/deu@1.0.0` | 1,333,102 deployed bytes (2,070,514 raw bytes) |
+| `lang/hin.traineddata.gz` | `@tesseract.js-data/hin@1.0.0` | 1,389,692 deployed bytes (1,651,097 raw bytes) |
 
-and writes `public/ocr/manifest.json`. The script prints a line such as `[ocr] bundled worker, 2 core file(s), languages: eng, deu, hin`.
+and writes `public/ocr/manifest.json`. The script prints the model sizes during the build. A CI size audit measured gzip -9 sizes of 2,944,714 bytes (English), 1,388,860 bytes (Hindi), and 1,332,206 bytes (German). The generated deployment artifact measured 17,141,436 bytes on both main and the feature build (0-byte increase because all three models already existed on main).
 
 For reproducible builds, keep the pinned language packages in `package.json` and `package-lock.json`. If maintaining a custom local model, place the allowlisted `eng`, `deu` or `hin` model in `ocr-data/` and verify its source and license before building.
 
@@ -46,7 +46,7 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 ## Limits
 
 - English, German and Hindi are selectable when their model files are bundled. Additional languages require an explicitly reviewed allowlist entry, a pinned data package, license documentation, and regression tests.
-- OCR language is independent of invoice locale: OCR language controls text recognition; invoice locale controls date and number interpretation.
+- OCR language is independent of invoice locale: OCR language controls text recognition; invoice locale controls date and number interpretation. Supported languages are English (default), German and Hindi.
 - At most 20 pages per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`). OCR runs at roughly 5 to 20 seconds per page depending on the device.
 - Handwriting, photos taken at an angle and low-resolution faxes are not reliable.
 - Tables with no visible column gaps may merge cells; review line items.
@@ -68,4 +68,4 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 
 ## Licenses
 
-Tesseract, tesseract.js, tesseract.js-core and the tessdata models are Apache-2.0. Re-verify exact versions before redistributing (see `docs/THIRD-PARTY-LICENSES.md`).
+The `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` wrapper packages are MIT; the underlying `naptha/tessdata` traineddata is Apache-2.0. Tesseract.js and its core are Apache-2.0. See `docs/THIRD-PARTY-LICENSES.md` and the license/notice files copied into the generated OCR asset directory.

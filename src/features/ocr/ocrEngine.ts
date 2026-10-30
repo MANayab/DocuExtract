@@ -77,7 +77,10 @@ export async function ocrPdf(
   pagesToOcr?: number[],
   signal?: AbortSignal,
 ): Promise<PdfExtraction> {
+  if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+
   const manifest = await getOcrManifest();
+  if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
 
   if (!manifest) {
     throw new AppError(

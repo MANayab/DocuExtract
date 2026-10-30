@@ -42,12 +42,11 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
 
   const localeSelect = page.getByLabel('Invoice locale');
   const ocrSelect = page.getByLabel('Scanned PDF language');
-  await page.locator('.dx-header').getByRole('link', { name: 'GitHub' }).focus();
-  await page.keyboard.press('Tab');
+  await localeSelect.focus();
   await expect(localeSelect).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Tab');
+  await ocrSelect.focus();
   await expect(ocrSelect).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');

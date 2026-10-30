@@ -60,6 +60,7 @@ describe('processPdf OCR language handoff', () => {
       expect.any(File),
       expect.any(Function),
       language,
+      [1],
     );
   });
 
@@ -74,6 +75,51 @@ describe('processPdf OCR language handoff', () => {
       expect.any(File),
       expect.any(Function),
       'eng',
+      [1],
+    );
+  });
+
+
+  it('OCRs only image-only pages in a mixed PDF and merges page text in order', async () => {
+    const mixedPdf: PdfExtraction = {
+      fileName: 'mixed.pdf',
+      pageCount: 2,
+      spans: [
+        { text: 'Text page with invoice details', x: 10, y: 10, width: 20, height: 8, page: 1 },
+      ],
+      text: 'Text page with invoice details\\n',
+      pageTexts: ['Text page with invoice details', ''],
+      kind: 'text-based',
+    };
+    mocks.extractPdf.mockResolvedValue(mixedPdf);
+    mocks.ocrPdf.mockResolvedValue({
+      ...ocrResult,
+      fileName: 'mixed.pdf',
+      pageCount: 2,
+      pageTexts: ['', 'Scanned page OCR text'],
+      spans: [
+        { text: 'Scanned', x: 10, y: 10, width: 20, height: 8, page: 2 },
+      ],
+    });
+
+    await processPdf(
+      new File(['pdf'], 'mixed.pdf'),
+      { ocr: true, ocrLanguage: 'hin' },
+      () => {},
+    );
+
+    expect(mocks.ocrPdf).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.any(Function),
+      'hin',
+      [2],
+    );
+    expect(mocks.splitInvoices).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pageTexts: ['Text page with invoice details', 'Scanned page OCR text'],
+        text: 'Text page with invoice details\\nScanned page OCR text',
+        ocr: true,
+      }),
     );
   });
 

@@ -42,6 +42,6 @@ Direct dependencies used by this project:
 
 ## OCR model data notices
 
-The traineddata payloads supplied by `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` originate from `naptha/tessdata` and are licensed under Apache-2.0. The npm package wrappers declare MIT; this does not replace the underlying model-data license. The build copies the exact package MIT license files, the Apache-2.0 tessdata license text and the OCR attribution notice into `public/ocr/licenses/` so they are distributed with the OCR assets. The source Apache license is retained at `licenses/Apache-2.0-tessdata.txt`.
+The traineddata payloads supplied by `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` originate from `naptha/tessdata` and are licensed under Apache-2.0. The npm package wrappers declare MIT; this does not replace the underlying model-data license. The build copies the MIT package license text, the Apache-2.0 tessdata license text and the OCR attribution notice into `public/ocr/licenses/` so they are distributed with the OCR assets. The source Apache license is retained at `licenses/Apache-2.0-tessdata.txt`.
 
 The maintainer must re-verify all dependency and transitive-dependency licenses before commercial distribution.

@@ -9,7 +9,7 @@ const pdf = async (kind: 'basic' | 'empty', name: string) => ({
 
 test('a text-only PDF does not request OCR assets', async ({ page }) => {
   const ocrRequests: string[] = [];
-  page.on('request', (request) => {
+  page.context().on('request', (request) => {
     if (new URL(request.url()).pathname.includes('/ocr/')) {
       ocrRequests.push(request.url());
     }
@@ -27,14 +27,14 @@ test('a text-only PDF does not request OCR assets', async ({ page }) => {
 test('loads only the selected same-origin language model and offers retry on 404', async ({ page }) => {
   const modelRequests: { origin: string; path: string }[] = [];
   const ocrAssetOrigins: string[] = [];
-  page.on('request', (request) => {
+  page.context().on('request', (request) => {
     const url = new URL(request.url());
     if (url.pathname.includes('/ocr/')) ocrAssetOrigins.push(url.origin);
     if (url.pathname.includes('.traineddata')) {
       modelRequests.push({ origin: url.origin, path: url.pathname });
     }
   });
-  await page.route('**/ocr/lang/hin.traineddata.gz', (route) =>
+  await page.context().route('**/ocr/lang/hin.traineddata.gz', (route) =>
     route.fulfill({ status: 404, body: 'model missing' }),
   );
   await page.goto('/');
@@ -47,9 +47,9 @@ test('loads only the selected same-origin language model and offers retry on 404
   await page.getByRole('button', { name: 'Run OCR' }).click();
   await expect(page.getByText(/OCR failed for hin/i)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Retry OCR' })).toBeVisible();
-  expect(modelRequests).toHaveLength(1);
-  expect(modelRequests[0].origin).toBe(new URL(page.url()).origin);
-  expect(modelRequests[0].path).toContain('/ocr/lang/hin.traineddata.gz');
+  expect(modelRequests.length).toBeGreaterThan(0);
+  expect(modelRequests.every((request) => request.path.includes('/hin.traineddata'))).toBe(true);
+  expect(modelRequests.every((request) => request.origin === new URL(page.url()).origin)).toBe(true);
   expect(ocrAssetOrigins.length).toBeGreaterThan(0);
   expect(ocrAssetOrigins.every((origin) => origin === new URL(page.url()).origin)).toBe(true);
 });

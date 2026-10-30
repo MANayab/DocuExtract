@@ -81,8 +81,12 @@ fs.copyFileSync(worker, path.join(out, 'worker.min.js'));
 for (const file of cores) fs.copyFileSync(path.join(coreDir, file), path.join(out, 'core', file));
 
 for (const item of bundled) {
-  const extension = item.gzip ? '.traineddata.gz' : '.traineddata';
-  fs.copyFileSync(item.source, path.join(out, 'lang', `${item.language}${extension}`));
+  const language = languageConfig.languages.find((entry) => entry.code === item.language);
+  if (!language) {
+    disable(`Language configuration missing for ${item.language}.`);
+    process.exit(1);
+  }
+  fs.copyFileSync(item.source, path.join(out, 'lang', language.fileName));
 }
 
 const licenseOut = path.join(out, 'licenses');

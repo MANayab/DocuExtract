@@ -89,6 +89,27 @@ describe('ocrPdf engine lifecycle', () => {
     },
   );
 
+
+  it('stops between pages when the abort signal is raised during recognition', async () => {
+    const controller = new AbortController();
+    pdf.numPages = 2;
+    page.render.mockReturnValue({ promise: Promise.resolve() });
+    worker.recognize.mockImplementation(async () => {
+      controller.abort();
+      return { data: { text: '', words: [] } };
+    });
+
+    await expect(
+      ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, 'eng', undefined, controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(pdf.getPage).toHaveBeenCalledOnce();
+    expect(worker.recognize).toHaveBeenCalledOnce();
+    expect(page.cleanup).toHaveBeenCalledOnce();
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(pdf.destroy).toHaveBeenCalledOnce();
+  });
+
   it('releases the canvas and terminates the worker when page rendering fails', async () => {
     await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, 'eng')).rejects.toThrow(
       /OCR failed/,

@@ -96,7 +96,7 @@ describe('processPdf OCR language handoff', () => {
       ...ocrResult,
       fileName: 'mixed.pdf',
       pageCount: 2,
-      pageTexts: ['', 'Scanned page OCR text'],
+      pageTexts: ['', 'कर चालान कुल राशि'],
       spans: [
         { text: 'Scanned', x: 10, y: 10, width: 20, height: 8, page: 2 },
       ],
@@ -116,8 +116,8 @@ describe('processPdf OCR language handoff', () => {
     );
     expect(mocks.splitInvoices).toHaveBeenCalledWith(
       expect.objectContaining({
-        pageTexts: ['Text page with invoice details', 'Scanned page OCR text'],
-        text: 'Text page with invoice details\\nScanned page OCR text',
+        pageTexts: ['Text page with invoice details', 'कर चालान कुल राशि'],
+        text: 'Text page with invoice details\\nकर चालान कुल राशि',
         ocr: true,
       }),
     );

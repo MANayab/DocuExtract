@@ -1,0 +1,26 @@
+{
+  "defaultLanguage": "eng",
+  "languages": [
+    {
+      "code": "eng",
+      "label": "English",
+      "nativeLabel": "English",
+      "fileName": "eng.traineddata.gz",
+      "sizeNote": "2.95 MB compressed"
+    },
+    {
+      "code": "hin",
+      "label": "Hindi",
+      "nativeLabel": "हिन्दी",
+      "fileName": "hin.traineddata.gz",
+      "sizeNote": "1.39 MB compressed"
+    },
+    {
+      "code": "deu",
+      "label": "German",
+      "nativeLabel": "Deutsch",
+      "fileName": "deu.traineddata.gz",
+      "sizeNote": "1.33 MB compressed"
+    }
+  ]
+}

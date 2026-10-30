@@ -73,6 +73,7 @@ export async function ocrPdf(
   file: File,
   onProgress: (percent: number, label: string) => void,
   language = 'eng',
+  pagesToOcr?: number[],
 ): Promise<PdfExtraction> {
   const manifest = await getOcrManifest();
 
@@ -94,14 +95,16 @@ export async function ocrPdf(
     throw new AppError('PDF_CORRUPT', 'The PDF could not be opened.');
   });
 
-  if (pdf.numPages > OCR_MAX_PAGES) {
+  const pageNumbers =
+    pagesToOcr?.length ? pagesToOcr : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
+  if (pageNumbers.length > OCR_MAX_PAGES) {
     await pdf.destroy();
     throw new AppError('TOO_MANY_PAGES', `OCR is limited to ${OCR_MAX_PAGES} pages per PDF.`);
   }
 
   let pageIndex = 0;
   const pageCount = pdf.numPages;
-  const overall = (fraction: number) => ((pageIndex + fraction) / pageCount) * 100;
+  const overall = (fraction: number) => ((pageIndex + fraction) / pageNumbers.length) * 100;
 
   const { createWorker } = await import('tesseract.js');
   const dir = ocrAssetBase();
@@ -115,7 +118,7 @@ export async function ocrPdf(
     cacheMethod: 'none',
     logger: (m: { status?: string; progress?: number }) => {
       if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-        onProgress(overall(m.progress), `OCR page ${pageIndex + 1} of ${pageCount}`);
+        onProgress(overall(m.progress), `OCR page ${pageNumbers[pageIndex]} (${pageIndex + 1} of ${pageNumbers.length})`);
       }
     },
   };

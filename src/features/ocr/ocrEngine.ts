@@ -101,6 +101,11 @@ export async function ocrPdf(
     throw new AppError('PDF_CORRUPT', 'The PDF could not be opened.');
   });
 
+  if (signal?.aborted) {
+    await pdf.destroy();
+    throw new DOMException('OCR was cancelled.', 'AbortError');
+  }
+
   const pageNumbers =
     pagesToOcr?.length ? pagesToOcr : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
   if (pageNumbers.length > OCR_MAX_PAGES) {

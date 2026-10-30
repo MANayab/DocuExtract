@@ -87,25 +87,15 @@ for (const item of bundled) {
 const licenseOut = path.join(out, 'licenses');
 fs.mkdirSync(licenseOut, { recursive: true });
 const tessdataLicense = path.join(root, 'licenses', 'Apache-2.0-tessdata.txt');
+const packageLicense = path.join(root, 'licenses', 'MIT-tesseract-data-packages.txt');
 const ocrNotice = path.join(root, 'licenses', 'OCR-NOTICE.txt');
-if (!fs.existsSync(tessdataLicense) || !fs.existsSync(ocrNotice)) {
+if (!fs.existsSync(tessdataLicense) || !fs.existsSync(packageLicense) || !fs.existsSync(ocrNotice)) {
   disable('OCR redistribution license or notice is missing.');
   process.exit(1);
 }
 fs.copyFileSync(tessdataLicense, path.join(licenseOut, 'Apache-2.0-tessdata.txt'));
+fs.copyFileSync(packageLicense, path.join(licenseOut, 'MIT-tesseract-data-packages.txt'));
 fs.copyFileSync(ocrNotice, path.join(licenseOut, 'OCR-NOTICE.txt'));
-
-for (const language of supportedLanguages) {
-  const packageDir = modules('@tesseract.js-data', language);
-  const packageLicense = walk(packageDir).find((file) =>
-    /^license(?:\\.(?:txt|md))?$/i.test(path.basename(file)),
-  );
-  if (!packageLicense) {
-    disable(`MIT package license missing for @tesseract.js-data/${language}.`);
-    process.exit(1);
-  }
-  fs.copyFileSync(packageLicense, path.join(licenseOut, `${language}-package-MIT.txt`));
-}
 
 const version = JSON.parse(fs.readFileSync(modules('tesseract.js', 'package.json'), 'utf8')).version;
 const gzip = bundled[0].gzip;

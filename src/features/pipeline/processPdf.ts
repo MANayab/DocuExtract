@@ -3,7 +3,6 @@ import { markAsOcr } from '../extraction/ocrMarking';
 import { parseInvoice } from '../extraction/invoiceParser';
 import { splitInvoices } from '../extraction/splitInvoices';
 import { DEFAULT_LOCALE } from '../../config/locales';
-import { MIN_TEXT_CHARS_PER_PAGE } from '../../config/limits';
 
 /**
  * The full local pipeline for one PDF: read text (or OCR a scan on request),
@@ -18,7 +17,7 @@ export const processPdf: Processor = async (file, options, onProgress) => {
 
   const imageOnlyPages = raw.pageTexts
     ?.map((pageText, index) =>
-      pageText.replace(/\\s/g, '').length < MIN_TEXT_CHARS_PER_PAGE ? index + 1 : null,
+      pageText.trim().length === 0 ? index + 1 : null,
     )
     .filter((page): page is number => page !== null);
   const needsOcr = raw.kind === 'image-only' || (imageOnlyPages?.length ?? 0) > 0;

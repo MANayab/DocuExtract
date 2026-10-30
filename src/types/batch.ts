@@ -1,8 +1,8 @@
 import type { Invoice } from './invoice';
 import type { LocaleCode } from '../config/locales';
+import type { OcrLanguage } from '../features/ocr/ocrLanguages';
 
 export type RecordStatus = 'queued' | 'processing' | 'ready' | 'needs-ocr' | 'error';
-export type OcrLanguage = 'eng' | 'deu' | 'hin';
 
 /** One row of the dashboard: a file being processed, or one invoice extracted from a file. */
 export interface BatchRecord {

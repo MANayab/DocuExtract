@@ -182,7 +182,7 @@ export async function ocrPdf(
         const pageSpans = wordsToSpans(collectWords(result.data), pageNumber, base.height, scale);
 
         spans.push(...pageSpans);
-        pageTexts[pageNumber - 1] = spansToLines(pageSpans).join('\\n');
+        pageTexts[pageNumber - 1] = spansToLines(pageSpans).join('\n');
       } finally {
         if (canvas) {
           canvas.width = 0;
@@ -192,7 +192,7 @@ export async function ocrPdf(
       }
     }
 
-    const text = pageTexts.join('\\n');
+    const text = pageTexts.join('\n');
 
     if (text.replace(/\s/g, '').length < MIN_OCR_CHARACTERS) {
       throw new AppError('EXTRACTION_FAILED', 'OCR could not read any text from this scan.');

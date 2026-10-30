@@ -3,6 +3,7 @@ import { markAsOcr } from '../extraction/ocrMarking';
 import { parseInvoice } from '../extraction/invoiceParser';
 import { splitInvoices } from '../extraction/splitInvoices';
 import { DEFAULT_LOCALE } from '../../config/locales';
+import { DEFAULT_OCR_LANGUAGE } from '../ocr/ocrLanguages';
 
 /**
  * The full local pipeline for one PDF: read text (or OCR a scan on request),
@@ -29,7 +30,7 @@ export const processPdf: Processor = async (file, options, onProgress) => {
     const ocrResult = await ocrPdf(
       file,
       (p, label) => onProgress(54 + p * 0.38, label),
-      options.ocrLanguage ?? 'eng',
+      options.ocrLanguage ?? DEFAULT_OCR_LANGUAGE,
       imageOnlyPages,
       options.signal,
     );

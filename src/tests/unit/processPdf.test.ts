@@ -64,7 +64,11 @@ describe('processPdf OCR language handoff', () => {
   });
 
   it('keeps English as the default when no language was selected', async () => {
-    await processPdf(new File(['pdf'], 'scan.pdf'), { ocr: true }, () => {});
+    await processPdf(
+      new File(['pdf'], 'scan.pdf'),
+      { ocr: true },
+      () => {},
+    );
 
     expect(mocks.ocrPdf).toHaveBeenCalledWith(
       expect.any(File),
@@ -81,7 +85,11 @@ describe('processPdf OCR language handoff', () => {
       pageTexts: ['Invoice 123'],
     });
 
-    await processPdf(new File(['pdf'], 'text.pdf'), { ocr: false }, () => {});
+    await processPdf(
+      new File(['pdf'], 'text.pdf'),
+      { ocr: false },
+      () => {},
+    );
 
     expect(mocks.ocrPdf).not.toHaveBeenCalled();
   });

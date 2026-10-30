@@ -32,6 +32,7 @@ export const processPdf: Processor = async (file, options, onProgress) => {
       (p, label) => onProgress(54 + p * 0.38, label),
       options.ocrLanguage ?? 'eng',
       imageOnlyPages,
+      options.signal,
     );
     const pageTexts = raw.pageTexts?.length
       ? raw.pageTexts.map((pageText, index) =>

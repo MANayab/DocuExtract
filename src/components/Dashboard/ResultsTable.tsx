@@ -126,6 +126,7 @@ export function ResultsTable({
   onOpen,
   onRemove,
   onOcr,
+  onCancel,
   ocrLanguage,
   onClear,
 }: Props) {

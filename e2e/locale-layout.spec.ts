@@ -29,7 +29,9 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
     expect(ocrBox).not.toBeNull();
     expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(dropBox!.y);
     expect(localeBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
-    expect(ocrBox!.y + ocrBox!.height).toBeLessThanOrEqual(panelBox!.y + panelBox!.height);
+    expect(ocrBox!.y + ocrBox!.height).toBeLessThanOrEqual(
+      panelBox!.y + panelBox!.height,
+    );
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     );

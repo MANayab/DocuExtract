@@ -75,6 +75,7 @@ export async function ocrPdf(
   onProgress: (percent: number, label: string) => void,
   language: OcrLanguage = DEFAULT_OCR_LANGUAGE,
   pagesToOcr?: number[],
+  signal?: AbortSignal,
 ): Promise<PdfExtraction> {
   const manifest = await getOcrManifest();
 
@@ -134,6 +135,8 @@ export async function ocrPdf(
       1,
       options as unknown as Parameters<typeof createWorker>[2],
     );
+
+    if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
 
     try {
       await worker.setParameters({ preserve_interword_spaces: '1' } as never);
@@ -195,6 +198,7 @@ export async function ocrPdf(
       ocr: true,
     };
   } catch (e) {
+    if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
     if (e instanceof AppError) throw e;
     throw new AppError(
       'OCR_UNAVAILABLE',

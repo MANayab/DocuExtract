@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
+import ExcelJS from 'exceljs';
 import { sheetToCsv, invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
+import { invoicesToXlsx } from '../../features/export/xlsxExporter';
 import { buildJson } from '../../features/export/jsonExporter';
 import { buildSheets, type ExportEntry } from '../../features/export/workbookModel';
 import { emptyField, type Invoice } from '../../types/invoice';
@@ -151,5 +153,48 @@ describe('json export', () => {
     expect(json.exportedAt).toBe('2026-10-10T00:00:00.000Z');
     expect(json.invoices[0].validation.status).toBe('PASS');
     expect(json.invoices[0].invoice.invoiceNumber.value).toBe('INV-1');
+  });
+});
+
+
+describe('manual edit export parity', () => {
+  it('keeps edited values consistent in XLSX, invoice CSV, line-item CSV and JSON', async () => {
+    const edited = invoice('INV-MANUAL', {
+      invoiceNumber: { ...field('INV-MANUAL'), source: 'manual' },
+      grandTotal: { ...field(1234), source: 'manual' },
+      items: [
+        {
+          ...item('Manually corrected item', 3, 400),
+          description: { ...field('Manually corrected item'), source: 'manual' },
+        },
+      ],
+      extraction: {
+        sourceType: 'manual',
+        confidence: 100,
+        warnings: [],
+        sourceFile: 'manual-edit.pdf',
+        pageCount: 2,
+      },
+    });
+    const entries = [entry(edited)];
+
+    const workbookBlob = await invoicesToXlsx(entries);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await workbookBlob.arrayBuffer());
+    const invoiceSheet = workbook.getWorksheet('Invoices');
+    const lineSheet = workbook.getWorksheet('Line Items');
+
+    expect(invoiceSheet?.getCell(2, 1).value).toBe('INV-MANUAL');
+    expect(invoiceSheet?.getCell(2, 14).value).toBe(1234);
+    expect(lineSheet?.getCell(2, 3).value).toBe('Manually corrected item');
+
+    const invoiceCsv = await invoicesToCsv(entries).text();
+    const lineItemCsv = await lineItemsToCsv(entries).text();
+    const json = buildJson(entries, '2026-10-30T00:00:00.000Z');
+
+    expect(invoiceCsv).toContain('INV-MANUAL');
+    expect(invoiceCsv).toContain('1234');
+    expect(lineItemCsv).toContain('Manually corrected item');
+    expect(json.invoices[0].invoice).toEqual(edited);
   });
 });

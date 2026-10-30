@@ -19,7 +19,7 @@ import type { ExportEntry } from '../features/export/workbookModel';
 import { analyzeInvoice } from '../features/validation/analysis';
 import type { Invoice } from '../types/invoice';
 import type { OcrLanguage } from '../features/ocr/ocrLanguages';
-import { OCR_LANGUAGES } from '../features/ocr/ocrLanguages';
+import { DEFAULT_OCR_LANGUAGE, OCR_LANGUAGES } from '../features/ocr/ocrLanguages';
 
 type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
 
@@ -29,7 +29,7 @@ export function App() {
   const [view, setView] = useState<View>({ kind: 'dashboard' });
   const [notices, setNotices] = useState<string[]>([]);
   const [locale, setLocale] = useState<LocaleCode>(() => store.getLocale());
-  const [ocrLanguage, setOcrLanguage] = useState<OcrLanguage>('eng');
+  const [ocrLanguage, setOcrLanguage] = useState<OcrLanguage>(DEFAULT_OCR_LANGUAGE);
   const autoOpen = useRef(false);
 
   const summary = useMemo(() => summarize(records), [records]);

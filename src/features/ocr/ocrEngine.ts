@@ -214,10 +214,13 @@ export async function ocrPdf(
     if (e instanceof AppError) throw e;
     throw new AppError(
       'OCR_UNAVAILABLE',
-      `OCR failed: ${e instanceof Error ? e.message : String(e)}`,
+      `OCR failed for ${language}. Check the local ${language} model and available memory, then retry. ${e instanceof Error ? e.message : String(e)}`,
     );
   } finally {
-    await worker?.terminate();
-    await pdf.destroy();
+    try {
+      await worker?.terminate();
+    } finally {
+      await pdf.destroy();
+    }
   }
 }

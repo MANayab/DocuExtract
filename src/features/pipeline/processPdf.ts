@@ -34,6 +34,9 @@ export const processPdf: Processor = async (file, options, onProgress) => {
       imageOnlyPages,
       options.signal,
     );
+    if (options.signal?.aborted) {
+      throw new DOMException('OCR was cancelled.', 'AbortError');
+    }
     const pageTexts = raw.pageTexts?.length
       ? raw.pageTexts.map((pageText, index) =>
           imageOnlyPages?.includes(index + 1)

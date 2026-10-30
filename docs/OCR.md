@@ -6,7 +6,7 @@ OCR is **optional at build time**. A build without the OCR files works normally;
 
 ## Enable it (one time)
 
-`tesseract.js` and its WASM core are already dependencies. English (`eng`), German (`deu`) and Hindi (`hin`) language data are bundled locally. English is the default. The selected model is fetched from the same-origin asset path only when OCR starts; text-only PDFs do not request OCR assets:
+`tesseract.js` and its WASM core are already dependencies. English (`eng`), German (`deu`) and Hindi (`hin`) language data are bundled locally. English is the default. The pinned `@tesseract.js-data/*@1.0.0` packages provide the `4.0.0_best_int` integerized `tessdata_best` models from `naptha/tessdata`. The selected model is fetched from the same-origin asset path only when OCR starts; text-only PDFs do not request OCR assets:
 
 ```bash
 npm ci

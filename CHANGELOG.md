@@ -2,6 +2,28 @@
 
 All notable changes to this project are documented here.
 
+## [1.4.0] — In preparation
+
+### Added
+
+- English, German and Hindi OCR language choices, independent of invoice locale.
+- Same-origin OCR model size reporting and language-selection UI separation.
+- OCR language forwarding regression coverage.
+
+### Fixed
+
+- Forward the selected OCR language from the batch processor to Tesseract.
+
+### QA notes
+
+- Mixed text/scanned-page OCR, cancellation, model-failure recovery and per-page cleanup remain pending until implemented and verified. This version is not released.
+
+## [1.3.1] — 2026-10-12
+
+### Fixed
+
+- Production version source synchronized to 1.3.1.
+
 ## [1.3.0] — Prepared release
 
 ### Fixed

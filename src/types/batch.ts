@@ -1,6 +1,7 @@
 import type { Invoice } from './invoice';
 import type { LocaleCode } from '../config/locales';
 import type { OcrLanguage } from '../features/ocr/ocrLanguages';
+export type { OcrLanguage } from '../features/ocr/ocrLanguages';
 
 export type RecordStatus = 'queued' | 'processing' | 'ready' | 'needs-ocr' | 'error';
 

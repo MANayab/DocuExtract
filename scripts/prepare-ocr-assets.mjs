@@ -50,7 +50,8 @@ if (cores.length === 0) {
   process.exit(1);
 }
 
-const supportedLanguages = ['eng', 'deu', 'hin'];
+const languageConfig = JSON.parse(fs.readFileSync(path.join(root, 'ocr-languages.json'), 'utf8'));
+const supportedLanguages = languageConfig.languages.map((item) => item.code);
 const bundled = [];
 
 for (const language of supportedLanguages) {
@@ -80,15 +81,32 @@ fs.copyFileSync(worker, path.join(out, 'worker.min.js'));
 for (const file of cores) fs.copyFileSync(path.join(coreDir, file), path.join(out, 'core', file));
 
 for (const item of bundled) {
-  const extension = item.gzip ? '.traineddata.gz' : '.traineddata';
-  fs.copyFileSync(item.source, path.join(out, 'lang', `${item.language}${extension}`));
+  const language = languageConfig.languages.find((entry) => entry.code === item.language);
+  if (!language) {
+    disable(`Language configuration missing for ${item.language}.`);
+    process.exit(1);
+  }
+  fs.copyFileSync(item.source, path.join(out, 'lang', language.fileName));
 }
+
+const licenseOut = path.join(out, 'licenses');
+fs.mkdirSync(licenseOut, { recursive: true });
+const tessdataLicense = path.join(root, 'licenses', 'Apache-2.0-tessdata.txt');
+const packageLicense = path.join(root, 'licenses', 'MIT-tesseract-data-packages.txt');
+const ocrNotice = path.join(root, 'licenses', 'OCR-NOTICE.txt');
+if (!fs.existsSync(tessdataLicense) || !fs.existsSync(packageLicense) || !fs.existsSync(ocrNotice)) {
+  disable('OCR redistribution license or notice is missing.');
+  process.exit(1);
+}
+fs.copyFileSync(tessdataLicense, path.join(licenseOut, 'Apache-2.0-tessdata.txt'));
+fs.copyFileSync(packageLicense, path.join(licenseOut, 'MIT-tesseract-data-packages.txt'));
+fs.copyFileSync(ocrNotice, path.join(licenseOut, 'OCR-NOTICE.txt'));
 
 const version = JSON.parse(fs.readFileSync(modules('tesseract.js', 'package.json'), 'utf8')).version;
 const gzip = bundled[0].gzip;
 fs.writeFileSync(
   path.join(out, 'manifest.json'),
-  JSON.stringify({ engine: `tesseract.js@${version}`, lang: 'eng', languages: bundled.map((item) => item.language), gzip }, null, 2),
+  JSON.stringify({ engine: `tesseract.js@${version}`, lang: languageConfig.defaultLanguage, languages: bundled.map((item) => item.language), gzip }, null, 2),
 );
 
 for (const item of bundled) {

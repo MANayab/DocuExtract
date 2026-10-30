@@ -1,7 +1,7 @@
 import type { PdfExtraction, TextSpan } from '../../types/extraction';
 import { loadPdf } from './pdfLoader';
 import { spansToLines } from './textLines';
-import { MAX_PAGES, MIN_TEXT_CHARS_PER_PAGE } from '../../config/limits';
+import { MAX_PAGES } from '../../config/limits';
 import { AppError } from '../../types/errors';
 
 export async function extractPdf(
@@ -72,10 +72,9 @@ export async function extractPdf(
       spans,
       text,
       pageTexts,
-      kind:
-        text.length >= MIN_TEXT_CHARS_PER_PAGE * pdf.numPages
-          ? 'text-based'
-          : 'image-only',
+      kind: pageTexts.every((pageText) => pageText.trim().length === 0)
+        ? 'image-only'
+        : 'text-based',
     };
   } finally {
     await pdf.destroy();

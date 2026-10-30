@@ -10,7 +10,7 @@ No backend. No account. No database. No analytics. No telemetry.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MANayab/DocuExtract/deploy.yml?branch=main&style=flat-square&label=deploy)](https://github.com/MANayab/DocuExtract/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1F6B45?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-C8431F?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-C8431F?style=flat-square)](CHANGELOG.md)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-1C1B19?style=flat-square)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-18.3-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -170,9 +170,9 @@ stateDiagram-v2
 | Multi-page                | **Yes**, up to 100 pages.                                                                                                                   |
 | Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together.                                                                 |
 
-## Known limitations (v1.2.0)
+## Known limitations (v1.4.0)
 
-- **OCR is English only**, limited to 20 pages per PDF, and slower and less accurate than text PDFs. Every OCR'd invoice is marked **Review**.
+- **OCR supports English, German and Hindi**, limited to 20 OCR pages per PDF, and slower and less reliable than text PDFs. Every OCR-derived invoice is marked **Review** with confidence capped at 75%.
 - OCR needs a one-time build step to bundle the Tesseract files ([docs/OCR.md](docs/OCR.md)). Without it, scanned PDFs are detected but not read.
 - Multi-invoice splitting relies on the invoice number changing between pages. A PDF where invoices share a number, or print none, is read as one invoice.
 - Line items need visible column gaps and a header row. Tables without a header, or with wrapped two-line headers, may need manual correction on the review screen.
@@ -346,12 +346,12 @@ gantt
     v1.0.0 Text-PDF extraction, XLSX/CSV/JSON, review screen :done, v1, 2026-06, 2026-09
     v1.1.0 Batch, multi-invoice, GST columns, labels above, OCR, dashboard, SEO :done, v11, 2026-10, 2026-10
     section Next
-    Locale-aware dates and numbers                           :loc, 2026-11, 45d
-    More OCR languages (Hindi and others)                    :lang, after loc, 45d
-    Vendor templates stored only with explicit consent       :tpl, after lang, 60d
+    Locale-aware dates and numbers                           :done, loc, 2026-10, 2026-10
+    Selectable English, German and Hindi OCR                    :done, lang, 2026-10, 2026-10
+    Vendor templates stored only with explicit consent       :tpl, 2026-11, 60d
     section Ideas
     Dedicated pages per use case (SEO)                       :seo, 2027-02, 30d
-    Installable offline PWA                                  :pwa, after seo, 45d
+    Installable offline PWA                                  :pwa, 2027-02, 45d
 ```
 
 > [!NOTE]

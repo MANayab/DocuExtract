@@ -143,6 +143,38 @@ describe('BatchStore', () => {
     expect(store.getSnapshot()[0].status).toBe('ready');
   });
 
+
+  it('keeps OCR language independent from invoice locale', async () => {
+    const calls: { locale?: string; language?: string; ocr: boolean }[] = [];
+    const store = new BatchStore(async (_file, options) => {
+      calls.push({
+        locale: options.locale,
+        language: options.ocrLanguage,
+        ocr: options.ocr,
+      });
+      return options.ocr
+        ? { kind: 'invoices', invoices: [invoice('LANGUAGE-INDEPENDENT')], pageCount: 1 }
+        : { kind: 'needs-ocr', pageCount: 1 };
+    });
+
+    store.setLocale('de-DE');
+    store.addFiles([pdf('independent.pdf')]);
+    await settle();
+    const scanned = store.getSnapshot()[0];
+    expect(scanned.status).toBe('needs-ocr');
+    expect(store.getLocale()).toBe('de-DE');
+
+    store.setLocale('en-US');
+    store.requestOcr(scanned.id, 'hin');
+    await settle();
+
+    expect(calls).toEqual([
+      { locale: 'de-DE', language: undefined, ocr: false },
+      { locale: 'en-US', language: 'hin', ocr: true },
+    ]);
+    expect(store.getLocale()).toBe('en-US');
+  });
+
   it('applies edits, removal and clear', async () => {
     const store = new BatchStore(async () => ({
       kind: 'invoices',
@@ -179,6 +211,47 @@ describe('BatchStore', () => {
     await settle();
 
     expect(store.getSnapshot()).toHaveLength(0);
+  });
+
+
+  it('cancels an OCR run and allows retry without discarding the file', async () => {
+    let ocrCalls = 0;
+    let activeSignal: AbortSignal | undefined;
+    const store = new BatchStore(async (_file, options) => {
+      if (!options.ocr) return { kind: 'needs-ocr', pageCount: 2 };
+      ocrCalls++;
+      activeSignal = options.signal;
+      if (ocrCalls === 1) {
+        return new Promise((_, reject) => {
+          options.signal?.addEventListener(
+            'abort',
+            () => reject(new DOMException('OCR was cancelled.', 'AbortError')),
+            { once: true },
+          );
+        });
+      }
+      return { kind: 'invoices', invoices: [invoice('RETRIED')], pageCount: 2 };
+    });
+
+    store.addFiles([pdf('cancel.pdf')]);
+    await settle();
+    const scanned = store.getSnapshot()[0];
+    expect(scanned.status).toBe('needs-ocr');
+
+    store.requestOcr(scanned.id, 'hin');
+    await settle();
+    expect(store.getSnapshot()[0].status).toBe('processing');
+
+    store.cancelOcr(scanned.id);
+    await settle();
+    expect(activeSignal?.aborted).toBe(true);
+    expect(store.getSnapshot()[0].status).toBe('cancelled');
+
+    store.requestOcr(scanned.id, 'hin');
+    await settle();
+    expect(ocrCalls).toBe(2);
+    expect(store.getSnapshot()[0].status).toBe('ready');
+    expect(store.getSnapshot()[0].invoice?.invoiceNumber.value).toBe('RETRIED');
   });
 
   it('notifies subscribers on every change', async () => {

@@ -14,7 +14,7 @@ export const SITE = {
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',
-  version: '1.3.1',
+  version: '1.4.0',
   themeColor: '#2563eb',
   keywords:
     'pdf invoice to excel, invoice data extraction, gst invoice to excel, invoice ocr, convert invoice pdf to csv, private invoice parser',
@@ -116,7 +116,7 @@ export function faqItems(ocrBundled: boolean): FaqItem[] {
     {
       q: 'Can it read scanned invoices?',
       a: ocrBundled
-        ? 'Yes. Scanned or image-only PDFs can be read with built-in English OCR that runs locally in your browser. OCR results are less accurate, so every value is marked as lower confidence and needs review.'
+        ? 'Yes. Scanned or image-only PDFs can be read with built-in English, German or Hindi OCR that runs locally in your browser. Choose the scanned-PDF language independently of invoice locale. OCR results need review and confidence is capped at 75%.'
         : 'Not in this build. Scanned or image-only PDFs need OCR, which is optional and not bundled here; they are listed as needing OCR instead of being guessed.',
     },
     {

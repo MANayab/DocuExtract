@@ -11,6 +11,7 @@ interface Props {
   onOpen: (id: string) => void;
   onRemove: (id: string) => void;
   onOcr: (id: string, language: OcrLanguage) => void;
+  onCancel: (id: string) => void;
   ocrLanguage: OcrLanguage;
   onClear: () => void;
 }
@@ -19,11 +20,13 @@ function StatusCell({
   record,
   ocrAvailable,
   onOcr,
+  onCancel,
   ocrLanguage,
 }: {
   record: BatchRecord;
   ocrAvailable: boolean | null;
   onOcr: (id: string, language: OcrLanguage) => void;
+  onCancel: (id: string) => void;
   ocrLanguage: OcrLanguage;
 }) {
   switch (record.status) {
@@ -37,6 +40,15 @@ function StatusCell({
             <span style={{ width: `${record.progress}%` }} />
           </div>
           <span className="dx-rowprogress__label">{record.label}</span>
+          {record.ocrRequested && (
+            <button
+              type="button"
+              className="dx-btn dx-btn--small dx-btn--ghost"
+              onClick={() => onCancel(record.id)}
+            >
+              Cancel OCR
+            </button>
+          )}
         </div>
       );
 
@@ -60,11 +72,34 @@ function StatusCell({
         </div>
       );
 
+    case 'cancelled':
+      return (
+        <div className="dx-statusstack">
+          <span className="dx-badge dx-badge--warn">Cancelled</span>
+          <button
+            type="button"
+            className="dx-btn dx-btn--small"
+            onClick={() => onOcr(record.id, ocrLanguage)}
+          >
+            Retry OCR
+          </button>
+        </div>
+      );
+
     case 'error':
       return (
         <div className="dx-statusstack">
           <span className="dx-badge dx-badge--bad">Failed</span>
           <span className="dx-rowerror">{record.error}</span>
+          {record.ocrRequested && (
+            <button
+              type="button"
+              className="dx-btn dx-btn--small"
+              onClick={() => onOcr(record.id, ocrLanguage)}
+            >
+              Retry OCR
+            </button>
+          )}
         </div>
       );
 
@@ -91,6 +126,7 @@ export function ResultsTable({
   onOpen,
   onRemove,
   onOcr,
+  onCancel,
   ocrLanguage,
   onClear,
 }: Props) {
@@ -201,6 +237,7 @@ export function ResultsTable({
                       record={record}
                       ocrAvailable={ocrAvailable}
                       onOcr={onOcr}
+                      onCancel={onCancel}
                       ocrLanguage={ocrLanguage}
                     />
                   </td>

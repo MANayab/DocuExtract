@@ -9,9 +9,9 @@ Direct dependencies used by this project:
 | pdfjs-dist | 4.10.38 | Apache-2.0 |
 | tesseract.js | 5.1.1 | Apache-2.0 |
 | tesseract.js-core (transitive, bundled for OCR) | 5.1.1 | Apache-2.0 |
-| @tesseract.js-data/eng (bundled OCR model) | 1.0.0 | MIT |
-| @tesseract.js-data/deu (bundled OCR model) | 1.0.0 | MIT |
-| @tesseract.js-data/hin (bundled OCR model) | 1.0.0 | MIT |
+| @tesseract.js-data/eng (bundled OCR model package) | 1.0.0 | MIT (package wrapper) |
+| @tesseract.js-data/deu (bundled OCR model package) | 1.0.0 | MIT (package wrapper) |
+| @tesseract.js-data/hin (bundled OCR model package) | 1.0.0 | MIT (package wrapper) |
 | exceljs | 4.4.0 | MIT |
 | file-saver | 2.0.5 | MIT |
 | zod | 3.23.8 | MIT |
@@ -38,5 +38,10 @@ Direct dependencies used by this project:
 | @eslint/js | 9.14.0 | MIT |
 | globals | 15.12.0 | MIT |
 | typescript-eslint | 8.13.0 | MIT |
+
+
+## OCR model data notices
+
+The traineddata payloads supplied by `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` originate from `naptha/tessdata` and are licensed under Apache-2.0. The npm package wrappers declare MIT; this does not replace the underlying model-data license. The build copies the MIT package license text, the Apache-2.0 tessdata license text and the OCR attribution notice into `public/ocr/licenses/` so they are distributed with the OCR assets. The source Apache license is retained at `licenses/Apache-2.0-tessdata.txt`.
 
 The maintainer must re-verify all dependency and transitive-dependency licenses before commercial distribution.

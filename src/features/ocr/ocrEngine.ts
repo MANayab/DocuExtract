@@ -4,6 +4,7 @@ import type { PdfExtraction, TextSpan } from '../../types/extraction';
 import { loadPdf } from '../pdf/pdfLoader';
 import { spansToLines } from '../pdf/textLines';
 import { getOcrManifest, ocrAssetBase } from './ocrManifest';
+import { DEFAULT_OCR_LANGUAGE, type OcrLanguage } from './ocrLanguages';
 
 interface OcrWord {
   text: string;
@@ -72,9 +73,14 @@ const MIN_OCR_CHARACTERS = 20;
 export async function ocrPdf(
   file: File,
   onProgress: (percent: number, label: string) => void,
-  language = 'eng',
+  language: OcrLanguage = DEFAULT_OCR_LANGUAGE,
+  pagesToOcr?: number[],
+  signal?: AbortSignal,
 ): Promise<PdfExtraction> {
+  if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+
   const manifest = await getOcrManifest();
+  if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
 
   if (!manifest) {
     throw new AppError(
@@ -90,20 +96,27 @@ export async function ocrPdf(
     );
   }
 
+  const { createWorker } = await import('tesseract.js');
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {
     throw new AppError('PDF_CORRUPT', 'The PDF could not be opened.');
   });
 
-  if (pdf.numPages > OCR_MAX_PAGES) {
+  if (signal?.aborted) {
+    await pdf.destroy();
+    throw new DOMException('OCR was cancelled.', 'AbortError');
+  }
+
+  const pageNumbers =
+    pagesToOcr?.length ? pagesToOcr : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
+  if (pageNumbers.length > OCR_MAX_PAGES) {
     await pdf.destroy();
     throw new AppError('TOO_MANY_PAGES', `OCR is limited to ${OCR_MAX_PAGES} pages per PDF.`);
   }
 
   let pageIndex = 0;
   const pageCount = pdf.numPages;
-  const overall = (fraction: number) => ((pageIndex + fraction) / pageCount) * 100;
+  const overall = (fraction: number) => ((pageIndex + fraction) / pageNumbers.length) * 100;
 
-  const { createWorker } = await import('tesseract.js');
   const dir = ocrAssetBase();
 
   const options = {
@@ -115,7 +128,7 @@ export async function ocrPdf(
     cacheMethod: 'none',
     logger: (m: { status?: string; progress?: number }) => {
       if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-        onProgress(overall(m.progress), `OCR page ${pageIndex + 1} of ${pageCount}`);
+        onProgress(overall(m.progress), `OCR page ${pageNumbers[pageIndex]} (${pageIndex + 1} of ${pageNumbers.length})`);
       }
     },
   };
@@ -131,6 +144,8 @@ export async function ocrPdf(
       options as unknown as Parameters<typeof createWorker>[2],
     );
 
+    if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+
     try {
       await worker.setParameters({ preserve_interword_spaces: '1' } as never);
     } catch {
@@ -138,39 +153,51 @@ export async function ocrPdf(
     }
 
     const spans: TextSpan[] = [];
-    const pageTexts: string[] = [];
+    const pageTexts = Array.from({ length: pageCount }, () => '');
 
-    for (pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-      onProgress(overall(0), `Rendering page ${pageIndex + 1} of ${pageCount}`);
-
-      const page = await pdf.getPage(pageIndex + 1);
-      const base = page.getViewport({ scale: 1 });
-      const scale = Math.min(
-        OCR_RENDER_SCALE,
-        Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)),
+    for (pageIndex = 0; pageIndex < pageNumbers.length; pageIndex++) {
+      if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+      const pageNumber = pageNumbers[pageIndex];
+      onProgress(
+        overall(0),
+        `Rendering page ${pageNumber} (${pageIndex + 1} of ${pageNumbers.length})`,
       );
-      const viewport = page.getViewport({ scale });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+      const page = await pdf.getPage(pageNumber);
+      let canvas: HTMLCanvasElement | undefined;
 
-      const context = canvas.getContext('2d');
-      if (!context) {
-        throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+      try {
+        const base = page.getViewport({ scale: 1 });
+        const scale = Math.min(
+          OCR_RENDER_SCALE,
+          Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)),
+        );
+        const viewport = page.getViewport({ scale });
+
+        canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+        }
+
+        await page.render({ canvasContext: context, viewport }).promise;
+
+        const result = (await worker.recognize(canvas)) as unknown as { data: OcrPageData };
+        if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+        const pageSpans = wordsToSpans(collectWords(result.data), pageNumber, base.height, scale);
+
+        spans.push(...pageSpans);
+        pageTexts[pageNumber - 1] = spansToLines(pageSpans).join('\n');
+      } finally {
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+        page.cleanup();
       }
-
-      await page.render({ canvasContext: context, viewport }).promise;
-
-      const result = (await worker.recognize(canvas)) as unknown as { data: OcrPageData };
-      const pageSpans = wordsToSpans(collectWords(result.data), pageIndex + 1, base.height, scale);
-
-      spans.push(...pageSpans);
-      pageTexts.push(spansToLines(pageSpans).join('\n'));
-
-      canvas.width = 0;
-      canvas.height = 0;
-      page.cleanup();
     }
 
     const text = pageTexts.join('\n');
@@ -191,13 +218,17 @@ export async function ocrPdf(
       ocr: true,
     };
   } catch (e) {
+    if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
     if (e instanceof AppError) throw e;
     throw new AppError(
       'OCR_UNAVAILABLE',
-      `OCR failed: ${e instanceof Error ? e.message : String(e)}`,
+      `OCR failed for ${language}. Check the local ${language} model and available memory, then retry. ${e instanceof Error ? e.message : String(e)}`,
     );
   } finally {
-    await worker?.terminate();
-    await pdf.destroy();
+    try {
+      await worker?.terminate();
+    } finally {
+      await pdf.destroy();
+    }
   }
 }

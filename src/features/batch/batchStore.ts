@@ -1,6 +1,7 @@
 import { MAX_BATCH_FILES } from '../../config/limits';
 import type { BatchRecord, OcrLanguage, Processor } from '../../types/batch';
 import type { Invoice } from '../../types/invoice';
+import { DEFAULT_OCR_LANGUAGE } from '../ocr/ocrLanguages';
 import { validatePdfFile } from '../../utils/fileValidation';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 
@@ -21,6 +22,7 @@ export class BatchStore {
   private listeners = new Set<() => void>();
   private files = new Map<string, File>();
   private ocrRequested = new Map<string, OcrLanguage>();
+  private ocrControllers = new Map<string, AbortController>();
   private running = false;
   private seq = 0;
   private locale: LocaleCode = DEFAULT_LOCALE;
@@ -106,9 +108,10 @@ export class BatchStore {
   }
 
   /** Re-queues a scanned PDF to be read with OCR. */
-  requestOcr(id: string, language: OcrLanguage = 'eng') {
+  requestOcr(id: string, language: OcrLanguage = DEFAULT_OCR_LANGUAGE) {
     const record = this.records.find((r) => r.id === id);
-    if (!record || record.status !== 'needs-ocr') return;
+    const retryable = record?.status === 'cancelled' || (record?.status === 'error' && record.ocrRequested);
+    if (!record || (record.status !== 'needs-ocr' && !retryable)) return;
 
     this.ocrRequested.set(id, language);
     this.patch(id, {
@@ -116,8 +119,16 @@ export class BatchStore {
       progress: 0,
       label: 'Waiting in queue (OCR)',
       error: undefined,
+      ocrRequested: true,
     });
     void this.pump();
+  }
+
+  cancelOcr(id: string) {
+    const controller = this.ocrControllers.get(id);
+    if (!controller || controller.signal.aborted) return;
+    controller.abort();
+    this.patch(id, { label: 'Cancelling OCR…' });
   }
 
   updateInvoice(id: string, invoice: Invoice) {
@@ -182,6 +193,8 @@ export class BatchStore {
   }
 
   remove(id: string) {
+    this.ocrControllers.get(id)?.abort();
+    this.ocrControllers.delete(id);
     this.files.delete(id);
     this.ocrRequested.delete(id);
     this.manuallyEdited.delete(id);
@@ -189,6 +202,8 @@ export class BatchStore {
   }
 
   clear() {
+    this.ocrControllers.forEach((controller) => controller.abort());
+    this.ocrControllers.clear();
     this.files.clear();
     this.ocrRequested.clear();
     this.manuallyEdited.clear();
@@ -219,16 +234,24 @@ export class BatchStore {
     }
 
     const useOcr = this.ocrRequested.has(record.id);
+    const controller = useOcr ? new AbortController() : undefined;
+    if (controller) this.ocrControllers.set(record.id, controller);
     this.patch(record.id, {
       status: 'processing',
       progress: 2,
       label: useOcr ? 'Starting OCR' : 'Opening PDF',
+      ocrRequested: useOcr,
     });
 
     try {
       const result = await this.processor(
         file,
-        { ocr: useOcr, locale: this.locale, ocrLanguage: this.ocrRequested.get(record.id) },
+        {
+          ocr: useOcr,
+          locale: this.locale,
+          ocrLanguage: this.ocrRequested.get(record.id),
+          signal: controller?.signal,
+        },
         (percent, label) => this.patch(record.id, { progress: clamp(percent), label }),
       );
 
@@ -276,12 +299,22 @@ export class BatchStore {
       }
       if (ready.length > 1) this.ocrRequested.delete(record.id);
     } catch (e) {
-      this.patch(record.id, {
-        status: 'error',
-        progress: 100,
-        label: 'Failed',
-        error: e instanceof Error ? e.message : 'This PDF could not be processed.',
-      });
+      if (controller?.signal.aborted) {
+        this.patch(record.id, {
+          status: 'cancelled',
+          label: 'OCR cancelled',
+          error: undefined,
+        });
+      } else {
+        this.patch(record.id, {
+          status: 'error',
+          progress: 100,
+          label: 'Failed',
+          error: e instanceof Error ? e.message : 'This PDF could not be processed.',
+        });
+      }
+    } finally {
+      if (controller) this.ocrControllers.delete(record.id);
     }
   }
 }

@@ -28,7 +28,6 @@ const makeInvoice = (): Invoice => ({
       taxRate: field(18),
       taxAmount: field(18),
       lineTotal: field(118),
-      hsn: field('1234'),
     },
   ],
   subtotal: field(100),

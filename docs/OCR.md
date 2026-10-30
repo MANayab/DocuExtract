@@ -47,7 +47,7 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 
 - English, German and Hindi are selectable when their model files are bundled. Additional languages require an explicitly reviewed allowlist entry, a pinned data package, license documentation, and regression tests.
 - OCR language is independent of invoice locale: OCR language controls text recognition; invoice locale controls date and number interpretation. Supported languages are English (default), German and Hindi.
-- At most 20 pages requiring OCR per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`); a mixed PDF may contain additional text-layer pages. OCR runs at roughly 5 to 20 seconds per scanned page depending on the device.
+- At most 20 pages requiring OCR per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`); a mixed PDF may contain additional text-layer pages. Each rendered page is capped at 24 million canvas pixels (`OCR_MAX_PIXELS`), and rendering scale is capped at 3. The shared PDF validator also enforces 25 MB and 100 total pages. There is no separate wall-clock OCR timeout; use Cancel OCR to stop between pages. OCR runtime varies by device and document, so no time or accuracy guarantee is made.
 - Handwriting, photos taken at an angle and low-resolution faxes are not reliable.
 - Tables with no visible column gaps may merge cells; review line items.
 

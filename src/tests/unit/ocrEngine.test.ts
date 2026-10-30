@@ -92,6 +92,21 @@ describe('ocrPdf engine lifecycle', () => {
 
 
 
+
+  it('defaults to English when no OCR language is supplied', async () => {
+    await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {})).rejects.toThrow(/OCR failed/);
+
+    expect(mocks.createWorker).toHaveBeenCalledWith(
+      'eng',
+      1,
+      expect.objectContaining({
+        workerPath: '/ocr/worker.min.js',
+        corePath: '/ocr/core',
+        langPath: '/ocr/lang',
+      }),
+    );
+  });
+
   it('rejects more than 20 pages requiring OCR before starting a worker', async () => {
     pdf.numPages = 21;
 

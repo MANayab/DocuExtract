@@ -96,6 +96,7 @@ export async function ocrPdf(
     );
   }
 
+  const { createWorker } = await import('tesseract.js');
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {
     throw new AppError('PDF_CORRUPT', 'The PDF could not be opened.');
   });
@@ -111,7 +112,6 @@ export async function ocrPdf(
   const pageCount = pdf.numPages;
   const overall = (fraction: number) => ((pageIndex + fraction) / pageNumbers.length) * 100;
 
-  const { createWorker } = await import('tesseract.js');
   const dir = ocrAssetBase();
 
   const options = {

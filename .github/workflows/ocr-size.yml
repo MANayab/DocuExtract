@@ -1,0 +1,114 @@
+name: OCR asset size audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/ocr-size.yml'
+      - 'scripts/prepare-ocr-assets.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'ocr-data/**'
+  push:
+    branches: ['feat/v1.4.0-ocr-languages-2']
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: feature
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: feature/package-lock.json
+      - name: Build feature branch
+        working-directory: feature
+        run: |
+          npm ci
+          npm run build
+      - name: Checkout main baseline
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline
+      - name: Build main baseline
+        working-directory: baseline
+        run: |
+          npm ci
+          npm run build
+      - name: Measure models and deploy output
+        shell: bash
+        run: |
+          set -euo pipefail
+          FEATURE="$GITHUB_WORKSPACE/feature/dist"
+          BASELINE="$GITHUB_WORKSPACE/baseline/dist"
+          REPORT="$GITHUB_WORKSPACE/ocr-size-report.md"
+          : > "$REPORT"
+          {
+            echo "# OCR asset size report"
+            echo
+            echo "- Feature SHA: ${{ github.event.pull_request.head.sha || github.sha }}"
+            echo "- Baseline: main (${{ github.event.pull_request.base.sha || 'current main' }})"
+            echo
+            echo "## Traineddata"
+            echo
+            echo "| Language | File | Raw bytes | gzip -9 bytes |"
+            echo "|---|---|---:|---:|"
+          } >> "$REPORT"
+          for lang in eng hin deu; do
+            file="$(find "$FEATURE/ocr/lang" -maxdepth 1 -type f -name "$lang.traineddata*" -print -quit)"
+            if [ -z "$file" ]; then
+              echo "| $lang | MISSING | — | — |" >> "$REPORT"
+              continue
+            fi
+            raw="$(mktemp)"
+            if [[ "$file" == *.gz ]]; then gzip -dc "$file" > "$raw"; else cp "$file" "$raw"; fi
+            raw_bytes="$(wc -c < "$raw" | tr -d ' ')"
+            gzip_bytes="$(gzip -9 -c "$raw" | wc -c | tr -d ' ')"
+            printf '| %s | %s | %s | %s |\n' "$lang" "${file#"$FEATURE/"}" "$raw_bytes" "$gzip_bytes" >> "$REPORT"
+            rm -f "$raw"
+          done
+          {
+            echo
+            echo "## Worker and WASM core"
+            echo
+            echo "| File | Bytes |"
+            echo "|---|---:|"
+          } >> "$REPORT"
+          find "$FEATURE/ocr" -type f \( -name 'worker*.js' -o -name '*.wasm' -o -name '*core*.js' \) -print0 | sort -z | while IFS= read -r -d '' f; do
+            printf '| %s | %s |\n' "${f#"$FEATURE/"}" "$(wc -c < "$f" | tr -d ' ')" >> "$REPORT"
+          done
+          feature_bytes="$(du -sb "$FEATURE" | cut -f1)"
+          baseline_bytes="$(du -sb "$BASELINE" | cut -f1)"
+          delta=$((feature_bytes - baseline_bytes))
+          {
+            echo
+            echo "## Deployment artifact comparison"
+            echo
+            echo "| Build | dist bytes |"
+            echo "|---|---:|"
+            echo "| main baseline | $baseline_bytes |"
+            echo "| feature | $feature_bytes |"
+            echo "| increase | $delta |"
+            echo
+            echo "## OCR asset file inventory"
+            echo
+            find "$FEATURE/ocr" -type f -printf '%P (%s bytes)\n' | sort | sed 's/^/- /'
+          } >> "$REPORT"
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          cp "$REPORT" "$GITHUB_WORKSPACE/feature/ocr-size-report.md"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ocr-size-report
+          path: |
+            ocr-size-report.md
+            feature/ocr-size-report.md
+          if-no-files-found: error

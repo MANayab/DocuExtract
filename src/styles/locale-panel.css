@@ -3,7 +3,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 10px;
+  gap: 18px;
   margin: 0 0 20px;
   padding: 18px 22px;
   color: #0f172a;
@@ -11,6 +11,12 @@
   border: 1px solid #cbd5e1;
   border-radius: 16px;
   box-shadow: var(--shadow);
+}
+
+.dx-locale-panel__group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .dx-locale-panel__field {

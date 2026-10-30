@@ -91,6 +91,18 @@ describe('ocrPdf engine lifecycle', () => {
 
 
 
+
+  it('rejects more than 20 pages requiring OCR before starting a worker', async () => {
+    pdf.numPages = 21;
+
+    await expect(ocrPdf(new File(['pdf'], 'too-many-pages.pdf'), () => {}, 'eng')).rejects.toThrow(
+      /20 pages/,
+    );
+
+    expect(pdf.destroy).toHaveBeenCalledOnce();
+    expect(mocks.createWorker).not.toHaveBeenCalled();
+  });
+
   it('recognizes only requested image-only pages and reports per-page progress', async () => {
     const onProgress = vi.fn();
     pdf.numPages = 2;

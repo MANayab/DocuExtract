@@ -241,6 +241,7 @@ export function App() {
                 onOpen={(id) => setView({ kind: 'review', id })}
                 onRemove={(id) => store.remove(id)}
                 onOcr={(id, language) => store.requestOcr(id, language)}
+                onCancel={(id) => store.cancelOcr(id)}
                 ocrLanguage={ocrLanguage}
                 onClear={() => store.clear()}
               />

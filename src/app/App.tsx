@@ -18,7 +18,8 @@ import { findDuplicates, summarize } from '../features/batch/summary';
 import type { ExportEntry } from '../features/export/workbookModel';
 import { analyzeInvoice } from '../features/validation/analysis';
 import type { Invoice } from '../types/invoice';
-import type { OcrLanguage } from '../types/batch';
+import type { OcrLanguage } from '../features/ocr/ocrLanguages';
+import { OCR_LANGUAGES } from '../features/ocr/ocrLanguages';
 
 type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
 
@@ -213,9 +214,11 @@ export function App() {
                     value={ocrLanguage}
                     onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
                   >
-                    <option value="eng">English</option>
-                    <option value="deu">German</option>
-                    <option value="hin">Hindi</option>
+                    {OCR_LANGUAGES.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.label} ({option.nativeLabel})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <p id="ocr-language-hint" className="dx-locale-panel__hint">

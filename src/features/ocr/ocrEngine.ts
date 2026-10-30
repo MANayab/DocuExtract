@@ -4,6 +4,7 @@ import type { PdfExtraction, TextSpan } from '../../types/extraction';
 import { loadPdf } from '../pdf/pdfLoader';
 import { spansToLines } from '../pdf/textLines';
 import { getOcrManifest, ocrAssetBase } from './ocrManifest';
+import { DEFAULT_OCR_LANGUAGE, type OcrLanguage } from './ocrLanguages';
 
 interface OcrWord {
   text: string;
@@ -72,7 +73,7 @@ const MIN_OCR_CHARACTERS = 20;
 export async function ocrPdf(
   file: File,
   onProgress: (percent: number, label: string) => void,
-  language = 'eng',
+  language: OcrLanguage = DEFAULT_OCR_LANGUAGE,
   pagesToOcr?: number[],
 ): Promise<PdfExtraction> {
   const manifest = await getOcrManifest();

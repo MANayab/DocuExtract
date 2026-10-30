@@ -50,7 +50,8 @@ if (cores.length === 0) {
   process.exit(1);
 }
 
-const supportedLanguages = ['eng', 'deu', 'hin'];
+const languageConfig = JSON.parse(fs.readFileSync(path.join(root, 'ocr-languages.json'), 'utf8'));
+const supportedLanguages = languageConfig.languages.map((item) => item.code);
 const bundled = [];
 
 for (const language of supportedLanguages) {
@@ -101,7 +102,7 @@ const version = JSON.parse(fs.readFileSync(modules('tesseract.js', 'package.json
 const gzip = bundled[0].gzip;
 fs.writeFileSync(
   path.join(out, 'manifest.json'),
-  JSON.stringify({ engine: `tesseract.js@${version}`, lang: 'eng', languages: bundled.map((item) => item.language), gzip }, null, 2),
+  JSON.stringify({ engine: `tesseract.js@${version}`, lang: languageConfig.defaultLanguage, languages: bundled.map((item) => item.language), gzip }, null, 2),
 );
 
 for (const item of bundled) {

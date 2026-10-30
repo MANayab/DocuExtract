@@ -6,13 +6,18 @@ All notable changes to this project are documented here.
 
 ### Added
 
-- English, German and Hindi OCR language choices, independent of invoice locale.
-- Same-origin OCR model size reporting and language-selection UI separation.
-- OCR language forwarding regression coverage.
+- English, German and Hindi OCR language choices from one typed central configuration, independent of invoice locale.
+- Same-origin OCR model size reporting and shipped MIT / Apache-2.0 license notices.
+- Page-level OCR for mixed text/scanned PDFs, merging text and OCR pages in document order.
+- A Cancel OCR action, between-page cancellation, worker termination, retry states and per-page progress.
+- Separate invoice-locale and scanned-PDF-language controls with responsive keyboard-accessible layout.
 
 ### Fixed
 
 - Forward the selected OCR language from the batch processor to Tesseract.
+- Release canvases and PDF resources on page errors and cancellation.
+- Defer OCR manifest/model requests until OCR is explicitly requested; text-only PDFs do not fetch OCR assets.
+- Permit retry after a failed manifest or language-model load without silently changing languages.
 
 ### QA notes
 

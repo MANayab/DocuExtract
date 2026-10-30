@@ -19,7 +19,11 @@ export const processPdf: Processor = async (file, options, onProgress) => {
     if (!options.ocr) return { kind: 'needs-ocr', pageCount: raw.pageCount };
 
     const { ocrPdf } = await import('../ocr/ocrEngine');
-    raw = await ocrPdf(file, (p, label) => onProgress(54 + p * 0.38, label));
+    raw = await ocrPdf(
+      file,
+      (p, label) => onProgress(54 + p * 0.38, label),
+      options.ocrLanguage ?? 'eng',
+    );
   }
 
   onProgress(92, 'Detecting invoice fields');

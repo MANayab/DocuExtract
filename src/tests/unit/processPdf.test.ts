@@ -47,10 +47,14 @@ describe('processPdf OCR language handoff', () => {
   });
 
   it.each(['hin', 'deu'] as const)('forwards %s to Tesseract', async (language) => {
-    await processPdf(new File(['pdf'], 'scan.pdf'), {
-      ocr: true,
-      ocrLanguage: language,
-    }, () => {});
+    await processPdf(
+      new File(['pdf'], 'scan.pdf'),
+      {
+        ocr: true,
+        ocrLanguage: language,
+      },
+      () => {},
+    );
 
     expect(mocks.ocrPdf).toHaveBeenCalledWith(
       expect.any(File),

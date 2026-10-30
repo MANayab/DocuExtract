@@ -1,6 +1,7 @@
 import { MAX_BATCH_FILES } from '../../config/limits';
 import type { BatchRecord, OcrLanguage, Processor } from '../../types/batch';
 import type { Invoice } from '../../types/invoice';
+import { DEFAULT_OCR_LANGUAGE } from '../ocr/ocrLanguages';
 import { validatePdfFile } from '../../utils/fileValidation';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
 
@@ -107,7 +108,7 @@ export class BatchStore {
   }
 
   /** Re-queues a scanned PDF to be read with OCR. */
-  requestOcr(id: string, language: OcrLanguage = 'eng') {
+  requestOcr(id: string, language: OcrLanguage = DEFAULT_OCR_LANGUAGE) {
     const record = this.records.find((r) => r.id === id);
     const retryable = record?.status === 'cancelled' || (record?.status === 'error' && record.ocrRequested);
     if (!record || (record.status !== 'needs-ocr' && !retryable)) return;

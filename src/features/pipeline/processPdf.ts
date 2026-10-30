@@ -44,7 +44,7 @@ export const processPdf: Processor = async (file, options, onProgress) => {
       ...raw,
       spans: [...raw.spans, ...ocrResult.spans].sort((a, b) => a.page - b.page),
       pageTexts,
-      text: pageTexts.join('\\n'),
+      text: pageTexts.join('\n'),
       kind: 'text-based',
       ocr: true,
     };

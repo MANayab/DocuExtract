@@ -175,48 +175,55 @@ export function App() {
             </div>
           )}
 
-          <section className="dx-panel dx-locale-panel" aria-labelledby="locale-heading">
-            <div className="dx-locale-panel__field">
-              <div className="dx-locale-panel__copy">
-                <h2 id="locale-heading">Number and date format</h2>
-                <label htmlFor="invoice-locale">Invoice locale</label>
-              </div>
-              <select
-                id="invoice-locale"
-                value={locale}
-                onChange={(event) => {
-                  const next = event.target.value as LocaleCode;
-                  setLocale(next);
-                  store.setLocale(next);
-                }}
-              >
-                {Object.values(LOCALES).map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {OCR_BUNDLED && (
+          <section className="dx-panel dx-locale-panel" aria-label="Extraction language settings">
+            <div className="dx-locale-panel__group">
+              <h2>Invoice locale (dates and numbers)</h2>
               <div className="dx-locale-panel__field">
-                <div className="dx-locale-panel__copy">
-                  <label htmlFor="ocr-language">Scanned PDF language</label>
-                </div>
+                <label htmlFor="invoice-locale">Invoice locale</label>
                 <select
-                  id="ocr-language"
-                  value={ocrLanguage}
-                  onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
+                  id="invoice-locale"
+                  aria-describedby="invoice-locale-hint"
+                  value={locale}
+                  onChange={(event) => {
+                    const next = event.target.value as LocaleCode;
+                    setLocale(next);
+                    store.setLocale(next);
+                  }}
                 >
-                  <option value="eng">English</option>
-                  <option value="deu">German</option>
-                  <option value="hin">Hindi</option>
+                  {Object.values(LOCALES).map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
+              <p id="invoice-locale-hint" className="dx-locale-panel__hint">
+                Controls how ambiguous dates and number separators are interpreted. Review financial
+                data before relying on it.
+              </p>
+            </div>
+            {OCR_BUNDLED && (
+              <div className="dx-locale-panel__group">
+                <h2>Scanned PDF language (OCR)</h2>
+                <div className="dx-locale-panel__field">
+                  <label htmlFor="ocr-language">Scanned PDF language</label>
+                  <select
+                    id="ocr-language"
+                    aria-describedby="ocr-language-hint"
+                    value={ocrLanguage}
+                    onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
+                  >
+                    <option value="eng">English</option>
+                    <option value="deu">German</option>
+                    <option value="hin">Hindi</option>
+                  </select>
+                </div>
+                <p id="ocr-language-hint" className="dx-locale-panel__hint">
+                  Applies only to scanned or image-only pages. OCR results are lower-confidence and
+                  must be reviewed. Supported languages: English, German and Hindi.
+                </p>
+              </div>
             )}
-            <p className="dx-locale-panel__hint">
-              Controls how ambiguous dates and number separators are interpreted. Review financial
-              data before relying on it.
-            </p>
           </section>
 
           <FileUploader onFiles={handleFiles} />

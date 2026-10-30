@@ -1,6 +1,6 @@
 # OCR for scanned PDFs
 
-DocuExtract can read scanned or image-only PDFs with [Tesseract](https://github.com/naptha/tesseract.js) compiled to WebAssembly. Everything runs **in the browser tab**: the worker, the WASM engine and the language data are served from this site, so no invoice image and no OCR file ever comes from a CDN.
+DocuExtract can read scanned or image-only PDF pages with [Tesseract](https://github.com/naptha/tesseract.js) compiled to WebAssembly. In mixed PDFs, only pages with no extractable text are sent through OCR; text-layer pages are retained and merged in page order. Everything runs **in the browser tab**: the worker, the WASM engine and the selected language data are served from this site, so no invoice image and no OCR file ever comes from a CDN.
 
 OCR is **optional at build time**. A build without the OCR files works normally; scanned PDFs are then listed as "Scanned PDF" with a disabled **Run OCR** button, and the site copy (FAQ, structured data) says so honestly.
 
@@ -47,13 +47,15 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 
 - English, German and Hindi are selectable when their model files are bundled. Additional languages require an explicitly reviewed allowlist entry, a pinned data package, license documentation, and regression tests.
 - OCR language is independent of invoice locale: OCR language controls text recognition; invoice locale controls date and number interpretation. Supported languages are English (default), German and Hindi.
-- At most 20 pages per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`). OCR runs at roughly 5 to 20 seconds per page depending on the device.
+- At most 20 pages requiring OCR per PDF (`OCR_MAX_PAGES` in `src/config/limits.ts`); a mixed PDF may contain additional text-layer pages. OCR runs at roughly 5 to 20 seconds per scanned page depending on the device.
 - Handwriting, photos taken at an angle and low-resolution faxes are not reliable.
 - Tables with no visible column gaps may merge cells; review line items.
 
 ## Privacy
 
 - `cacheMethod: 'none'` stops Tesseract from persisting language data in IndexedDB.
+- The app does not request the OCR manifest, worker, WASM core or language data on initial load. These same-origin assets are requested only after the user chooses **Run OCR** for a scanned PDF.
+- The Cancel OCR control stops processing between pages. The page currently being recognized may finish first; then the worker is terminated and canvases are released. The file remains in a Cancelled state with Retry OCR available.
 - The Content-Security-Policy allows `wasm-unsafe-eval` (needed to start WebAssembly) and no remote origins.
 - Verify in DevTools → Network: during OCR the only requests are to this site's `/ocr/` files.
 
@@ -62,10 +64,13 @@ Because OCR output is capped below the HIGH band and carries a warning, an OCR'd
 | Symptom | Cause and fix |
 | --- | --- |
 | **Run OCR** is disabled | The build has no `public/ocr/manifest.json`. Follow "Enable it" and rebuild. |
+| A language model returns 404 or cannot be decoded | Check the same-origin `/ocr/lang/` asset path and deployment output. DocuExtract reports the selected language failure and offers Retry OCR; it does not silently switch languages. |
+| OCR runs out of memory or fails while rendering | The row reports the failure without deleting the source file or edited invoice data. Retry after reducing the PDF's scanned-page count or image dimensions. |
+| OCR is cancelled | The current page may finish, then the worker is terminated. The row remains available with Retry OCR. |
 | Build log says a language model is missing | Run `npm ci`; the production build fails if any allowlisted model is missing. |
 | `OCR failed: ...` on a row | Open DevTools → Console/Network. A 404 under `/DocuExtract/ocr/` means the files were not deployed; check `dist/ocr/`. |
 | Garbled numbers | Scan quality. Re-scan at 300 dpi, straight, high contrast. |
 
 ## Licenses
 
-The `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` wrapper packages are MIT; the underlying `naptha/tessdata` traineddata is Apache-2.0. Tesseract.js and its core are Apache-2.0. See `docs/THIRD-PARTY-LICENSES.md` and the license/notice files copied into the generated OCR asset directory.
+The `@tesseract.js-data/eng`, `@tesseract.js-data/deu` and `@tesseract.js-data/hin` wrapper packages are MIT; the underlying `naptha/tessdata` traineddata is Apache-2.0. Tesseract.js and its core are Apache-2.0. See `docs/THIRD-PARTY-LICENSES.md` and the MIT, Apache-2.0 and attribution text copied into the generated OCR asset directory.

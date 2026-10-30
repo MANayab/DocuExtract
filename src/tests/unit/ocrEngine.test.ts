@@ -90,6 +90,45 @@ describe('ocrPdf engine lifecycle', () => {
   );
 
 
+
+  it('recognizes only requested image-only pages and reports per-page progress', async () => {
+    const onProgress = vi.fn();
+    pdf.numPages = 2;
+    page.render.mockReturnValue({ promise: Promise.resolve() });
+    worker.recognize.mockImplementation(async () => {
+      const options = mocks.createWorker.mock.calls[0][2] as {
+        logger: (message: { status: string; progress: number }) => void;
+      };
+      options.logger({ status: 'recognizing text', progress: 0.5 });
+      return {
+        data: {
+          words: [
+            {
+              text: 'Invoice number 123456',
+              bbox: { x0: 10, y0: 10, x1: 90, y1: 20 },
+            },
+          ],
+        },
+      };
+    });
+
+    const result = await ocrPdf(
+      new File(['pdf'], 'mixed.pdf'),
+      onProgress,
+      'hin',
+      [2],
+    );
+
+    expect(pdf.getPage).toHaveBeenCalledOnce();
+    expect(pdf.getPage).toHaveBeenCalledWith(2);
+    expect(result.pageTexts[0]).toBe('');
+    expect(result.pageTexts[1]).toContain('Invoice number 123456');
+    expect(result.spans.every((span) => span.page === 2)).toBe(true);
+    expect(onProgress).toHaveBeenCalledWith(50, expect.stringContaining('OCR page 2'));
+    expect(canvas.width).toBe(0);
+    expect(canvas.height).toBe(0);
+  });
+
   it('stops between pages when the abort signal is raised during recognition', async () => {
     const controller = new AbortController();
     pdf.numPages = 2;

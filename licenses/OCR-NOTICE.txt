@@ -1,0 +1,7 @@
+OCR asset notices
+
+The traineddata files are redistributed from naptha/tessdata under the Apache License 2.0. The complete Apache License 2.0 text is included as Apache-2.0-tessdata.txt.
+
+The npm wrapper packages @tesseract.js-data/eng, @tesseract.js-data/deu and @tesseract.js-data/hin are version 1.0.0 and declare the MIT license. Their package license texts are copied from the installed package distributions into this directory during the build.
+
+The Tesseract.js worker and WebAssembly core are Apache-2.0; see the dependency notices in the repository's docs/THIRD-PARTY-LICENSES.md.

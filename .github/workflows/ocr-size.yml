@@ -3,12 +3,6 @@ name: OCR asset size audit
 on:
   pull_request:
     branches: [main]
-    paths:
-      - '.github/workflows/ocr-size.yml'
-      - 'scripts/prepare-ocr-assets.mjs'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'ocr-data/**'
   push:
     branches: ['feat/v1.4.0-ocr-languages-2']
 

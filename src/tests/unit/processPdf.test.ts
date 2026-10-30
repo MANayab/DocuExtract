@@ -61,6 +61,7 @@ describe('processPdf OCR language handoff', () => {
       expect.any(Function),
       language,
       [1],
+      undefined,
     );
   });
 
@@ -113,6 +114,7 @@ describe('processPdf OCR language handoff', () => {
       expect.any(Function),
       'hin',
       [2],
+      undefined,
     );
     expect(mocks.splitInvoices).toHaveBeenCalledWith(
       expect.objectContaining({

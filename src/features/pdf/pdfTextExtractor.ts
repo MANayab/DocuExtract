@@ -72,10 +72,11 @@ export async function extractPdf(
       spans,
       text,
       pageTexts,
-      kind:
-        text.length >= MIN_TEXT_CHARS_PER_PAGE * pdf.numPages
-          ? 'text-based'
-          : 'image-only',
+      kind: pageTexts.some(
+        (pageText) => pageText.replace(/\\s/g, '').length >= MIN_TEXT_CHARS_PER_PAGE,
+      )
+        ? 'text-based'
+        : 'image-only',
     };
   } finally {
     await pdf.destroy();

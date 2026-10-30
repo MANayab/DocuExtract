@@ -26,9 +26,11 @@ test('a text-only PDF does not request OCR assets', async ({ page }) => {
 
 test('loads only the selected same-origin language model and offers retry on 404', async ({ page }) => {
   const modelRequests: { origin: string; path: string }[] = [];
+  const ocrAssetOrigins: string[] = [];
   page.on('request', (request) => {
-    if (request.url().includes('.traineddata')) {
-      const url = new URL(request.url());
+    const url = new URL(request.url());
+    if (url.pathname.includes('/ocr/')) ocrAssetOrigins.push(url.origin);
+    if (url.pathname.includes('.traineddata')) {
       modelRequests.push({ origin: url.origin, path: url.pathname });
     }
   });
@@ -48,4 +50,6 @@ test('loads only the selected same-origin language model and offers retry on 404
   expect(modelRequests).toHaveLength(1);
   expect(modelRequests[0].origin).toBe(new URL(page.url()).origin);
   expect(modelRequests[0].path).toContain('/ocr/lang/hin.traineddata.gz');
+  expect(ocrAssetOrigins.length).toBeGreaterThan(0);
+  expect(ocrAssetOrigins.every((origin) => origin === new URL(page.url()).origin)).toBe(true);
 });

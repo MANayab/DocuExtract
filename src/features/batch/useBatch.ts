@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { OCR_BUNDLED } from '../../config/build';
 import { processPdf } from '../pipeline/processPdf';
 import { BatchStore } from './batchStore';

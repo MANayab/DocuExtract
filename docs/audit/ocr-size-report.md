@@ -1,6 +1,6 @@
 # OCR asset size report
 
-- Feature SHA: c0d554357f3ba15a2522125660b080a8125ee5f
+- Feature SHA: c0d554357f3ba15c4508b1868aa10698fd9334d4
 - Baseline: main (current main)
 
 ## Traineddata

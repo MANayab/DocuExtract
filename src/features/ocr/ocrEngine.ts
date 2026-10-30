@@ -145,42 +145,54 @@ export async function ocrPdf(
     }
 
     const spans: TextSpan[] = [];
-    const pageTexts: string[] = [];
+    const pageTexts = Array.from({ length: pageCount }, () => '');
 
-    for (pageIndex = 0; pageIndex < pageCount; pageIndex++) {
-      onProgress(overall(0), `Rendering page ${pageIndex + 1} of ${pageCount}`);
-
-      const page = await pdf.getPage(pageIndex + 1);
-      const base = page.getViewport({ scale: 1 });
-      const scale = Math.min(
-        OCR_RENDER_SCALE,
-        Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)),
+    for (pageIndex = 0; pageIndex < pageNumbers.length; pageIndex++) {
+      if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+      const pageNumber = pageNumbers[pageIndex];
+      onProgress(
+        overall(0),
+        `Rendering page ${pageNumber} (${pageIndex + 1} of ${pageNumbers.length})`,
       );
-      const viewport = page.getViewport({ scale });
 
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
+      const page = await pdf.getPage(pageNumber);
+      let canvas: HTMLCanvasElement | undefined;
 
-      const context = canvas.getContext('2d');
-      if (!context) {
-        throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+      try {
+        const base = page.getViewport({ scale: 1 });
+        const scale = Math.min(
+          OCR_RENDER_SCALE,
+          Math.sqrt(OCR_MAX_PIXELS / (base.width * base.height)),
+        );
+        const viewport = page.getViewport({ scale });
+
+        canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new AppError('EXTRACTION_FAILED', 'This browser cannot render pages for OCR.');
+        }
+
+        await page.render({ canvasContext: context, viewport }).promise;
+
+        const result = (await worker.recognize(canvas)) as unknown as { data: OcrPageData };
+        if (signal?.aborted) throw new DOMException('OCR was cancelled.', 'AbortError');
+        const pageSpans = wordsToSpans(collectWords(result.data), pageNumber, base.height, scale);
+
+        spans.push(...pageSpans);
+        pageTexts[pageNumber - 1] = spansToLines(pageSpans).join('\\n');
+      } finally {
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+        page.cleanup();
       }
-
-      await page.render({ canvasContext: context, viewport }).promise;
-
-      const result = (await worker.recognize(canvas)) as unknown as { data: OcrPageData };
-      const pageSpans = wordsToSpans(collectWords(result.data), pageIndex + 1, base.height, scale);
-
-      spans.push(...pageSpans);
-      pageTexts.push(spansToLines(pageSpans).join('\n'));
-
-      canvas.width = 0;
-      canvas.height = 0;
-      page.cleanup();
     }
 
-    const text = pageTexts.join('\n');
+    const text = pageTexts.join('\\n');
 
     if (text.replace(/\s/g, '').length < MIN_OCR_CHARACTERS) {
       throw new AppError('EXTRACTION_FAILED', 'OCR could not read any text from this scan.');

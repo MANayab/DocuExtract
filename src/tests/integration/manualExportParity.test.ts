@@ -2,6 +2,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
+import { BatchStore } from '../../features/batch/batchStore';
 import { buildJson } from '../../features/export/jsonExporter';
 import { invoicesToXlsx } from '../../features/export/xlsxExporter';
 import type { ExportEntry } from '../../features/export/workbookModel';
@@ -72,8 +73,32 @@ const entry = (invoice: Invoice): ExportEntry => ({
 
 describe('manual edit export parity', () => {
   it('keeps edited values consistent in XLSX, invoice CSV, line-item CSV and JSON', async () => {
-    const edited = makeInvoice();
-    const entries = [entry(edited)];
+    const original = makeInvoice();
+    original.invoiceNumber = field('INV-RAW');
+    original.grandTotal = field(1200);
+    original.items[0].description = field('Original item');
+
+    const store = new BatchStore(async () => ({
+      kind: 'invoices',
+      invoices: [original],
+      pageCount: 2,
+    }));
+    store.addFiles([
+      new File(['%PDF-1.4'], 'manual-edit.pdf', { type: 'application/pdf' }),
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    const record = store.getSnapshot()[0];
+    expect(record.status).toBe('ready');
+
+    const edited = structuredClone(original);
+    edited.invoiceNumber = field('INV-MANUAL', 'manual');
+    edited.grandTotal = field(1234, 'manual');
+    edited.items[0].description = field('Manually corrected item', 'manual');
+    store.updateInvoice(record.id, edited);
+
+    const savedInvoice = store.getSnapshot()[0].invoice;
+    expect(savedInvoice).toEqual(edited);
+    const entries = [entry(savedInvoice!)];
 
     const workbookBlob = await invoicesToXlsx(entries);
     const workbook = new ExcelJS.Workbook();

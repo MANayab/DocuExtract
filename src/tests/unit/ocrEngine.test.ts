@@ -70,28 +70,21 @@ describe('ocrPdf engine lifecycle', () => {
     mocks.createWorker.mockResolvedValue(worker);
   });
 
-  it.each(['hin', 'deu', 'eng'] as const)(
-    'passes %s to createWorker',
-    async (language) => {
-      await expect(
-        ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, language),
-      ).rejects.toThrow(/OCR failed/);
+  it.each(['hin', 'deu', 'eng'] as const)('passes %s to createWorker', async (language) => {
+    await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, language)).rejects.toThrow(
+      /OCR failed/,
+    );
 
-      expect(mocks.createWorker).toHaveBeenCalledWith(
-        language,
-        1,
-        expect.objectContaining({
-          workerPath: '/ocr/worker.min.js',
-          corePath: '/ocr/core',
-          langPath: '/ocr/lang',
-        }),
-      );
-    },
-  );
-
-
-
-
+    expect(mocks.createWorker).toHaveBeenCalledWith(
+      language,
+      1,
+      expect.objectContaining({
+        workerPath: '/ocr/worker.min.js',
+        corePath: '/ocr/core',
+        langPath: '/ocr/lang',
+      }),
+    );
+  });
 
   it('defaults to English when no OCR language is supplied', async () => {
     await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {})).rejects.toThrow(/OCR failed/);
@@ -139,12 +132,7 @@ describe('ocrPdf engine lifecycle', () => {
       };
     });
 
-    const result = await ocrPdf(
-      new File(['pdf'], 'mixed.pdf'),
-      onProgress,
-      'hin',
-      [2],
-    );
+    const result = await ocrPdf(new File(['pdf'], 'mixed.pdf'), onProgress, 'hin', [2]);
 
     expect(pdf.getPage).toHaveBeenCalledOnce();
     expect(pdf.getPage).toHaveBeenCalledWith(2);

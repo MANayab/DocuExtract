@@ -143,7 +143,6 @@ describe('BatchStore', () => {
     expect(store.getSnapshot()[0].status).toBe('ready');
   });
 
-
   it('keeps OCR language independent from invoice locale', async () => {
     const calls: { locale?: string; language?: string; ocr: boolean }[] = [];
     const store = new BatchStore(async (_file, options) => {
@@ -212,7 +211,6 @@ describe('BatchStore', () => {
 
     expect(store.getSnapshot()).toHaveLength(0);
   });
-
 
   it('cancels an OCR run and allows retry without discarding the file', async () => {
     let ocrCalls = 0;

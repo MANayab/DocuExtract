@@ -24,7 +24,9 @@ test('a text-only PDF does not request OCR assets', async ({ page }) => {
   expect(ocrRequests).toEqual([]);
 });
 
-test('loads only the selected same-origin language model and offers retry on 404', async ({ page }) => {
+test('loads only the selected same-origin language model and offers retry on 404', async ({
+  page,
+}) => {
   const modelRequests: { origin: string; path: string }[] = [];
   const ocrAssetOrigins: string[] = [];
   page.context().on('request', (request) => {
@@ -34,9 +36,11 @@ test('loads only the selected same-origin language model and offers retry on 404
       modelRequests.push({ origin: url.origin, path: url.pathname });
     }
   });
-  await page.context().route('**/ocr/lang/hin.traineddata*', (route) =>
-    route.fulfill({ status: 404, body: 'model missing' }),
-  );
+  await page
+    .context()
+    .route('**/ocr/lang/hin.traineddata*', (route) =>
+      route.fulfill({ status: 404, body: 'model missing' }),
+    );
   await page.goto('/');
   await page.getByLabel('Scanned PDF language').selectOption('hin');
   await page.setInputFiles('input[type="file"]', await pdf('empty', 'missing-model.pdf'));
@@ -49,7 +53,9 @@ test('loads only the selected same-origin language model and offers retry on 404
   await expect(page.getByRole('button', { name: 'Retry OCR' })).toBeVisible();
   expect(modelRequests.length).toBeGreaterThan(0);
   expect(modelRequests.every((request) => request.path.includes('/hin.traineddata'))).toBe(true);
-  expect(modelRequests.every((request) => request.origin === new URL(page.url()).origin)).toBe(true);
+  expect(modelRequests.every((request) => request.origin === new URL(page.url()).origin)).toBe(
+    true,
+  );
   expect(ocrAssetOrigins.length).toBeGreaterThan(0);
   expect(ocrAssetOrigins.every((origin) => origin === new URL(page.url()).origin)).toBe(true);
 });

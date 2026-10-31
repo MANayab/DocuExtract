@@ -9,7 +9,7 @@ import type { ExportEntry } from '../../features/export/workbookModel';
 import { emptyField, type Invoice } from '../../types/invoice';
 import { validateInvoice } from '../../features/validation/invoiceValidator';
 
-const field = <T,>(value: T, source: 'text' | 'manual' = 'text') => ({
+const field = <T>(value: T, source: 'text' | 'manual' = 'text') => ({
   value,
   confidence: source === 'manual' ? 100 : 92,
   source,
@@ -83,9 +83,7 @@ describe('manual edit export parity', () => {
       invoices: [original],
       pageCount: 2,
     }));
-    store.addFiles([
-      new File(['%PDF-1.4'], 'manual-edit.pdf', { type: 'application/pdf' }),
-    ]);
+    store.addFiles([new File(['%PDF-1.4'], 'manual-edit.pdf', { type: 'application/pdf' })]);
     await new Promise((resolve) => setTimeout(resolve, 25));
     const record = store.getSnapshot()[0];
     expect(record.status).toBe('ready');

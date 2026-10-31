@@ -17,9 +17,7 @@ export const processPdf: Processor = async (file, options, onProgress) => {
   let raw = await extractPdf(file, (p) => onProgress(4 + p * 0.5, 'Extracting PDF text'));
 
   const imageOnlyPages = raw.pageTexts
-    ?.map((pageText, index) =>
-      pageText.trim().length === 0 ? index + 1 : null,
-    )
+    ?.map((pageText, index) => (pageText.trim().length === 0 ? index + 1 : null))
     .filter((page): page is number => page !== null);
   const needsOcr = raw.kind === 'image-only' || (imageOnlyPages?.length ?? 0) > 0;
 
@@ -39,11 +37,9 @@ export const processPdf: Processor = async (file, options, onProgress) => {
     }
     const pageTexts = raw.pageTexts?.length
       ? raw.pageTexts.map((pageText, index) =>
-          imageOnlyPages?.includes(index + 1)
-            ? ocrResult.pageTexts?.[index] ?? ''
-            : pageText,
+          imageOnlyPages?.includes(index + 1) ? (ocrResult.pageTexts?.[index] ?? '') : pageText,
         )
-      : ocrResult.pageTexts ?? [];
+      : (ocrResult.pageTexts ?? []);
     raw = {
       ...raw,
       spans: [...raw.spans, ...ocrResult.spans].sort((a, b) => a.page - b.page),

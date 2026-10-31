@@ -66,18 +66,9 @@ describe('processPdf OCR language handoff', () => {
   });
 
   it('keeps English as the default when no language was selected', async () => {
-    await processPdf(
-      new File(['pdf'], 'scan.pdf'),
-      { ocr: true },
-      () => {},
-    );
+    await processPdf(new File(['pdf'], 'scan.pdf'), { ocr: true }, () => {});
 
-    expect(mocks.ocrPdf).toHaveBeenCalledWith(
-      expect.any(File),
-      expect.any(Function),
-      'eng',
-      [1],
-    );
+    expect(mocks.ocrPdf).toHaveBeenCalledWith(expect.any(File), expect.any(Function), 'eng', [1]);
   });
 
   it('OCRs only image-only pages in a mixed PDF and merges page text in order', async () => {
@@ -97,16 +88,10 @@ describe('processPdf OCR language handoff', () => {
       fileName: 'mixed.pdf',
       pageCount: 2,
       pageTexts: ['', 'कर चालान कुल राशि'],
-      spans: [
-        { text: 'Scanned', x: 10, y: 10, width: 20, height: 8, page: 2 },
-      ],
+      spans: [{ text: 'Scanned', x: 10, y: 10, width: 20, height: 8, page: 2 }],
     });
 
-    await processPdf(
-      new File(['pdf'], 'mixed.pdf'),
-      { ocr: true, ocrLanguage: 'hin' },
-      () => {},
-    );
+    await processPdf(new File(['pdf'], 'mixed.pdf'), { ocr: true, ocrLanguage: 'hin' }, () => {});
 
     expect(mocks.ocrPdf).toHaveBeenCalledWith(
       expect.any(File),
@@ -132,11 +117,7 @@ describe('processPdf OCR language handoff', () => {
       pageTexts: ['Invoice 123'],
     });
 
-    await processPdf(
-      new File(['pdf'], 'text.pdf'),
-      { ocr: false },
-      () => {},
-    );
+    await processPdf(new File(['pdf'], 'text.pdf'), { ocr: false }, () => {});
 
     expect(mocks.ocrPdf).not.toHaveBeenCalled();
   });

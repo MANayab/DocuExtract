@@ -10,9 +10,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
     const localeHint = page.getByText(
       /Controls how ambiguous dates and number separators are interpreted/,
     );
-    const ocrHint = page.getByText(
-      /Applies only to scanned or image-only pages/,
-    );
+    const ocrHint = page.getByText(/Applies only to scanned or image-only pages/);
 
     await expect(panel).toBeVisible();
     await expect(localeHint).toBeVisible();
@@ -29,9 +27,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
     expect(ocrBox).not.toBeNull();
     expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(dropBox!.y);
     expect(localeBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
-    expect(ocrBox!.y + ocrBox!.height).toBeLessThanOrEqual(
-      panelBox!.y + panelBox!.height,
-    );
+    expect(ocrBox!.y + ocrBox!.height).toBeLessThanOrEqual(panelBox!.y + panelBox!.height);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     );

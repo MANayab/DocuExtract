@@ -106,8 +106,9 @@ export async function ocrPdf(
     throw new DOMException('OCR was cancelled.', 'AbortError');
   }
 
-  const pageNumbers =
-    pagesToOcr?.length ? pagesToOcr : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
+  const pageNumbers = pagesToOcr?.length
+    ? pagesToOcr
+    : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
   if (pageNumbers.length > OCR_MAX_PAGES) {
     await pdf.destroy();
     throw new AppError('TOO_MANY_PAGES', `OCR is limited to ${OCR_MAX_PAGES} pages per PDF.`);
@@ -128,7 +129,10 @@ export async function ocrPdf(
     cacheMethod: 'none',
     logger: (m: { status?: string; progress?: number }) => {
       if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-        onProgress(overall(m.progress), `OCR page ${pageNumbers[pageIndex]} (${pageIndex + 1} of ${pageNumbers.length})`);
+        onProgress(
+          overall(m.progress),
+          `OCR page ${pageNumbers[pageIndex]} (${pageIndex + 1} of ${pageNumbers.length})`,
+        );
       }
     },
   };

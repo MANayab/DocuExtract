@@ -110,7 +110,8 @@ export class BatchStore {
   /** Re-queues a scanned PDF to be read with OCR. */
   requestOcr(id: string, language: OcrLanguage = DEFAULT_OCR_LANGUAGE) {
     const record = this.records.find((r) => r.id === id);
-    const retryable = record?.status === 'cancelled' || (record?.status === 'error' && record.ocrRequested);
+    const retryable =
+      record?.status === 'cancelled' || (record?.status === 'error' && record.ocrRequested);
     if (!record || (record.status !== 'needs-ocr' && !retryable)) return;
 
     this.ocrRequested.set(id, language);

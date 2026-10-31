@@ -135,7 +135,7 @@ describe('ocrPdf engine lifecycle', () => {
           text: 'Invoice number 123456 synthetic invoice text',
           words: [
             {
-              text: 'Invoice number 123456',
+              text: 'Invoice number 123456 synthetic invoice text',
               bbox: { x0: 10, y0: 10, x1: 90, y1: 20 },
             },
           ],

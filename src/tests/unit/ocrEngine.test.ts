@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ocrPdf } from '../../features/ocr/ocrEngine';
 
 const mocks = vi.hoisted(() => ({
@@ -38,6 +38,7 @@ describe('ocrPdf engine lifecycle', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
     canvas = document.createElement('canvas');
     vi.spyOn(document, 'createElement').mockReturnValue(canvas);
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
@@ -68,6 +69,10 @@ describe('ocrPdf engine lifecycle', () => {
     });
     mocks.loadPdf.mockResolvedValue(pdf);
     mocks.createWorker.mockResolvedValue(worker);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it.each(['hin', 'deu', 'eng'] as const)('passes %s to createWorker', async (language) => {

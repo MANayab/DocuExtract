@@ -68,7 +68,13 @@ describe('processPdf OCR language handoff', () => {
   it('keeps English as the default when no language was selected', async () => {
     await processPdf(new File(['pdf'], 'scan.pdf'), { ocr: true }, () => {});
 
-    expect(mocks.ocrPdf).toHaveBeenCalledWith(expect.any(File), expect.any(Function), 'eng', [1], undefined);
+    expect(mocks.ocrPdf).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.any(Function),
+      'eng',
+      [1],
+      undefined,
+    );
   });
 
   it('OCRs only image-only pages in a mixed PDF and merges page text in order', async () => {

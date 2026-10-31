@@ -98,7 +98,9 @@ export async function ocrPdf(
 
   const dir = ocrAssetBase();
   const modelPath = `${dir}/lang/${language}.traineddata${manifest.gzip ? '.gz' : ''}`;
-  const modelProbe = await fetch(modelPath, { method: 'HEAD', cache: 'no-store' }).catch(() => null);
+  const modelProbe = await fetch(modelPath, { method: 'HEAD', cache: 'no-store' }).catch(
+    () => null,
+  );
   if (!modelProbe?.ok) {
     throw new AppError(
       'OCR_UNAVAILABLE',

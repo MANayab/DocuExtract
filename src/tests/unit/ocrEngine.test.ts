@@ -136,8 +136,8 @@ describe('ocrPdf engine lifecycle', () => {
 
     expect(pdf.getPage).toHaveBeenCalledOnce();
     expect(pdf.getPage).toHaveBeenCalledWith(2);
-    expect(result.pageTexts[0]).toBe('');
-    expect(result.pageTexts[1]).toContain('Invoice number 123456');
+    expect(result.pageTexts?.[0]).toBe('');
+    expect(result.pageTexts?.[1]).toContain('Invoice number 123456');
     expect(result.spans.every((span) => span.page === 2)).toBe(true);
     expect(onProgress).toHaveBeenCalledWith(50, expect.stringContaining('OCR page 2'));
     expect(canvas.width).toBe(0);

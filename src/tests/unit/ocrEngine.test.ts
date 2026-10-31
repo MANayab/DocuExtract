@@ -82,9 +82,7 @@ describe('ocrPdf engine lifecycle', () => {
   });
 
   it.each(['hin', 'deu', 'eng'] as const)('passes %s to createWorker', async (language) => {
-    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, language)).rejects.toThrow(
-      /OCR failed/,
-    );
+    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, language)).rejects.toThrow(/OCR failed/);
 
     expect(mocks.createWorker).toHaveBeenCalledWith(
       language,
@@ -176,9 +174,7 @@ describe('ocrPdf engine lifecycle', () => {
   });
 
   it('releases the canvas and terminates the worker when page rendering fails', async () => {
-    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, 'eng')).rejects.toThrow(
-      /OCR failed/,
-    );
+    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, 'eng')).rejects.toThrow(/OCR failed/);
 
     expect(canvas.width).toBe(0);
     expect(canvas.height).toBe(0);

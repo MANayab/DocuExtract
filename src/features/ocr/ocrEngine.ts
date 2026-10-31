@@ -96,6 +96,16 @@ export async function ocrPdf(
     );
   }
 
+  const dir = ocrAssetBase();
+  const modelPath = `${dir}/lang/${language}.traineddata${manifest.gzip ? '.gz' : ''}`;
+  const modelProbe = await fetch(modelPath, { method: 'HEAD', cache: 'no-store' }).catch(() => null);
+  if (!modelProbe?.ok) {
+    throw new AppError(
+      'OCR_UNAVAILABLE',
+      `OCR failed for ${language}. The selected local model could not be loaded. Check the local ${language} model, then retry.`,
+    );
+  }
+
   const { createWorker } = await import('tesseract.js');
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {
     throw new AppError('PDF_CORRUPT', 'The PDF could not be opened.');
@@ -117,8 +127,6 @@ export async function ocrPdf(
   let pageIndex = 0;
   const pageCount = pdf.numPages;
   const overall = (fraction: number) => ((pageIndex + fraction) / pageNumbers.length) * 100;
-
-  const dir = ocrAssetBase();
 
   const options = {
     workerPath: `${dir}/worker.min.js`,

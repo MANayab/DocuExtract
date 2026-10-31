@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ocrPdf } from '../../features/ocr/ocrEngine';
 
-const pdfFile = (name = 'scan.pdf') => ({\n  name,\n  arrayBuffer: async () => new ArrayBuffer(0),\n}) as File;\n\nconst mocks = vi.hoisted(() => ({
+const pdfFile = (name = 'scan.pdf') => ({
+  name,
+  arrayBuffer: async () => new ArrayBuffer(0),
+}) as File;
+
+const mocks = vi.hoisted(() => ({
   loadPdf: vi.fn(),
   getOcrManifest: vi.fn(),
   createWorker: vi.fn(),

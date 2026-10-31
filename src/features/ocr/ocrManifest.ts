@@ -39,5 +39,8 @@ export function getOcrManifest(): Promise<OcrManifest | null> {
     }
   })();
 
-  return manifestPromise;
+  return manifestPromise.then((manifest) => {
+    if (!manifest) manifestPromise = undefined;
+    return manifest;
+  });
 }

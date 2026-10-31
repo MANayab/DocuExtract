@@ -34,7 +34,7 @@ test('loads only the selected same-origin language model and offers retry on 404
       modelRequests.push({ origin: url.origin, path: url.pathname });
     }
   });
-  await page.context().route('**/ocr/lang/hin.traineddata.gz', (route) =>
+  await page.context().route('**/ocr/lang/hin.traineddata*', (route) =>
     route.fulfill({ status: 404, body: 'model missing' }),
   );
   await page.goto('/');

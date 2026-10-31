@@ -123,6 +123,7 @@ describe('ocrPdf engine lifecycle', () => {
   it('recognizes only requested image-only pages and reports per-page progress', async () => {
     const onProgress = vi.fn();
     pdf.numPages = 2;
+    pdf.getPage.mockResolvedValue(page);
     page.render.mockReturnValue({ promise: Promise.resolve() });
     worker.recognize.mockImplementation(async () => {
       const options = mocks.createWorker.mock.calls[0][2] as {

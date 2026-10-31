@@ -131,6 +131,7 @@ describe('ocrPdf engine lifecycle', () => {
       options.logger({ status: 'recognizing text', progress: 0.5 });
       return {
         data: {
+          text: 'Invoice number 123456',
           words: [
             {
               text: 'Invoice number 123456',

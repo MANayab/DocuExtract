@@ -80,7 +80,6 @@ describe('processPdf OCR language handoff', () => {
     );
   });
 
-
   it('OCRs only image-only pages in a mixed PDF and merges page text in order', async () => {
     const mixedPdf: PdfExtraction = {
       fileName: 'mixed.pdf',

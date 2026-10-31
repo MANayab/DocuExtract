@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ocrPdf } from '../../features/ocr/ocrEngine';
 
-const mocks = vi.hoisted(() => ({
+const pdfFile = (name = 'scan.pdf') => ({\n  name,\n  arrayBuffer: async () => new ArrayBuffer(0),\n}) as File;\n\nconst mocks = vi.hoisted(() => ({
   loadPdf: vi.fn(),
   getOcrManifest: vi.fn(),
   createWorker: vi.fn(),
@@ -76,7 +76,7 @@ describe('ocrPdf engine lifecycle', () => {
   });
 
   it.each(['hin', 'deu', 'eng'] as const)('passes %s to createWorker', async (language) => {
-    await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, language)).rejects.toThrow(
+    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, language)).rejects.toThrow(
       /OCR failed/,
     );
 
@@ -92,7 +92,7 @@ describe('ocrPdf engine lifecycle', () => {
   });
 
   it('defaults to English when no OCR language is supplied', async () => {
-    await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {})).rejects.toThrow(/OCR failed/);
+    await expect(ocrPdf(pdfFile('scan.pdf'), () => {})).rejects.toThrow(/OCR failed/);
 
     expect(mocks.createWorker).toHaveBeenCalledWith(
       'eng',
@@ -108,7 +108,7 @@ describe('ocrPdf engine lifecycle', () => {
   it('rejects more than 20 pages requiring OCR before starting a worker', async () => {
     pdf.numPages = 21;
 
-    await expect(ocrPdf(new File(['pdf'], 'too-many-pages.pdf'), () => {}, 'eng')).rejects.toThrow(
+    await expect(ocrPdf(pdfFile('too-many-pages.pdf'), () => {}, 'eng')).rejects.toThrow(
       /20 pages/,
     );
 
@@ -137,7 +137,7 @@ describe('ocrPdf engine lifecycle', () => {
       };
     });
 
-    const result = await ocrPdf(new File(['pdf'], 'mixed.pdf'), onProgress, 'hin', [2]);
+    const result = await ocrPdf(pdfFile('mixed.pdf'), onProgress, 'hin', [2]);
 
     expect(pdf.getPage).toHaveBeenCalledOnce();
     expect(pdf.getPage).toHaveBeenCalledWith(2);
@@ -159,7 +159,7 @@ describe('ocrPdf engine lifecycle', () => {
     });
 
     await expect(
-      ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, 'eng', undefined, controller.signal),
+      ocrPdf(pdfFile('scan.pdf'), () => {}, 'eng', undefined, controller.signal),
     ).rejects.toMatchObject({ name: 'AbortError' });
 
     expect(pdf.getPage).toHaveBeenCalledOnce();
@@ -170,7 +170,7 @@ describe('ocrPdf engine lifecycle', () => {
   });
 
   it('releases the canvas and terminates the worker when page rendering fails', async () => {
-    await expect(ocrPdf(new File(['pdf'], 'scan.pdf'), () => {}, 'eng')).rejects.toThrow(
+    await expect(ocrPdf(pdfFile('scan.pdf'), () => {}, 'eng')).rejects.toThrow(
       /OCR failed/,
     );
 

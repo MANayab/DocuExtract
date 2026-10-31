@@ -68,7 +68,7 @@ describe('processPdf OCR language handoff', () => {
   it('keeps English as the default when no language was selected', async () => {
     await processPdf(new File(['pdf'], 'scan.pdf'), { ocr: true }, () => {});
 
-    expect(mocks.ocrPdf).toHaveBeenCalledWith(expect.any(File), expect.any(Function), 'eng', [1]);
+    expect(mocks.ocrPdf).toHaveBeenCalledWith(expect.any(File), expect.any(Function), 'eng', [1], undefined);
   });
 
   it('OCRs only image-only pages in a mixed PDF and merges page text in order', async () => {
@@ -78,7 +78,7 @@ describe('processPdf OCR language handoff', () => {
       spans: [
         { text: 'Text page with invoice details', x: 10, y: 10, width: 20, height: 8, page: 1 },
       ],
-      text: 'Text page with invoice details\\n',
+      text: 'Text page with invoice details\n',
       pageTexts: ['Text page with invoice details', ''],
       kind: 'text-based',
     };
@@ -103,7 +103,7 @@ describe('processPdf OCR language handoff', () => {
     expect(mocks.splitInvoices).toHaveBeenCalledWith(
       expect.objectContaining({
         pageTexts: ['Text page with invoice details', 'कर चालान कुल राशि'],
-        text: 'Text page with invoice details\\nकर चालान कुल राशि',
+        text: 'Text page with invoice details\nकर चालान कुल राशि',
         ocr: true,
       }),
     );

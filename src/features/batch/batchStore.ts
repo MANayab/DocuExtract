@@ -4,6 +4,8 @@ import type { Invoice } from '../../types/invoice';
 import { DEFAULT_OCR_LANGUAGE } from '../ocr/ocrLanguages';
 import { validatePdfFile } from '../../utils/fileValidation';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
+import { anchorsMatch, matchVendorTemplate } from '../templates/templateMatcher';
+import type { VendorTemplate } from '../templates/templateSchema';
 
 export interface AddResult {
   accepted: number;
@@ -27,6 +29,7 @@ export class BatchStore {
   private seq = 0;
   private locale: LocaleCode = DEFAULT_LOCALE;
   private manuallyEdited = new Set<string>();
+  private templates: VendorTemplate[] = [];
 
   setLocale(locale: LocaleCode) {
     this.locale = locale;
@@ -34,6 +37,14 @@ export class BatchStore {
 
   getLocale() {
     return this.locale;
+  }
+
+  setTemplates(templates: VendorTemplate[]) {
+    this.templates = [...templates];
+  }
+
+  readWithoutTemplate(id: string) {
+    this.patch(id, { templateApplied: undefined });
   }
 
   constructor(private processor: Processor) {}
@@ -270,17 +281,25 @@ export class BatchStore {
       }
 
       const total = result.invoices.length;
-      const ready: BatchRecord[] = result.invoices.map((invoice, k) => ({
-        id: total > 1 ? `${record.id}#${k + 1}` : record.id,
-        fileName: record.fileName,
-        size: record.size,
-        status: 'ready',
-        progress: 100,
-        label: 'Ready',
-        invoice,
-        pageCount: result.pageCount,
-        segment: total > 1 ? { index: k + 1, total } : undefined,
-      }));
+      const ready: BatchRecord[] = result.invoices.map((invoice, k) => {
+        const template = matchVendorTemplate(invoice, this.templates);
+        const templateApplied =
+          template && anchorsMatch(invoice, template)
+            ? { id: template.id, name: template.name }
+            : undefined;
+        return {
+          id: total > 1 ? `${record.id}#${k + 1}` : record.id,
+          fileName: record.fileName,
+          size: record.size,
+          status: 'ready',
+          progress: 100,
+          label: 'Ready',
+          invoice,
+          pageCount: result.pageCount,
+          segment: total > 1 ? { index: k + 1, total } : undefined,
+          templateApplied,
+        };
+      });
 
       if (ready.length === 0) {
         this.patch(record.id, {

@@ -9,6 +9,7 @@ import { IconCheck, IconShield, IconSparkle } from '../components/layout/Icons';
 import { Features, Faq, HowItWorks } from '../components/marketing/Sections';
 import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
+import { TemplateManager } from '../components/templates/TemplateManager';
 import { ReviewScreen } from '../components/review/ReviewScreen';
 import { OCR_BUNDLED } from '../config/build';
 import { LOCALES, type LocaleCode } from '../config/locales';
@@ -105,6 +106,7 @@ export function App() {
               store.setLocale(next);
             }}
             canReprocess={store.canReprocess(reviewing.id)}
+            onReadWithoutTemplate={() => store.readWithoutTemplate(reviewing.id)}
             onReprocess={() => {
               if (
                 !window.confirm(
@@ -230,6 +232,8 @@ export function App() {
           </section>
 
           <FileUploader onFiles={handleFiles} />
+
+          <TemplateManager onTemplatesChange={(templates) => store.setTemplates(templates)} />
 
           {hasRecords && (
             <div className="dx-stack dx-dashboard">

@@ -13,3 +13,7 @@ When OCR is used, the page images, Tesseract worker, WebAssembly engine and sele
 ## Hosting
 
 The site is served by GitHub Pages. GitHub may keep ordinary web-server logs for page requests; those logs do not contain your invoices because invoices are never sent.
+
+## Seller templates
+
+Consent-based seller templates are stored only in this browser's local storage after an explicit user action. Template records contain seller match keys and reading-rule anchors only; they are designed not to contain invoice amounts or copied invoice text. Invoice files and extracted invoice data remain in memory and are not stored in URLs, localStorage or sessionStorage by the application.

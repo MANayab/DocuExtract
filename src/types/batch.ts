@@ -20,6 +20,8 @@ export interface BatchRecord {
   pageCount?: number;
   /** Set when one PDF contained several invoices. */
   segment?: { index: number; total: number };
+  /** Set only after a seller template safely matches this invoice. */
+  templateApplied?: { id: string; name: string };
 }
 
 export type ProcessResult =

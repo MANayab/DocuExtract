@@ -22,6 +22,7 @@ interface Props {
   onLocaleChange: (locale: LocaleCode) => void;
   canReprocess: boolean;
   onReprocess: () => void;
+  onReadWithoutTemplate: () => void;
 }
 
 export function ReviewScreen({
@@ -37,6 +38,7 @@ export function ReviewScreen({
   onLocaleChange,
   canReprocess,
   onReprocess,
+  onReadWithoutTemplate,
 }: Props) {
   const entry: ExportEntry = { invoice, checks: analysis.checks };
 
@@ -86,6 +88,21 @@ export function ReviewScreen({
           {invoice.extraction.sourceType === 'ocr' ? ' · read with OCR' : ''}
         </p>
       </header>
+
+      {record.templateApplied && (
+        <div className="dx-alert" role="status">
+          <div>
+            <p className="dx-strong">Template applied: {record.templateApplied.name}</p>
+            <button
+              type="button"
+              className="dx-btn dx-btn--small dx-btn--ghost"
+              onClick={onReadWithoutTemplate}
+            >
+              Read without template
+            </button>
+          </div>
+        </div>
+      )}
 
       {analysis.reasons.length > 0 && (
         <div className="dx-alert dx-alert--warn" role="status">

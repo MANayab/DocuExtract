@@ -5,7 +5,8 @@ describe('seller template schema', () => {
   it('accepts reading rules and rejects unsafe markup', () => {
     const json = JSON.stringify({
       schemaVersion: TEMPLATE_SCHEMA_VERSION,
-      templates: [{
+      templates: [
+        {
         schemaVersion: TEMPLATE_SCHEMA_VERSION,
         id: 'template_12345678',
         name: 'Acme rules',
@@ -14,7 +15,8 @@ describe('seller template schema', () => {
         tableColumns: [{ column: 'description', headerAnchor: 'Description' }],
         createdAt: '2026-11-02T00:00:00.000Z',
         updatedAt: '2026-11-02T00:00:00.000Z',
-      }],
+        },
+      ],
     });
     expect(parseTemplateImport(json)).toHaveLength(1);
     expect(() => parseTemplateImport(json.replace('Invoice No', '<script>'))).toThrow();

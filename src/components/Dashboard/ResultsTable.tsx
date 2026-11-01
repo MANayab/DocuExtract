@@ -192,6 +192,9 @@ export function ResultsTable({
                         <p className="dx-muted dx-small">
                           {invoice.invoiceDate.value || 'No date'}
                         </p>
+                        {record.templateApplied && (
+                          <span className="dx-chip">Template applied: {record.templateApplied.name}</span>
+                        )}
                         {duplicates.has(record.id) && (
                           <span className="dx-chip">Possible duplicate</span>
                         )}

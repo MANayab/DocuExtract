@@ -71,7 +71,7 @@ export function TemplateManager({ onTemplatesChange }: Props) {
   };
 
   return (
-    <section className="dx-locale-panel" aria-labelledby="seller-templates-title">
+    <section className="dx-template-panel" aria-labelledby="seller-templates-title">
       <div className="dx-locale-panel__group">
         <h2 id="seller-templates-title">Seller templates</h2>
         <p className="dx-locale-panel__hint">

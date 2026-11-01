@@ -8,13 +8,19 @@ const safeText = z
   .trim()
   .min(1)
   .max(160)
-  .regex(/^[^<>\u0000]+$/, 'Template text cannot contain markup or control characters.');
+  .refine(
+    (value) => !/[<>]/.test(value) && !value.includes('\0'),
+    'Template text cannot contain markup or control characters.',
+  );
 
 const optionalSafeText = z
   .string()
   .trim()
   .max(160)
-  .regex(/^[^<>\u0000]*$/, 'Template text cannot contain markup or control characters.')
+  .refine(
+    (value) => !/[<>]/.test(value) && !value.includes('\0'),
+    'Template text cannot contain markup or control characters.',
+  )
   .optional();
 
 export const templateFieldKeySchema = z.enum([

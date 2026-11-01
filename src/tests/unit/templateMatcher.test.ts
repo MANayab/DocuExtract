@@ -4,7 +4,10 @@ import { matchVendorTemplate } from '../../features/templates/templateMatcher';
 import type { VendorTemplate } from '../../features/templates/templateSchema';
 
 const invoice = {
-  seller: { name: emptyField('Acme Traders'), taxId: emptyField('29ABCDE1234F2Z5') },
+  seller: {
+    name: emptyField('Acme Traders'),
+    taxId: emptyField('29ABCDE1234F2Z5'),
+  },
 } as unknown as Invoice;
 
 const template = (seller: VendorTemplate['seller']): VendorTemplate => ({

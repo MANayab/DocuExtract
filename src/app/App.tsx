@@ -231,9 +231,9 @@ export function App() {
             )}
           </section>
 
-          <TemplateManager onTemplatesChange={(templates) => store.setTemplates(templates)} />
-
           <FileUploader onFiles={handleFiles} />
+
+          <TemplateManager onTemplatesChange={(templates) => store.setTemplates(templates)} />
 
           {hasRecords && (
             <div className="dx-stack dx-dashboard">

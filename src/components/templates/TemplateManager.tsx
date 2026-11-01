@@ -81,25 +81,47 @@ export function TemplateManager({ onTemplatesChange }: Props) {
         <div className="dx-template-grid">
           <label>
             Template name
-            <input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} />
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={160}
+            />
           </label>
           <label>
             Seller GSTIN (optional)
-            <input value={gstin} onChange={(event) => setGstin(event.target.value)} maxLength={160} />
+            <input
+              value={gstin}
+              onChange={(event) => setGstin(event.target.value)}
+              maxLength={160}
+            />
           </label>
           <label>
             Seller name key (optional)
-            <input value={nameKey} onChange={(event) => setNameKey(event.target.value)} maxLength={160} />
+            <input
+              value={nameKey}
+              onChange={(event) => setNameKey(event.target.value)}
+              maxLength={160}
+            />
           </label>
         </div>
         <label className="dx-template-consent">
-          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
+          />
           I explicitly agree to save these reading rules in this browser.
         </label>
         <div className="dx-template-actions">
-          <button type="button" onClick={create}>Save template</button>
-          <button type="button" onClick={exportTemplates} disabled={!templates.length}>Export</button>
-          <button type="button" onClick={() => fileRef.current?.click()}>Import</button>
+          <button type="button" onClick={create}>
+            Save template
+          </button>
+          <button type="button" onClick={exportTemplates} disabled={!templates.length}>
+            Export
+          </button>
+          <button type="button" onClick={() => fileRef.current?.click()}>
+            Import
+          </button>
           <input
             ref={fileRef}
             type="file"
@@ -115,7 +137,9 @@ export function TemplateManager({ onTemplatesChange }: Props) {
               <li key={template.id}>
                 <strong>{template.name}</strong>
                 <span>{template.seller.gstin ? ' GSTIN match' : ' Seller-name match'}</span>
-                <button type="button" onClick={() => remove(template.id)}>Delete</button>
+                <button type="button" onClick={() => remove(template.id)}>
+                  Delete
+                </button>
               </li>
             ))}
           </ul>

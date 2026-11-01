@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here.
 
+## [1.5.0] — In preparation
+
+### Added
+
+- Consent-based seller templates with a versioned Zod schema for seller match keys, field label anchors and table column anchors.
+- Browser-only template storage with an explicit save consent tick.
+- Strict JSON import/export validation and a 256 KB size limit.
+- Exact seller GSTIN matching with exact normalized seller-name fallback; similar names do not apply a template.
+- Visible Template applied indicators and a per-invoice Read without template action.
+- Template schema and matcher regression tests.
+
+### Known limits
+
+- Review remains the final authority. Templates are reading rules and do not replace validation or manual review.
+- If anchors do not match, DocuExtract preserves the general extraction result instead of forcing a template.
+
 ## [1.4.0] — In preparation
 
 ### Added

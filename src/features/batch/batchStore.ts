@@ -102,11 +102,11 @@ export class BatchStore {
       this.files.set(id, file);
       added.push({
         id,
-        fileName: file.name,
-        size: file.size,
-        status: 'queued',
-        progress: 0,
-        label: 'Waiting in queue',
+          fileName: file.name,
+          size: file.size,
+          status: 'queued',
+          progress: 0,
+          label: 'Waiting in queue',
       });
     }
 
@@ -187,8 +187,8 @@ export class BatchStore {
         return false;
       }
       this.patch(id, {
-        invoice,
-        pageCount: result.pageCount,
+          invoice,
+          pageCount: result.pageCount,
         label: 'Reprocessed with selected locale',
         status: 'ready',
         progress: 100,
@@ -288,7 +288,7 @@ export class BatchStore {
             ? { id: template.id, name: template.name }
             : undefined;
         return {
-        id: total > 1 ? `${record.id}#${k + 1}` : record.id,
+          id: total > 1 ? `${record.id}#${k + 1}` : record.id,
         fileName: record.fileName,
         size: record.size,
         status: 'ready',
@@ -296,9 +296,9 @@ export class BatchStore {
         label: 'Ready',
         invoice,
         pageCount: result.pageCount,
-        segment: total > 1 ? { index: k + 1, total } : undefined,
-        templateApplied,
-      };
+          segment: total > 1 ? { index: k + 1, total } : undefined,
+          templateApplied,
+        };
       });
 
       if (ready.length === 0) {

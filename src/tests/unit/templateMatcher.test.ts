@@ -23,7 +23,9 @@ const template = (seller: VendorTemplate['seller']): VendorTemplate => ({
 
 describe('seller template matcher', () => {
   it('matches exact GSTIN before seller-name keys', () => {
-    expect(matchVendorTemplate(invoice, [template({ gstin: '29ABCDE1234F2Z5' })])?.name).toBe('Acme');
+    expect(matchVendorTemplate(invoice, [template({ gstin: '29ABCDE1234F2Z5' })])?.name).toBe(
+      'Acme',
+    );
   });
 
   it('does not apply a similar but incorrect seller match', () => {

@@ -81,11 +81,7 @@ export function TemplateManager({ onTemplatesChange }: Props) {
         <div className="dx-template-grid">
           <label>
             Template name
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={160}
-            />
+            <input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} />
           </label>
           <label>
             Seller GSTIN (optional)

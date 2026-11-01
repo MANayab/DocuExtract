@@ -12,17 +12,17 @@ export function matchVendorTemplate(
 
   const exactGstin = templates.find(
     (template) =>
-      template.seller.gstin &&
-      gstin &&
-      normalize(template.seller.gstin) === gstin,
+      Boolean(template.seller.gstin) &&
+      Boolean(gstin) &&
+      normalize(template.seller.gstin ?? '') === gstin,
   );
   if (exactGstin) return exactGstin;
 
   return templates.find(
     (template) =>
-      template.seller.nameKey &&
-      sellerName &&
-      normalize(template.seller.nameKey) === sellerName,
+      Boolean(template.seller.nameKey) &&
+      Boolean(sellerName) &&
+      normalize(template.seller.nameKey ?? '') === sellerName,
   );
 }
 

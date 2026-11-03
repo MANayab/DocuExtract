@@ -192,8 +192,7 @@ describe('offline extraction quality benchmark', () => {
       limitations: [
         'Synthetic fixtures do not represent the full diversity of real supplier invoices.',
         'HSN/SAC is not represented in the current InvoiceItem schema and is therefore not scored.',
-        'German and Hindi OCR fixtures remain experimental and are not counted as successful text',
-        'extraction.',
+        'German and Hindi OCR fixtures remain experimental and are not counted as successful text extraction.',
       ],
     };
 
@@ -277,6 +276,11 @@ describe('offline extraction quality benchmark', () => {
         }
 
         const actual = actualFields(invoice);
+        expect(invoice.currency.value).toBe('INR');
+        expect(invoice.currency.confidence).toBe(40);
+        expect(invoice.currency.warning).toBe(
+          'No currency symbol found; defaulted to INR. Please confirm.',
+        );
         const fieldResults = compareFields(actual, expectedInvoice);
         const matchedCount = Object.values(fieldResults).filter(Boolean).length;
         const fieldCount = Object.keys(fieldResults).length;
@@ -309,6 +313,11 @@ describe('offline extraction quality benchmark', () => {
 
         perInvoiceResults.push({
           invoiceNumber: actual.invoiceNumber,
+          currencyReview: {
+            value: invoice.currency.value,
+            confidence: invoice.currency.confidence,
+            warning: invoice.currency.warning,
+          },
           fieldResults,
           actualFields: actual,
           validationValid: validateInvoice(invoice).valid,
@@ -332,6 +341,16 @@ describe('offline extraction quality benchmark', () => {
       const lineItemsSheet = workbook.getWorksheet('Line Items');
       expect(invoiceSheet?.rowCount).toBe(invoices.length + 1);
       expect(lineItemsSheet?.rowCount).toBe(actualLineCount + 1);
+      const exportedInvoiceNumbers = invoiceSheet?.getColumn(1).values.map(String) ?? [];
+      const exportedDescriptions = lineItemsSheet?.getColumn(3).values.map(String) ?? [];
+      for (const invoice of invoices) {
+        if (invoice.invoiceNumber.value) {
+          expect(exportedInvoiceNumbers).toContain(invoice.invoiceNumber.value);
+        }
+      }
+      for (const description of expectedDescriptions) {
+        expect(exportedDescriptions).toContain(description);
+      }
       exportVerifiedInvoices.xlsx += invoices.length;
 
       const invoiceCsv = await blobToText(invoicesToCsv(entries));
@@ -349,10 +368,21 @@ describe('offline extraction quality benchmark', () => {
       exportVerifiedInvoices.lineItemsCsv += invoices.length;
 
       const json = JSON.parse(await blobToText(invoicesToJson(entries))) as {
-        invoices: Array<{ invoice: unknown }>;
+        invoices: Array<{
+          invoice: {
+            invoiceNumber: { value: string };
+            items: Array<{ description: { value: string } }>;
+          };
+        }>;
       };
       expect(json.invoices).toHaveLength(invoices.length);
       expect(json.invoices.every((entry) => Boolean(entry.invoice))).toBe(true);
+      expect(json.invoices.map((entry) => entry.invoice.invoiceNumber.value).filter(Boolean)).toEqual(
+        invoices.map((invoice) => invoice.invoiceNumber.value).filter(Boolean),
+      );
+      expect(
+        json.invoices.flatMap((entry) => entry.invoice.items.map((item) => item.description.value)),
+      ).toEqual(expectedDescriptions);
       exportVerifiedInvoices.json += invoices.length;
 
       report.totalInvoicesProcessed += invoices.length;
@@ -367,6 +397,14 @@ describe('offline extraction quality benchmark', () => {
       });
       report.lineItemDiagnostics.push({
         fixture: fixture.id,
+        previousRootCause:
+          expectedLineCount === 0
+            ? null
+            : 'Single-spaced PDF text produced one unaligned cell; the former numeric token accepted whitespace and merged quantity/rate/amount values. Header roles were also unavailable for single-spaced GST and discount columns.',
+        fixApplied:
+          expectedLineCount === 0
+            ? null
+            : 'Whitespace-delimited numeric tokens, header-derived column roles and wrapped-description carry-forward.',
         expectedCount: expectedLineCount,
         actualCount: actualLineCount,
         expected: expected.flatMap((item) => item.lineItems),

@@ -51,6 +51,7 @@ describe('deterministic line-item parsing', () => {
       description: { value: 'Service' },
       quantity: { value: 2 },
       unitPrice: { value: 1500 },
+      taxAmount: { value: 540 },
       lineTotal: { value: 3540 },
     });
   });

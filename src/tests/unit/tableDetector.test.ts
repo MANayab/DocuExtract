@@ -77,7 +77,7 @@ describe('deterministic line-item parsing', () => {
     });
   });
 
-  it('does not merge table rows across pages when the caller supplies page-positioned spans', () => {
+  it('keeps rows from separate PDF pages independent', () => {
     const spans = spansForLines([
       'Description Quantity Unit Price Line Total',
       'Consulting 2 500 1000',
@@ -91,7 +91,10 @@ describe('deterministic line-item parsing', () => {
       page: 2,
     });
 
-    const items = detectLineItems(spans, 'Description Quantity Unit Price Line Total\nConsulting 2 500 1000\nTax: 180');
+    const items = detectLineItems(
+      spans,
+      'Description Quantity Unit Price Line Total\nConsulting 2 500 1000\nTax: 180',
+    );
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({
       description: { value: 'Consulting' },
@@ -124,7 +127,7 @@ describe('deterministic line-item parsing', () => {
         'implementation support 2 500 1000',
         'Subtotal: 1000',
       ]),
-      'Description Quantity Unit Price Line Total\\nIndustrial consulting and\\nimplementation support 2 500 1000',
+      'Description Quantity Unit Price Line Total\nIndustrial consulting and\nimplementation support 2 500 1000',
     );
 
     expect(items).toHaveLength(1);
@@ -135,5 +138,4 @@ describe('deterministic line-item parsing', () => {
       lineTotal: { value: 1000 },
     });
   });
-
 });

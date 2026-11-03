@@ -21,8 +21,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Preview formatted benchmark source
-        run: npx prettier src/tests/quality/benchmark.test.ts
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck

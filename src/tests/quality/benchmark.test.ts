@@ -50,10 +50,7 @@ describe('offline extraction quality benchmark', () => {
       generatedAt: new Date().toISOString(),
       source: 'Repository-owned synthetic fixtures generated in-process',
       totalInvoicesProcessed: 0,
-      fieldAccuracy: {} as Record<
-        string,
-        { correct: number; total: number; percentage: number }
-      >,
+      fieldAccuracy: {} as Record<string, { correct: number; total: number; percentage: number }>,
       invoicesRequiringCorrection: 0,
       averageCorrectedFieldsPerInvoice: 0,
       extractionSuccessBySellerOrTemplate: {} as Record<
@@ -206,16 +203,12 @@ describe('offline extraction quality benchmark', () => {
     for (const [field, count] of fieldCounts) {
       report.fieldAccuracy[field] = {
         ...count,
-        percentage: count.total
-          ? Number(((count.correct / count.total) * 100).toFixed(2))
-          : 0,
+        percentage: count.total ? Number(((count.correct / count.total) * 100).toFixed(2)) : 0,
       };
     }
 
     const processed = report.totalInvoicesProcessed || 1;
-    report.averageCorrectedFieldsPerInvoice = Number(
-      (correctedFields / processed).toFixed(2),
-    );
+    report.averageCorrectedFieldsPerInvoice = Number((correctedFields / processed).toFixed(2));
     report.exportSuccess.total =
       report.exportSuccess.xlsx +
       report.exportSuccess.invoiceCsv +
@@ -233,10 +226,7 @@ describe('offline extraction quality benchmark', () => {
       : 0;
 
     mkdirSync(outputDir, { recursive: true });
-    writeFileSync(
-      join(outputDir, 'benchmark-report.json'),
-      JSON.stringify(report, null, 2),
-    );
+    writeFileSync(join(outputDir, 'benchmark-report.json'), JSON.stringify(report, null, 2));
 
     const markdown = [
       '# DocuExtract extraction quality benchmark',

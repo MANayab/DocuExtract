@@ -21,6 +21,18 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Generate temporary Prettier formatting preview
+        run: |
+          npx prettier --write src/features/extraction/tableDetector.ts src/tests/quality/benchmark.test.ts
+          mkdir -p formatting-preview
+          cp src/features/extraction/tableDetector.ts formatting-preview/tableDetector.ts
+          cp src/tests/quality/benchmark.test.ts formatting-preview/benchmark.test.ts
+      - name: Upload temporary formatting preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: prettier-format-preview
+          path: formatting-preview/
+          if-no-files-found: error
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck

@@ -72,6 +72,7 @@ describe('deterministic line-item parsing', () => {
       description: { value: 'Item' },
       quantity: { value: 2 },
       unitPrice: { value: 500 },
+      discount: { value: 100 },
       lineTotal: { value: 900 },
     });
   });
@@ -114,4 +115,25 @@ describe('deterministic line-item parsing', () => {
       lineTotal: { value: 100 },
     });
   });
+
+  it('joins wrapped description lines to the following numeric row', () => {
+    const items = detectLineItems(
+      spansForLines([
+        'Description Quantity Unit Price Line Total',
+        'Industrial consulting and',
+        'implementation support 2 500 1000',
+        'Subtotal: 1000',
+      ]),
+      'Description Quantity Unit Price Line Total\\nIndustrial consulting and\\nimplementation support 2 500 1000',
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      description: { value: 'Industrial consulting and implementation support' },
+      quantity: { value: 2 },
+      unitPrice: { value: 500 },
+      lineTotal: { value: 1000 },
+    });
+  });
+
 });

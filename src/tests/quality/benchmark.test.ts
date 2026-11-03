@@ -83,9 +83,10 @@ describe('offline extraction quality benchmark', () => {
 
     for (const fixture of fixtures) {
       const bytes = await generateFixture(fixture.kind as FixtureKind);
-      const file = new File([bytes], `${fixture.id}.pdf`, {
-        type: 'application/pdf',
-      });
+      const file = {
+        name: `${fixture.id}.pdf`,
+        arrayBuffer: async () => bytes.slice().buffer as ArrayBuffer,
+      } as File;
 
       if (fixture.expectedError) {
         let rejected = false;

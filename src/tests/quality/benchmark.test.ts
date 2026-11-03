@@ -18,6 +18,7 @@ type ExpectedLine = {
   quantity: number;
   rate: number;
   amount: number;
+  discount: number;
   taxRate: number;
   taxAmount: number;
 };
@@ -121,6 +122,7 @@ function actualFields(invoice: ReturnType<typeof parseInvoice>): ExpectedFields 
       quantity: item.quantity.value,
       rate: item.unitPrice.value,
       amount: item.lineTotal.value,
+      discount: item.discount.value,
       taxRate: item.taxRate.value,
       taxAmount: item.taxAmount.value,
     })),
@@ -358,6 +360,7 @@ describe('offline extraction quality benchmark', () => {
             quantity: item.quantity.value,
             rate: item.unitPrice.value,
             amount: item.lineTotal.value,
+            discount: item.discount.value,
             taxRate: item.taxRate.value,
             taxAmount: item.taxAmount.value,
           })),
@@ -370,6 +373,7 @@ describe('offline extraction quality benchmark', () => {
               quantity: item.quantity.value,
               rate: item.unitPrice.value,
               amount: item.lineTotal.value,
+              discount: item.discount.value,
               taxRate: item.taxRate.value,
               taxAmount: item.taxAmount.value,
             })),

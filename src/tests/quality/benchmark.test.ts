@@ -45,6 +45,21 @@ function equal(actual: unknown, expected: unknown) {
   return JSON.stringify(actual) === JSON.stringify(expected);
 }
 
+function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) {
+        resolve(reader.result);
+      } else {
+        reject(new TypeError('XLSX export did not produce an ArrayBuffer.'));
+      }
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read XLSX export.'));
+    reader.readAsArrayBuffer(blob);
+  });
+}
+
 async function extractBenchmarkPdf(file: File) {
   try {
     return await extractPdf(file);
@@ -186,7 +201,7 @@ describe('offline extraction quality benchmark', () => {
       };
       const workbookBlob = await invoicesToXlsx([entry]);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(await workbookBlob.arrayBuffer());
+      await workbook.xlsx.load(await blobToArrayBuffer(workbookBlob));
       expect(workbook.getWorksheet('Invoices')?.rowCount).toBeGreaterThan(1);
       report.exportSuccess.xlsx += 1;
 

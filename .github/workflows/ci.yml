@@ -8,6 +8,7 @@ concurrency:
 
 permissions:
   contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -20,36 +21,27 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Check formatting for changed source and config files
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          set -euo pipefail
-
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            BASE_SHA="$PR_BASE_SHA"
-          else
-            BASE_SHA="$(git rev-parse "origin/$DEFAULT_BRANCH")"
-          fi
-
-          if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
-            echo "::error::Unable to resolve formatting base commit for event '$EVENT_NAME'."
-            exit 1
-          fi
-
-          git diff --name-only --diff-filter=ACMR "$BASE_SHA"...HEAD -- "*.ts" "*.tsx" "*.js" "*.jsx" "*.json" "*.yml" "*.yaml" "*.css" "*.html" > /tmp/changed-files.txt
-          if [ -s /tmp/changed-files.txt ]; then
-            xargs -d '\n' npx prettier --check < /tmp/changed-files.txt
-          else
-            echo "No changed files to format-check."
-          fi
+      - name: Check formatting
+        run: npm run format:check
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
       - run: npm run build
+      - name: Run offline extraction benchmark
+        run: npm run benchmark
+      - name: Upload quality and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-and-test-reports
+          path: |
+            output/benchmark-report.json
+            output/benchmark-report.md
+            test-results/
+            coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
   playwright:
     name: Playwright E2E
     runs-on: ubuntu-latest
@@ -63,3 +55,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: npm run test:e2e
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

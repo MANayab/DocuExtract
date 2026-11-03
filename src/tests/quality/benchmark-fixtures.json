@@ -12,7 +12,7 @@
         "subtotal": 1000,
         "taxAmount": 180,
         "grandTotal": 1180,
-        "currency": "",
+        "currency": "INR",
         "lineItems": [{ "description": "Widget", "quantity": 2, "rate": 500, "amount": 1000 }]
       }
     },
@@ -26,7 +26,7 @@
         "subtotal": 1000,
         "taxAmount": 180,
         "grandTotal": 1180,
-        "currency": "",
+        "currency": "INR",
         "lineItems": [{ "description": "Service", "quantity": 2, "rate": 500, "amount": 1180 }]
       }
     },
@@ -40,7 +40,7 @@
         "subtotal": 0,
         "taxAmount": 180,
         "grandTotal": 1180,
-        "currency": "",
+        "currency": "INR",
         "lineItems": [{ "description": "Consulting", "quantity": 2, "rate": 500, "amount": 1000 }]
       }
     },
@@ -54,7 +54,7 @@
         "subtotal": 900,
         "taxAmount": 0,
         "grandTotal": 800,
-        "currency": "",
+        "currency": "INR",
         "lineItems": [{ "description": "Item", "quantity": 2, "rate": 500, "amount": 900 }]
       }
     },
@@ -68,7 +68,7 @@
         "subtotal": 0,
         "taxAmount": 0,
         "grandTotal": 100,
-        "currency": "",
+        "currency": "INR",
         "lineItems": [{ "description": "Item", "quantity": 1, "rate": 100, "amount": 100 }]
       }
     },
@@ -88,7 +88,7 @@
         "subtotal": 0,
         "taxAmount": 0,
         "grandTotal": 0,
-        "currency": "",
+        "currency": "INR",
         "lineItems": []
       }
     }

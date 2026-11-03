@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom';
-import { GlobalWorkerOptions } from 'pdfjs-dist';
+import { GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-// Vitest runs in Node/jsdom, where Vite's ?url worker asset is not a browser URL.
-// Point PDF.js at its locally installed legacy worker for real parser execution.
+// Configure the same legacy PDF.js module instance used by Vitest's alias.
+// The browser Vite loader and production worker configuration remain untouched.
 GlobalWorkerOptions.workerSrc = new URL(
   '../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
   import.meta.url,

@@ -218,8 +218,7 @@ describe('offline extraction quality benchmark', () => {
     report.splitAccuracy.percentage = report.splitAccuracy.expectedInvoices
       ? Number(
           (
-            (report.splitAccuracy.actualInvoices /
-              report.splitAccuracy.expectedInvoices) *
+            (report.splitAccuracy.actualInvoices / report.splitAccuracy.expectedInvoices) *
             100
           ).toFixed(2),
         )

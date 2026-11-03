@@ -240,11 +240,26 @@ function parseLoosely(
   };
 }
 
+const HEADER_ROLE = new RegExp(
+  String.raw\`\b(?:\${[
+    'quantity',
+    'qty',
+    String.raw\`unit\s+price\`,
+    'rate',
+    'price',
+    String.raw\`taxable\s+value\`,
+    'taxable',
+    'discount',
+    String.raw\`(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?\`,
+    String.raw\`line\s+total\`,
+    'amount',
+    'total',
+  ].join('|')})\b\`,
+  'gi',
+);
+
 function rolesFromHeader(line: string): Role[] {
-  const columns =
-    line.match(
-      /\b(?:quantity|qty|unit\s+price|rate|price|taxable\s+value|taxable|discount|(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?|line\s+total|amount|total)\b/gi,
-    ) ?? [];
+  const columns = line.match(HEADER_ROLE) ?? [];
   return columns.map((column) => roleOf(column));
 }
 

@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented here.
 
+## [1.5.1] — Quality-gate work in progress
+
+### Currency policy
+
+- Currency symbols and recognized currency codes are extracted explicitly. When no marker is present, the parser deliberately falls back to INR at low confidence and attaches a review warning; this is not treated as confirmed invoice evidence.
+- The benchmark now expects INR for fixtures with no currency marker, matching the existing extraction policy. The field remains review-required until a user confirms it.
+
+### Quality gate
+
+- The benchmark is being upgraded to enforce field-level extraction, invoice splitting and export verification thresholds before this release can be considered ready.
+
 ## [1.5.0] — In preparation
 
 ### Added

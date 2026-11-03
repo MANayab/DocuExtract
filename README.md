@@ -157,6 +157,12 @@ stateDiagram-v2
     Done --> [*]
 ```
 
+## Currency extraction policy
+
+When an invoice contains a recognized currency symbol or code (for example, ₹, USD or EUR), DocuExtract records that explicit currency. If the invoice contains no currency marker, the current extraction policy defaults the field to **INR** with low confidence and a visible review warning: “No currency symbol found; defaulted to INR. Please confirm.” This is a fallback, not evidence that the invoice itself specifies INR. Always confirm the currency during review.
+
+The offline quality benchmark expects INR for fixtures with no currency marker because that is the documented parser policy. It separately verifies explicit currency markers when present.
+
 ## Support matrix
 
 | PDF type                  | Support                                                                                                                                     |

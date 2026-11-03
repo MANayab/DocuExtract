@@ -11,8 +11,6 @@ permissions:
 
 jobs:
   verify:
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,28 +21,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Generate temporary Prettier formatting preview
-        run: |
-          npx prettier --write src/features/extraction/tableDetector.ts src/tests/quality/benchmark.test.ts
-          mkdir -p formatting-preview
-          cp src/features/extraction/tableDetector.ts formatting-preview/tableDetector.ts
-          cp src/tests/quality/benchmark.test.ts formatting-preview/benchmark.test.ts
-      - name: Commit Prettier formatting on release branch pushes
-        if: github.event_name == 'push'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/features/extraction/tableDetector.ts src/tests/quality/benchmark.test.ts
-          if ! git diff --cached --quiet; then
-            git commit -m "style: format v1.5.1 quality gate files"
-            git push origin HEAD:refs/heads/release/v1.5.1
-          fi
-      - name: Upload temporary formatting preview
-        uses: actions/upload-artifact@v4
-        with:
-          name: prettier-format-preview
-          path: formatting-preview/
-          if-no-files-found: error
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck

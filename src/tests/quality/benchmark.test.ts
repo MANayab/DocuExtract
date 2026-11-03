@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
-import { parseInvoice } from '../../features/extraction/invoiceParser';
-import { splitInvoices } from '../../features/extraction/splitInvoices';
 import { invoicesToJson } from '../../features/export/jsonExporter';
 import { invoicesToXlsx } from '../../features/export/xlsxExporter';
+import { parseInvoice } from '../../features/extraction/invoiceParser';
+import { splitInvoices } from '../../features/extraction/splitInvoices';
 import { extractPdf } from '../../features/pdf/pdfTextExtractor';
 import { validateInvoice } from '../../features/validation/invoiceValidator';
 import { generateFixture, type FixtureKind } from '../fixtures/generateFixtures';
@@ -40,8 +40,9 @@ type BenchmarkFixture = {
 const fixtures = manifest.fixtures as BenchmarkFixture[];
 const outputDir = join(process.cwd(), 'output');
 
-const equal = (actual: unknown, expected: unknown) =>
-  JSON.stringify(actual) === JSON.stringify(expected);
+function equal(actual: unknown, expected: unknown) {
+  return JSON.stringify(actual) === JSON.stringify(expected);
+}
 
 describe('offline extraction quality benchmark', () => {
   it('measures fixture accuracy and verifies local export generation', async () => {
@@ -59,8 +60,18 @@ describe('offline extraction quality benchmark', () => {
         string,
         { processed: number; reviewRequired: number }
       >,
-      exportSuccess: { xlsx: 0, invoiceCsv: 0, lineItemsCsv: 0, json: 0, total: 0 },
-      splitAccuracy: { expectedInvoices: 0, actualInvoices: 0, percentage: 0 },
+      exportSuccess: {
+        xlsx: 0,
+        invoiceCsv: 0,
+        lineItemsCsv: 0,
+        json: 0,
+        total: 0,
+      },
+      splitAccuracy: {
+        expectedInvoices: 0,
+        actualInvoices: 0,
+        percentage: 0,
+      },
       zeroErrorInvoices: 0,
       criticalFieldErrorInvoices: 0,
       fixtureResults: [] as Array<Record<string, unknown>>,
@@ -87,7 +98,10 @@ describe('offline extraction quality benchmark', () => {
           rejected = true;
         }
         expect(rejected, `${fixture.id} should be rejected as malformed`).toBe(true);
-        report.fixtureResults.push({ id: fixture.id, rejectedAsExpected: true });
+        report.fixtureResults.push({
+          id: fixture.id,
+          rejectedAsExpected: true,
+        });
         continue;
       }
 
@@ -116,9 +130,14 @@ describe('offline extraction quality benchmark', () => {
 
       const fieldResults: Record<string, boolean> = {};
       for (const [field, expectedValue] of Object.entries(expected)) {
-        const matched = equal(actual[field as keyof ExpectedFields], expectedValue);
+        const actualValue = actual[field as keyof ExpectedFields];
+        const matched = equal(actualValue, expectedValue);
         fieldResults[field] = matched;
-        const count = fieldCounts.get(field) ?? { correct: 0, total: 0 };
+
+        const count = fieldCounts.get(field) ?? {
+          correct: 0,
+          total: 0,
+        };
         count.total += 1;
         if (matched) count.correct += 1;
         fieldCounts.set(field, count);
@@ -202,6 +221,7 @@ describe('offline extraction quality benchmark', () => {
       report.exportSuccess.invoiceCsv +
       report.exportSuccess.lineItemsCsv +
       report.exportSuccess.json;
+
     report.splitAccuracy.percentage = report.splitAccuracy.expectedInvoices
       ? Number(
           (
@@ -230,10 +250,9 @@ describe('offline extraction quality benchmark', () => {
       '',
       '| Critical field | Correct | Total | Accuracy |',
       '|---|---:|---:|---:|',
-      ...Object.entries(report.fieldAccuracy).map(
-        ([field, value]) =>
-          `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`,
-      ),
+      ...Object.entries(report.fieldAccuracy).map(([field, value]) => {
+        return `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`;
+      }),
       '',
       `Export successes: ${report.exportSuccess.total}`,
       '',
@@ -242,6 +261,7 @@ describe('offline extraction quality benchmark', () => {
     ].join('\n');
 
     writeFileSync(join(outputDir, 'benchmark-report.md'), markdown);
+
     expect(report.exportSuccess.xlsx).toBeGreaterThan(0);
     expect(report.exportSuccess.invoiceCsv).toBeGreaterThan(0);
     expect(report.exportSuccess.lineItemsCsv).toBeGreaterThan(0);

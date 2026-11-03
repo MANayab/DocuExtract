@@ -19,9 +19,9 @@
             "quantity": 2,
             "rate": 500,
             "amount": 1000,
+            "discount": 0,
             "taxRate": 0,
-            "taxAmount": 0,
-            "discount": 0
+            "taxAmount": 0
           }
         ]
       },
@@ -44,9 +44,9 @@
             "quantity": 2,
             "rate": 500,
             "amount": 1180,
+            "discount": 0,
             "taxRate": 0,
-            "taxAmount": 180,
-            "discount": 0
+            "taxAmount": 180
           }
         ]
       },
@@ -69,9 +69,9 @@
             "quantity": 2,
             "rate": 500,
             "amount": 1000,
+            "discount": 0,
             "taxRate": 0,
-            "taxAmount": 0,
-            "discount": 0
+            "taxAmount": 0
           }
         ]
       },
@@ -94,9 +94,9 @@
             "quantity": 2,
             "rate": 500,
             "amount": 900,
+            "discount": 100,
             "taxRate": 0,
-            "taxAmount": 0,
-            "discount": 100
+            "taxAmount": 0
           }
         ]
       },
@@ -119,9 +119,9 @@
             "quantity": 1,
             "rate": 100,
             "amount": 100,
+            "discount": 0,
             "taxRate": 0,
-            "taxAmount": 0,
-            "discount": 0
+            "taxAmount": 0
           }
         ]
       },
@@ -168,9 +168,9 @@
               "quantity": 1,
               "rate": 100,
               "amount": 100,
+              "discount": 0,
               "taxRate": 0,
-              "taxAmount": 0,
-              "discount": 0
+              "taxAmount": 0
             }
           ]
         },
@@ -188,9 +188,9 @@
               "quantity": 2,
               "rate": 50,
               "amount": 100,
+              "discount": 0,
               "taxRate": 0,
-              "taxAmount": 0,
-              "discount": 0
+              "taxAmount": 0
             }
           ]
         }

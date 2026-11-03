@@ -233,7 +233,10 @@ describe('offline extraction quality benchmark', () => {
       const segments = splitInvoices(raw);
       const invoices = segments.map((segment) => parseInvoice(segment.raw));
       const expected = fixture.expectedInvoices ?? (fixture.critical ? [fixture.critical] : []);
-      expect(expected.length, `${fixture.id} must define expected invoice values`).toBeGreaterThan(0);
+      expect(
+        expected.length,
+        `${fixture.id} must define expected invoice values`,
+      ).toBeGreaterThan(0);
 
       expectedInvoicesTotal += expected.length;
       actualInvoicesTotal += invoices.length;

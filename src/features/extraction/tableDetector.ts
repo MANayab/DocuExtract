@@ -243,7 +243,7 @@ function parseLoosely(
 function rolesFromHeader(line: string): Role[] {
   const columns =
     line.match(
-      /\\b(?:quantity|qty|unit\\s+price|rate|price|taxable\\s+value|taxable|discount|(?:cgst|sgst|igst|gst|tax)\\s*(?:amount|amt|rate|%)?|line\\s+total|amount|total)\\b/gi,
+      /\b(?:quantity|qty|unit\s+price|rate|price|taxable\s+value|taxable|discount|(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?|line\s+total|amount|total)\b/gi,
     ) ?? [];
   return columns.map((column) => roleOf(column));
 }
@@ -266,7 +266,12 @@ export function detectLineItems(
 
   const headerIndex = lines.findIndex((x) => HEADER.test(x));
   const headerCells = headerIndex >= 0 ? splitHeaderCells(cellsOf(lines[headerIndex])) : [];
-  const roles = headerCells.length >= 3 ? headerCells.map(roleOf) : headerIndex >= 0 ? rolesFromHeader(lines[headerIndex]) : null;
+  const roles =
+    headerCells.length >= 3
+      ? headerCells.map(roleOf)
+      : headerIndex >= 0
+        ? rolesFromHeader(lines[headerIndex])
+        : null;
 
   const source =
     headerIndex >= 0
@@ -285,7 +290,7 @@ export function detectLineItems(
     if (!row) {
       // Some invoices wrap the item description onto one or more lines above
       // the numeric cells. Carry only non-summary text forward to the next row.
-      if (!HEADER.test(line) && !/^(?:continued invoice|page\\s+\\d+)/i.test(line)) {
+      if (!HEADER.test(line) && !/^(?:continued invoice|page\s+\d+)/i.test(line)) {
         pendingDescription = [pendingDescription, line].filter(Boolean).join(' ');
       }
       continue;

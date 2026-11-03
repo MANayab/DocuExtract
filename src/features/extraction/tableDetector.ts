@@ -167,15 +167,68 @@ function parseByColumns(line: string, headerRoles: Role[] | null, locale: Locale
 }
 
 /** Fallback for single-spaced text where no column gaps exist. */
-function parseLoosely(line: string, locale: LocaleCode): Row | null {
-  const nums = [...line.matchAll(NUMBER_TOKEN)].map((m) => normalizeNumber(m[0], locale));
+function parseLoosely(
+  line: string,
+  locale: LocaleCode,
+  headerRoles: Role[] | null,
+): Row | null {
+  const matches = [...line.matchAll(NUMBER_TOKEN)];
+  const nums = matches.map((m) => normalizeNumber(m[0], locale));
 
-  if (nums.length < 2) return null;
+  if (nums.length < 2 || nums.some((value) => !Number.isFinite(value))) return null;
 
-  const first = line.match(NUMBER_TOKEN)?.[0] ?? '';
+  const first = matches[0]?.[0] ?? '';
+  const description = line.slice(0, Math.max(1, line.indexOf(first))).trim() || line;
+
+  // With no positioned column gaps, use the numeric column order advertised by
+  // the table header. This preserves GST/discount columns instead of guessing
+  // that every row contains only quantity, rate and amount.
+  if (headerRoles && headerRoles.length === nums.length) {
+    let qty: number | undefined;
+    let rate: number | undefined;
+    let amount: number | undefined;
+    let taxable: number | undefined;
+    let discount = 0;
+    let taxRate = 0;
+    let taxAmount = 0;
+    let hasTax = false;
+
+    headerRoles.forEach((role, index) => {
+      const value = nums[index];
+      if (role === 'qty') qty = value;
+      else if (role === 'rate') rate = value;
+      else if (role === 'amount') amount = value;
+      else if (role === 'taxable') taxable = value;
+      else if (role === 'discount') discount = value;
+      else if (role === 'taxRate') {
+        taxRate += value;
+        hasTax = true;
+      } else if (role === 'taxAmount') {
+        taxAmount += value;
+        hasTax = true;
+      }
+    });
+
+    if (amount !== undefined || taxable !== undefined || rate !== undefined) {
+      const finalQty = qty ?? 1;
+      const finalAmount = amount ?? taxable ?? (rate ?? 0) * finalQty - discount;
+      const finalRate = rate ?? (finalQty ? (finalAmount + discount) / finalQty : finalAmount);
+      return {
+        description,
+        qty: finalQty,
+        rate: finalRate,
+        amount: finalAmount,
+        discount,
+        taxRate: Number(taxRate.toFixed(4)),
+        taxAmount: Number(taxAmount.toFixed(2)),
+        hasTax,
+        aligned: true,
+      };
+    }
+  }
 
   return {
-    description: line.slice(0, Math.max(1, line.indexOf(first))).trim() || line,
+    description,
     qty: nums.length >= 3 ? nums[0] : 1,
     rate: nums.length >= 3 ? nums[1] : nums[0],
     amount: nums[nums.length - 1],
@@ -185,6 +238,14 @@ function parseLoosely(line: string, locale: LocaleCode): Row | null {
     hasTax: false,
     aligned: false,
   };
+}
+
+function rolesFromHeader(line: string): Role[] {
+  const columns =
+    line.match(
+      /\\b(?:quantity|qty|unit\\s+price|rate|price|taxable\\s+value|taxable|discount|(?:cgst|sgst|igst|gst|tax)\\s*(?:amount|amt|rate|%)?|line\\s+total|amount|total)\\b/gi,
+    ) ?? [];
+  return columns.map((column) => roleOf(column));
 }
 
 const field = (value: number, confidence: number) => ({
@@ -205,7 +266,7 @@ export function detectLineItems(
 
   const headerIndex = lines.findIndex((x) => HEADER.test(x));
   const headerCells = headerIndex >= 0 ? splitHeaderCells(cellsOf(lines[headerIndex])) : [];
-  const roles = headerCells.length >= 3 ? headerCells.map(roleOf) : null;
+  const roles = headerCells.length >= 3 ? headerCells.map(roleOf) : headerIndex >= 0 ? rolesFromHeader(lines[headerIndex]) : null;
 
   const source =
     headerIndex >= 0
@@ -218,7 +279,7 @@ export function detectLineItems(
     if (STOP.test(line)) break;
     if (NOISE.test(line)) continue;
 
-    const row = parseByColumns(line, roles, locale) ?? parseLoosely(line, locale);
+    const row = parseByColumns(line, roles, locale) ?? parseLoosely(line, locale, roles);
 
     if (!row) continue;
 

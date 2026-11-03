@@ -60,6 +60,21 @@ function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
   });
 }
 
+function blobToText(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new TypeError('Export did not produce text.'));
+      }
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read export text.'));
+    reader.readAsText(blob);
+  });
+}
+
 async function extractBenchmarkPdf(file: File) {
   try {
     return await extractPdf(file);
@@ -205,15 +220,15 @@ describe('offline extraction quality benchmark', () => {
       expect(workbook.getWorksheet('Invoices')?.rowCount).toBeGreaterThan(1);
       report.exportSuccess.xlsx += 1;
 
-      const invoiceCsv = await invoicesToCsv([entry]).text();
+      const invoiceCsv = await blobToText(invoicesToCsv([entry]));
       expect(invoiceCsv).toContain('Invoice Number');
       report.exportSuccess.invoiceCsv += 1;
 
-      const itemsCsv = await lineItemsToCsv([entry]).text();
+      const itemsCsv = await blobToText(lineItemsToCsv([entry]));
       expect(itemsCsv).toContain('Description');
       report.exportSuccess.lineItemsCsv += 1;
 
-      const json = JSON.parse(await invoicesToJson([entry]).text()) as {
+      const json = JSON.parse(await blobToText(invoicesToJson([entry]))) as {
         invoices: Array<{ invoice: unknown }>;
       };
       expect(json.invoices[0]?.invoice).toBeTruthy();

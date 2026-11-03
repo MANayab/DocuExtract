@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "Expected values are derived from generateFixtures.ts. Empty strings and empty arrays represent fields intentionally absent from a fixture.",
+  "fixtures": [
+    {
+      "id": "basic",
+      "kind": "basic",
+      "critical": {
+        "invoiceNumber": "INV-BASIC-001",
+        "invoiceDate": "2026-09-17",
+        "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+        "subtotal": 1000,
+        "taxAmount": 180,
+        "grandTotal": 1180,
+        "currency": "",
+        "lineItems": [{ "description": "Widget", "quantity": 2, "rate": 500, "amount": 1000 }]
+      }
+    },
+    {
+      "id": "gst",
+      "kind": "gst",
+      "critical": {
+        "invoiceNumber": "INV-GST-001",
+        "invoiceDate": "2026-09-17",
+        "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+        "subtotal": 1000,
+        "taxAmount": 180,
+        "grandTotal": 1180,
+        "currency": "",
+        "lineItems": [{ "description": "Service", "quantity": 2, "rate": 500, "amount": 1180 }]
+      }
+    },
+    {
+      "id": "multi-page",
+      "kind": "multi-page",
+      "critical": {
+        "invoiceNumber": "INV-MULTI-PAGE-001",
+        "invoiceDate": "2026-09-17",
+        "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+        "subtotal": 0,
+        "taxAmount": 180,
+        "grandTotal": 1180,
+        "currency": "",
+        "lineItems": [{ "description": "Consulting", "quantity": 2, "rate": 500, "amount": 1000 }]
+      }
+    },
+    {
+      "id": "discount",
+      "kind": "discount",
+      "critical": {
+        "invoiceNumber": "INV-DISCOUNT-001",
+        "invoiceDate": "2026-09-17",
+        "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+        "subtotal": 900,
+        "taxAmount": 0,
+        "grandTotal": 800,
+        "currency": "",
+        "lineItems": [{ "description": "Item", "quantity": 2, "rate": 500, "amount": 900 }]
+      }
+    },
+    {
+      "id": "missing-fields",
+      "kind": "missing-fields",
+      "critical": {
+        "invoiceNumber": "INV-MISSING-001",
+        "invoiceDate": "",
+        "sellerName": "",
+        "subtotal": 0,
+        "taxAmount": 0,
+        "grandTotal": 100,
+        "currency": "",
+        "lineItems": [{ "description": "Item", "quantity": 1, "rate": 100, "amount": 100 }]
+      }
+    },
+    {
+      "id": "malformed",
+      "kind": "malformed",
+      "expectedError": "PDF_CORRUPT"
+    },
+    {
+      "id": "empty",
+      "kind": "empty",
+      "expectedReview": true,
+      "critical": {
+        "invoiceNumber": "",
+        "invoiceDate": "",
+        "sellerName": "",
+        "subtotal": 0,
+        "taxAmount": 0,
+        "grandTotal": 0,
+        "currency": "",
+        "lineItems": []
+      }
+    }
+  ]
+}

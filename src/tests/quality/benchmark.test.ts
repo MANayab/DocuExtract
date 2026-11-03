@@ -142,9 +142,13 @@ describe('offline extraction quality benchmark', () => {
   it('enforces v1.5.1 field-level, splitting and export quality thresholds', async () => {
     const report = {
       generatedAt: new Date().toISOString(),
-      source: 'Repository-owned synthetic PDFs processed through extractPdf, splitInvoices and parseInvoice',
-      currencyPolicy:
-        'A recognized currency marker is extracted explicitly. If none is present, the parser defaults to INR with low confidence and a review warning; INR in these fixtures is a fallback, not invoice evidence.',
+      source:
+        'Repository-owned synthetic PDFs processed through extractPdf, splitInvoices and parseInvoice',
+      currencyPolicy: [
+        'A recognized currency marker is extracted explicitly. If none is present, the parser defaults',
+        'to INR with low confidence and a review warning; INR in these fixtures is a fallback, not invoice',
+        'evidence.',
+      ].join(' '),
       totalInvoicesProcessed: 0,
       fieldAccuracy: {} as Record<string, Accuracy>,
       groupAccuracy: {} as Record<string, Accuracy & { minimum: number; passed: boolean }>,
@@ -165,7 +169,13 @@ describe('offline extraction quality benchmark', () => {
         fixturesTotal: 0,
         percentage: 0,
       },
-      multiInvoiceSplitting: { expectedInvoices: 0, actualInvoices: 0, fixturesPassed: 0, fixturesTotal: 0, percentage: 0 },
+      multiInvoiceSplitting: {
+        expectedInvoices: 0,
+        actualInvoices: 0,
+        fixturesPassed: 0,
+        fixturesTotal: 0,
+        percentage: 0,
+      },
       zeroErrorInvoices: 0,
       criticalFieldErrorInvoices: 0,
       zeroErrorInvoicePercentage: 0,
@@ -182,7 +192,8 @@ describe('offline extraction quality benchmark', () => {
       limitations: [
         'Synthetic fixtures do not represent the full diversity of real supplier invoices.',
         'HSN/SAC is not represented in the current InvoiceItem schema and is therefore not scored.',
-        'German and Hindi OCR fixtures remain experimental and are not counted as successful text extraction.',
+        'German and Hindi OCR fixtures remain experimental and are not counted as successful text',
+        'extraction.',
       ],
     };
 
@@ -307,7 +318,9 @@ describe('offline extraction quality benchmark', () => {
       }));
       const expectedLineCount = expected.reduce((sum, item) => sum + item.lineItems.length, 0);
       const actualLineCount = invoices.reduce((sum, invoice) => sum + invoice.items.length, 0);
-      const expectedDescriptions = expected.flatMap((item) => item.lineItems.map((line) => line.description));
+      const expectedDescriptions = expected.flatMap((item) =>
+        item.lineItems.map((line) => line.description),
+      );
 
       const workbookBlob = await invoicesToXlsx(entries);
       const workbook = new ExcelJS.Workbook();
@@ -387,7 +400,10 @@ describe('offline extraction quality benchmark', () => {
     }
 
     for (const [field, count] of fieldCounts) {
-      report.fieldAccuracy[field] = { ...count, percentage: percentage(count.correct, count.total) };
+      report.fieldAccuracy[field] = {
+        ...count,
+        percentage: percentage(count.correct, count.total),
+      };
     }
     for (const [group, count] of groupCounts) {
       const minimum = group === 'textEnglish' ? 95 : group === 'indianGst' ? 90 : 95;
@@ -434,7 +450,9 @@ describe('offline extraction quality benchmark', () => {
       report.exportVerification[key] = { minimum: 100, actual, passed: actual === 100 };
     }
 
-    const stableFieldAccuracy = STABLE_FIELDS.map((field) => report.fieldAccuracy[field]?.percentage ?? 0);
+    const stableFieldAccuracy = STABLE_FIELDS.map(
+      (field) => report.fieldAccuracy[field]?.percentage ?? 0,
+    );
     const noRegressionPassed = stableFieldAccuracy.every((value) => value === 100);
     report.noRegression.passed = noRegressionPassed;
     report.qualityGate.textEnglishCriticalFieldAccuracy = {
@@ -470,11 +488,17 @@ describe('offline extraction quality benchmark', () => {
     writeFileSync(join(outputDir, 'benchmark-report.json'), JSON.stringify(report, null, 2));
 
     const gateRows = [
-      ['Text-based English critical-field accuracy', report.qualityGate.textEnglishCriticalFieldAccuracy],
+      [
+        'Text-based English critical-field accuracy',
+        report.qualityGate.textEnglishCriticalFieldAccuracy,
+      ],
       ['Indian GST critical-field accuracy', report.qualityGate.indianGstCriticalFieldAccuracy],
       ['Multi-invoice splitting accuracy', report.qualityGate.multiInvoiceSplittingAccuracy],
       ['Previously passing fields (no regression)', report.qualityGate.noRegression],
-      ...Object.entries(report.exportVerification).map(([name, metric]) => [`${name} export verification`, metric]),
+      ...Object.entries(report.exportVerification).map(([name, metric]) => [
+        `${name} export verification`,
+        metric,
+      ]),
     ] as Array<[string, GateMetric]>;
     const markdown = [
       '# DocuExtract extraction quality benchmark',
@@ -490,7 +514,10 @@ describe('offline extraction quality benchmark', () => {
       '',
       '| Gate | Minimum | Actual | Result |',
       '|---|---:|---:|---|',
-      ...gateRows.map(([name, metric]) => `| ${name} | ${metric.minimum}% | ${metric.actual}% | ${metric.passed ? 'PASS' : 'FAIL'} |`),
+      ...gateRows.map(
+        ([name, metric]) =>
+          `| ${name} | ${metric.minimum}% | ${metric.actual}% | ${metric.passed ? 'PASS' : 'FAIL'} |`,
+      ),
       '',
       '## Critical field accuracy',
       '',
@@ -505,7 +532,9 @@ describe('offline extraction quality benchmark', () => {
       '| Fixture | Expected items | Actual items | Exact match |',
       '|---|---:|---:|---|',
       ...report.lineItemDiagnostics.map((item) =>
-        `| ${String(item.fixture)} | ${String(item.expectedCount)} | ${String(item.actualCount)} | ${item.matched ? 'yes' : 'no'} |`,
+        `| ${String(item.fixture)} | ${String(item.expectedCount)} | ${String(item.actualCount)} | ${
+          item.matched ? 'yes' : 'no'
+        } |`,
       ),
       '',
       '## Currency policy',
@@ -517,13 +546,28 @@ describe('offline extraction quality benchmark', () => {
     ].join('\n');
     writeFileSync(join(outputDir, 'benchmark-report.md'), markdown);
 
-    expect(report.qualityGate.textEnglishCriticalFieldAccuracy.passed, 'Text-based English fixtures must reach 95% critical-field accuracy').toBe(true);
-    expect(report.qualityGate.indianGstCriticalFieldAccuracy.passed, 'Indian GST fixtures must reach 90% critical-field accuracy').toBe(true);
-    expect(report.qualityGate.multiInvoiceSplittingAccuracy.passed, 'Multi-invoice splitting must reach 90% accuracy').toBe(true);
-    expect(report.qualityGate.noRegression.passed, 'Previously passing invoice header and total fields must not regress').toBe(true);
+    expect(
+      report.qualityGate.textEnglishCriticalFieldAccuracy.passed,
+      'Text-based English fixtures must reach 95% critical-field accuracy',
+    ).toBe(true);
+    expect(
+      report.qualityGate.indianGstCriticalFieldAccuracy.passed,
+      'Indian GST fixtures must reach 90% critical-field accuracy',
+    ).toBe(true);
+    expect(
+      report.qualityGate.multiInvoiceSplittingAccuracy.passed,
+      'Multi-invoice splitting must reach 90% accuracy',
+    ).toBe(true);
+    expect(
+      report.qualityGate.noRegression.passed,
+      'Previously passing invoice header and total fields must not regress',
+    ).toBe(true);
     for (const [name, metric] of Object.entries(report.exportVerification)) {
       expect(metric.passed, `${name} export verification must be 100%`).toBe(true);
     }
-    expect(report.qualityGate.overallPassed, 'All v1.5.1 release-quality thresholds must pass').toBe(true);
+    expect(
+      report.qualityGate.overallPassed,
+      'All v1.5.1 release-quality thresholds must pass',
+    ).toBe(true);
   });
 });

@@ -18,6 +18,8 @@ type ExpectedLine = {
   quantity: number;
   rate: number;
   amount: number;
+  taxRate: number;
+  taxAmount: number;
 };
 
 type ExpectedFields = {
@@ -34,26 +36,40 @@ type ExpectedFields = {
 type BenchmarkFixture = {
   id: string;
   kind: string;
+  qualityGroup: 'textEnglish' | 'indianGst' | 'multiInvoice' | 'excluded';
   critical?: ExpectedFields;
+  expectedInvoices?: ExpectedFields[];
   expectedError?: string;
 };
 
+type Accuracy = { correct: number; total: number; percentage: number };
+type GateMetric = { minimum: number; actual: number; passed: boolean };
+
 const fixtures = manifest.fixtures as BenchmarkFixture[];
 const outputDir = join(process.cwd(), 'output');
+const STABLE_FIELDS = [
+  'invoiceNumber',
+  'invoiceDate',
+  'sellerName',
+  'subtotal',
+  'taxAmount',
+  'grandTotal',
+] as const;
 
 function equal(actual: unknown, expected: unknown) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+function percentage(correct: number, total: number) {
+  return total ? Number(((correct / total) * 100).toFixed(2)) : 0;
 }
 
 function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (reader.result instanceof ArrayBuffer) {
-        resolve(reader.result);
-      } else {
-        reject(new TypeError('XLSX export did not produce an ArrayBuffer.'));
-      }
+      if (reader.result instanceof ArrayBuffer) resolve(reader.result);
+      else reject(new TypeError('XLSX export did not produce an ArrayBuffer.'));
     };
     reader.onerror = () => reject(reader.error ?? new Error('Unable to read XLSX export.'));
     reader.readAsArrayBuffer(blob);
@@ -64,11 +80,8 @@ function blobToText(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new TypeError('Export did not produce text.'));
-      }
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new TypeError('Export did not produce text.'));
     };
     reader.onerror = () => reject(reader.error ?? new Error('Unable to read export text.'));
     reader.readAsText(blob);
@@ -90,24 +103,51 @@ async function extractBenchmarkPdf(file: File) {
         cause: error,
       });
     }
-
     throw error;
   }
 }
 
+function actualFields(invoice: ReturnType<typeof parseInvoice>): ExpectedFields {
+  return {
+    invoiceNumber: invoice.invoiceNumber.value,
+    invoiceDate: invoice.invoiceDate.value,
+    sellerName: invoice.seller.name.value,
+    subtotal: invoice.subtotal.value,
+    taxAmount: invoice.taxTotal.value,
+    grandTotal: invoice.grandTotal.value,
+    currency: invoice.currency.value,
+    lineItems: invoice.items.map((item) => ({
+      description: item.description.value,
+      quantity: item.quantity.value,
+      rate: item.unitPrice.value,
+      amount: item.lineTotal.value,
+      taxRate: item.taxRate.value,
+      taxAmount: item.taxAmount.value,
+    })),
+  };
+}
+
+function compareFields(actual: ExpectedFields, expected: ExpectedFields) {
+  return Object.fromEntries(
+    Object.entries(expected).map(([field, expectedValue]) => [
+      field,
+      equal(actual[field as keyof ExpectedFields], expectedValue),
+    ]),
+  ) as Record<keyof ExpectedFields, boolean>;
+}
+
 describe('offline extraction quality benchmark', () => {
-  it('measures fixture accuracy and verifies local export generation', async () => {
+  it('enforces v1.5.1 field-level, splitting and export quality thresholds', async () => {
     const report = {
       generatedAt: new Date().toISOString(),
-      source: 'Repository-owned synthetic fixtures generated in-process',
+      source: 'Repository-owned synthetic PDFs processed through extractPdf, splitInvoices and parseInvoice',
+      currencyPolicy:
+        'A recognized currency marker is extracted explicitly. If none is present, the parser defaults to INR with low confidence and a review warning; INR in these fixtures is a fallback, not invoice evidence.',
       totalInvoicesProcessed: 0,
-      fieldAccuracy: {} as Record<string, { correct: number; total: number; percentage: number }>,
+      fieldAccuracy: {} as Record<string, Accuracy>,
+      groupAccuracy: {} as Record<string, Accuracy & { minimum: number; passed: boolean }>,
       invoicesRequiringCorrection: 0,
       averageCorrectedFieldsPerInvoice: 0,
-      extractionSuccessBySellerOrTemplate: {} as Record<
-        string,
-        { processed: number; reviewRequired: number }
-      >,
       exportSuccess: {
         xlsx: 0,
         invoiceCsv: 0,
@@ -115,22 +155,47 @@ describe('offline extraction quality benchmark', () => {
         json: 0,
         total: 0,
       },
+      exportVerification: {} as Record<string, GateMetric>,
       splitAccuracy: {
         expectedInvoices: 0,
         actualInvoices: 0,
+        fixturesPassed: 0,
+        fixturesTotal: 0,
         percentage: 0,
       },
+      multiInvoiceSplitting: { expectedInvoices: 0, actualInvoices: 0, fixturesPassed: 0, fixturesTotal: 0, percentage: 0 },
       zeroErrorInvoices: 0,
       criticalFieldErrorInvoices: 0,
+      zeroErrorInvoicePercentage: 0,
+      noRegression: { fields: [...STABLE_FIELDS], passed: false },
+      qualityGate: {
+        textEnglishCriticalFieldAccuracy: { minimum: 95, actual: 0, passed: false } as GateMetric,
+        indianGstCriticalFieldAccuracy: { minimum: 90, actual: 0, passed: false } as GateMetric,
+        multiInvoiceSplittingAccuracy: { minimum: 90, actual: 0, passed: false } as GateMetric,
+        noRegression: { minimum: 100, actual: 0, passed: false } as GateMetric,
+        overallPassed: false,
+      },
+      lineItemDiagnostics: [] as Array<Record<string, unknown>>,
       fixtureResults: [] as Array<Record<string, unknown>>,
       limitations: [
         'Synthetic fixtures do not represent the full diversity of real supplier invoices.',
-        'This initial baseline does not include scanned German or Hindi OCR fixtures.',
+        'HSN/SAC is not represented in the current InvoiceItem schema and is therefore not scored.',
+        'German and Hindi OCR fixtures remain experimental and are not counted as successful text extraction.',
       ],
     };
 
     const fieldCounts = new Map<string, { correct: number; total: number }>();
+    const groupCounts = new Map<string, { correct: number; total: number }>();
+    const exportVerifiedInvoices = { xlsx: 0, invoiceCsv: 0, lineItemsCsv: 0, json: 0 };
     let correctedFields = 0;
+    let expectedInvoicesTotal = 0;
+    let actualInvoicesTotal = 0;
+    let exactSplitFixtures = 0;
+    let splitFixtures = 0;
+    let multiExactSplitFixtures = 0;
+    let multiSplitFixtures = 0;
+    let multiExpectedInvoices = 0;
+    let multiActualInvoices = 0;
 
     for (const fixture of fixtures) {
       const bytes = await generateFixture(fixture.kind as FixtureKind);
@@ -147,165 +212,314 @@ describe('offline extraction quality benchmark', () => {
           rejected = true;
         }
         expect(rejected, `${fixture.id} should be rejected as malformed`).toBe(true);
-        report.fixtureResults.push({
-          id: fixture.id,
-          rejectedAsExpected: true,
-        });
+        report.fixtureResults.push({ id: fixture.id, rejectedAsExpected: true });
         continue;
       }
 
       const raw = await extractBenchmarkPdf(file);
       const segments = splitInvoices(raw);
       const invoices = segments.map((segment) => parseInvoice(segment.raw));
-      const invoice = invoices[0];
-      expect(invoice, `${fixture.id} should produce an invoice review record`).toBeTruthy();
+      const expected = fixture.expectedInvoices ?? (fixture.critical ? [fixture.critical] : []);
+      expect(expected.length, `${fixture.id} must define expected invoice values`).toBeGreaterThan(0);
 
-      const expected = fixture.critical!;
-      const actual: ExpectedFields = {
-        invoiceNumber: invoice.invoiceNumber.value,
-        invoiceDate: invoice.invoiceDate.value,
-        sellerName: invoice.seller.name.value,
-        subtotal: invoice.subtotal.value,
-        taxAmount: invoice.taxTotal.value,
-        grandTotal: invoice.grandTotal.value,
-        currency: invoice.currency.value,
-        lineItems: invoice.items.map((item) => ({
-          description: item.description.value,
-          quantity: item.quantity.value,
-          rate: item.unitPrice.value,
-          amount: item.lineTotal.value,
-        })),
-      };
-
-      const fieldResults: Record<string, boolean> = {};
-      for (const [field, expectedValue] of Object.entries(expected)) {
-        const actualValue = actual[field as keyof ExpectedFields];
-        const matched = equal(actualValue, expectedValue);
-        fieldResults[field] = matched;
-
-        const count = fieldCounts.get(field) ?? {
-          correct: 0,
-          total: 0,
-        };
-        count.total += 1;
-        if (matched) count.correct += 1;
-        fieldCounts.set(field, count);
-        if (!matched) correctedFields += 1;
+      expectedInvoicesTotal += expected.length;
+      actualInvoicesTotal += invoices.length;
+      splitFixtures += 1;
+      if (invoices.length === expected.length) exactSplitFixtures += 1;
+      if (fixture.qualityGroup === 'multiInvoice') {
+        multiSplitFixtures += 1;
+        multiExpectedInvoices += expected.length;
+        multiActualInvoices += invoices.length;
+        if (invoices.length === expected.length) multiExactSplitFixtures += 1;
       }
 
-      const hasCriticalErrors = Object.values(fieldResults).some((matched) => !matched);
-      if (hasCriticalErrors) {
-        report.criticalFieldErrorInvoices += 1;
-        report.invoicesRequiringCorrection += 1;
-      } else {
-        report.zeroErrorInvoices += 1;
+      const perInvoiceResults: Array<Record<string, unknown>> = [];
+      let fixtureCorrect = 0;
+      let fixtureTotal = 0;
+      let fixtureHasErrors = invoices.length !== expected.length;
+
+      for (let index = 0; index < expected.length; index++) {
+        const expectedInvoice = expected[index];
+        const invoice = invoices[index];
+        if (!invoice) {
+          fixtureHasErrors = true;
+          for (const [field, expectedValue] of Object.entries(expectedInvoice)) {
+            const count = fieldCounts.get(field) ?? { correct: 0, total: 0 };
+            count.total += 1;
+            fieldCounts.set(field, count);
+            if (fixture.qualityGroup !== 'excluded') {
+              const groupCount = groupCounts.get(fixture.qualityGroup) ?? { correct: 0, total: 0 };
+              groupCount.total += 1;
+              groupCounts.set(fixture.qualityGroup, groupCount);
+            }
+            correctedFields += 1;
+            fixtureTotal += 1;
+          }
+          report.criticalFieldErrorInvoices += 1;
+          report.invoicesRequiringCorrection += 1;
+          continue;
+        }
+
+        const actual = actualFields(invoice);
+        const fieldResults = compareFields(actual, expectedInvoice);
+        const matchedCount = Object.values(fieldResults).filter(Boolean).length;
+        const fieldCount = Object.keys(fieldResults).length;
+        fixtureCorrect += matchedCount;
+        fixtureTotal += fieldCount;
+        const hasErrors = matchedCount !== fieldCount;
+        fixtureHasErrors ||= hasErrors;
+
+        for (const [field, matched] of Object.entries(fieldResults)) {
+          const count = fieldCounts.get(field) ?? { correct: 0, total: 0 };
+          count.total += 1;
+          if (matched) count.correct += 1;
+          else correctedFields += 1;
+          fieldCounts.set(field, count);
+
+          if (fixture.qualityGroup !== 'excluded') {
+            const groupCount = groupCounts.get(fixture.qualityGroup) ?? { correct: 0, total: 0 };
+            groupCount.total += 1;
+            if (matched) groupCount.correct += 1;
+            groupCounts.set(fixture.qualityGroup, groupCount);
+          }
+        }
+
+        if (hasErrors) {
+          report.criticalFieldErrorInvoices += 1;
+          report.invoicesRequiringCorrection += 1;
+        } else {
+          report.zeroErrorInvoices += 1;
+        }
+
+        perInvoiceResults.push({
+          invoiceNumber: actual.invoiceNumber,
+          fieldResults,
+          actualFields: actual,
+          validationValid: validateInvoice(invoice).valid,
+        });
       }
 
-      const sellerKey = invoice.seller.name.value || fixture.id;
-      const seller = report.extractionSuccessBySellerOrTemplate[sellerKey] ?? {
-        processed: 0,
-        reviewRequired: 0,
-      };
-      seller.processed += 1;
-      if (hasCriticalErrors) seller.reviewRequired += 1;
-      report.extractionSuccessBySellerOrTemplate[sellerKey] = seller;
-
-      const entry = {
+      const entries = invoices.map((invoice) => ({
         invoice,
         checks: validateInvoice(invoice).checks,
-      };
-      const workbookBlob = await invoicesToXlsx([entry]);
+      }));
+      const expectedLineCount = expected.reduce((sum, item) => sum + item.lineItems.length, 0);
+      const actualLineCount = invoices.reduce((sum, invoice) => sum + invoice.items.length, 0);
+      const expectedDescriptions = expected.flatMap((item) => item.lineItems.map((line) => line.description));
+
+      const workbookBlob = await invoicesToXlsx(entries);
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(await blobToArrayBuffer(workbookBlob));
-      expect(workbook.getWorksheet('Invoices')?.rowCount).toBeGreaterThan(1);
-      report.exportSuccess.xlsx += 1;
+      const invoiceSheet = workbook.getWorksheet('Invoices');
+      const lineItemsSheet = workbook.getWorksheet('Line Items');
+      expect(invoiceSheet?.rowCount).toBe(invoices.length + 1);
+      expect(lineItemsSheet?.rowCount).toBe(actualLineCount + 1);
+      exportVerifiedInvoices.xlsx += invoices.length;
 
-      const invoiceCsv = await blobToText(invoicesToCsv([entry]));
+      const invoiceCsv = await blobToText(invoicesToCsv(entries));
       expect(invoiceCsv).toContain('Invoice Number');
-      report.exportSuccess.invoiceCsv += 1;
+      expect(invoiceCsv.split(/\r?\n/)).toHaveLength(invoices.length + 1);
+      for (const invoice of invoices) {
+        if (invoice.invoiceNumber.value) expect(invoiceCsv).toContain(invoice.invoiceNumber.value);
+      }
+      exportVerifiedInvoices.invoiceCsv += invoices.length;
 
-      const itemsCsv = await blobToText(lineItemsToCsv([entry]));
+      const itemsCsv = await blobToText(lineItemsToCsv(entries));
       expect(itemsCsv).toContain('Description');
-      report.exportSuccess.lineItemsCsv += 1;
+      expect(itemsCsv.split(/\r?\n/)).toHaveLength(actualLineCount + 1);
+      for (const description of expectedDescriptions) expect(itemsCsv).toContain(description);
+      exportVerifiedInvoices.lineItemsCsv += invoices.length;
 
-      const json = JSON.parse(await blobToText(invoicesToJson([entry]))) as {
+      const json = JSON.parse(await blobToText(invoicesToJson(entries))) as {
         invoices: Array<{ invoice: unknown }>;
       };
-      expect(json.invoices[0]?.invoice).toBeTruthy();
-      report.exportSuccess.json += 1;
+      expect(json.invoices).toHaveLength(invoices.length);
+      expect(json.invoices.every((entry) => Boolean(entry.invoice))).toBe(true);
+      exportVerifiedInvoices.json += invoices.length;
 
       report.totalInvoicesProcessed += invoices.length;
-      report.splitAccuracy.expectedInvoices += 1;
-      report.splitAccuracy.actualInvoices += invoices.length;
       report.fixtureResults.push({
         id: fixture.id,
-        fieldResults,
-        actualFields: actual,
-        invoiceCount: invoices.length,
-        validationValid: validateInvoice(invoice).valid,
-        exportVerified: {
-          xlsx: true,
-          invoiceCsv: true,
-          lineItemsCsv: true,
-          json: true,
-        },
+        qualityGroup: fixture.qualityGroup,
+        expectedInvoiceCount: expected.length,
+        actualInvoiceCount: invoices.length,
+        fieldAccuracy: fixtureTotal ? percentage(fixtureCorrect, fixtureTotal) : 0,
+        invoiceResults: perInvoiceResults,
+        exportVerified: { xlsx: true, invoiceCsv: true, lineItemsCsv: true, json: true },
       });
+      report.lineItemDiagnostics.push({
+        fixture: fixture.id,
+        expectedCount: expectedLineCount,
+        actualCount: actualLineCount,
+        expected: expected.flatMap((item) => item.lineItems),
+        actual: invoices.flatMap((invoice) =>
+          invoice.items.map((item) => ({
+            description: item.description.value,
+            quantity: item.quantity.value,
+            rate: item.unitPrice.value,
+            amount: item.lineTotal.value,
+            taxRate: item.taxRate.value,
+            taxAmount: item.taxAmount.value,
+          })),
+        ),
+        matched: equal(
+          expected.flatMap((item) => item.lineItems),
+          invoices.flatMap((invoice) =>
+            invoice.items.map((item) => ({
+              description: item.description.value,
+              quantity: item.quantity.value,
+              rate: item.unitPrice.value,
+              amount: item.lineTotal.value,
+              taxRate: item.taxRate.value,
+              taxAmount: item.taxAmount.value,
+            })),
+          ),
+        ),
+      });
+
+      if (fixtureHasErrors && fixtureTotal === 0) {
+        report.invoicesRequiringCorrection += invoices.length;
+      }
     }
 
     for (const [field, count] of fieldCounts) {
-      report.fieldAccuracy[field] = {
+      report.fieldAccuracy[field] = { ...count, percentage: percentage(count.correct, count.total) };
+    }
+    for (const [group, count] of groupCounts) {
+      const minimum = group === 'textEnglish' ? 95 : group === 'indianGst' ? 90 : 95;
+      report.groupAccuracy[group] = {
         ...count,
-        percentage: count.total ? Number(((count.correct / count.total) * 100).toFixed(2)) : 0,
+        percentage: percentage(count.correct, count.total),
+        minimum,
+        passed: percentage(count.correct, count.total) >= minimum,
       };
     }
 
     const processed = report.totalInvoicesProcessed || 1;
     report.averageCorrectedFieldsPerInvoice = Number((correctedFields / processed).toFixed(2));
-    report.exportSuccess.total =
-      report.exportSuccess.xlsx +
-      report.exportSuccess.invoiceCsv +
-      report.exportSuccess.lineItemsCsv +
-      report.exportSuccess.json;
+    report.zeroErrorInvoicePercentage = percentage(report.zeroErrorInvoices, processed);
+    report.exportSuccess = {
+      xlsx: exportVerifiedInvoices.xlsx,
+      invoiceCsv: exportVerifiedInvoices.invoiceCsv,
+      lineItemsCsv: exportVerifiedInvoices.lineItemsCsv,
+      json: exportVerifiedInvoices.json,
+      total:
+        exportVerifiedInvoices.xlsx +
+        exportVerifiedInvoices.invoiceCsv +
+        exportVerifiedInvoices.lineItemsCsv +
+        exportVerifiedInvoices.json,
+    };
 
-    report.splitAccuracy.percentage = report.splitAccuracy.expectedInvoices
-      ? Number(
-          (
-            (report.splitAccuracy.actualInvoices / report.splitAccuracy.expectedInvoices) *
-            100
-          ).toFixed(2),
-        )
-      : 0;
+    report.splitAccuracy = {
+      expectedInvoices: expectedInvoicesTotal,
+      actualInvoices: actualInvoicesTotal,
+      fixturesPassed: exactSplitFixtures,
+      fixturesTotal: splitFixtures,
+      percentage: percentage(exactSplitFixtures, splitFixtures),
+    };
+    report.multiInvoiceSplitting = {
+      expectedInvoices: multiExpectedInvoices,
+      actualInvoices: multiActualInvoices,
+      fixturesPassed: multiExactSplitFixtures,
+      fixturesTotal: multiSplitFixtures,
+      percentage: percentage(multiExactSplitFixtures, multiSplitFixtures),
+    };
+
+    for (const key of ['xlsx', 'invoiceCsv', 'lineItemsCsv', 'json'] as const) {
+      const actual = percentage(exportVerifiedInvoices[key], processed);
+      report.exportVerification[key] = { minimum: 100, actual, passed: actual === 100 };
+    }
+
+    const stableFieldAccuracy = STABLE_FIELDS.map((field) => report.fieldAccuracy[field]?.percentage ?? 0);
+    const noRegressionPassed = stableFieldAccuracy.every((value) => value === 100);
+    report.noRegression.passed = noRegressionPassed;
+    report.qualityGate.textEnglishCriticalFieldAccuracy = {
+      minimum: 95,
+      actual: report.groupAccuracy.textEnglish?.percentage ?? 0,
+      passed: (report.groupAccuracy.textEnglish?.percentage ?? 0) >= 95,
+    };
+    report.qualityGate.indianGstCriticalFieldAccuracy = {
+      minimum: 90,
+      actual: report.groupAccuracy.indianGst?.percentage ?? 0,
+      passed: (report.groupAccuracy.indianGst?.percentage ?? 0) >= 90,
+    };
+    report.qualityGate.multiInvoiceSplittingAccuracy = {
+      minimum: 90,
+      actual: report.multiInvoiceSplitting.percentage,
+      passed: report.multiInvoiceSplitting.percentage >= 90,
+    };
+    report.qualityGate.noRegression = {
+      minimum: 100,
+      actual: noRegressionPassed ? 100 : Math.min(...stableFieldAccuracy),
+      passed: noRegressionPassed,
+    };
+
+    const exportsPassed = Object.values(report.exportVerification).every((metric) => metric.passed);
+    report.qualityGate.overallPassed =
+      report.qualityGate.textEnglishCriticalFieldAccuracy.passed &&
+      report.qualityGate.indianGstCriticalFieldAccuracy.passed &&
+      report.qualityGate.multiInvoiceSplittingAccuracy.passed &&
+      report.qualityGate.noRegression.passed &&
+      exportsPassed;
 
     mkdirSync(outputDir, { recursive: true });
     writeFileSync(join(outputDir, 'benchmark-report.json'), JSON.stringify(report, null, 2));
 
+    const gateRows = [
+      ['Text-based English critical-field accuracy', report.qualityGate.textEnglishCriticalFieldAccuracy],
+      ['Indian GST critical-field accuracy', report.qualityGate.indianGstCriticalFieldAccuracy],
+      ['Multi-invoice splitting accuracy', report.qualityGate.multiInvoiceSplittingAccuracy],
+      ['Previously passing fields (no regression)', report.qualityGate.noRegression],
+      ...Object.entries(report.exportVerification).map(([name, metric]) => [`${name} export verification`, metric]),
+    ] as Array<[string, GateMetric]>;
     const markdown = [
       '# DocuExtract extraction quality benchmark',
       '',
       `Generated: ${report.generatedAt}`,
       `Invoices processed: ${report.totalInvoicesProcessed}`,
+      `Zero-error invoices: ${report.zeroErrorInvoices} (${report.zeroErrorInvoicePercentage}%)`,
       `Invoices requiring correction: ${report.invoicesRequiringCorrection}`,
       `Average corrected fields per invoice: ${report.averageCorrectedFieldsPerInvoice}`,
-      `Zero-error invoices: ${report.zeroErrorInvoices}`,
-      `Critical-field-error invoices: ${report.criticalFieldErrorInvoices}`,
+      `Overall release gate: ${report.qualityGate.overallPassed ? 'PASS' : 'FAIL'}`,
+      '',
+      '## Release thresholds',
+      '',
+      '| Gate | Minimum | Actual | Result |',
+      '|---|---:|---:|---|',
+      ...gateRows.map(([name, metric]) => `| ${name} | ${metric.minimum}% | ${metric.actual}% | ${metric.passed ? 'PASS' : 'FAIL'} |`),
+      '',
+      '## Critical field accuracy',
       '',
       '| Critical field | Correct | Total | Accuracy |',
       '|---|---:|---:|---:|',
-      ...Object.entries(report.fieldAccuracy).map(([field, value]) => {
-        return `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`;
-      }),
+      ...Object.entries(report.fieldAccuracy).map(([field, value]) =>
+        `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`,
+      ),
       '',
-      `Export successes: ${report.exportSuccess.total}`,
+      '## Line-item diagnostics',
+      '',
+      '| Fixture | Expected items | Actual items | Exact match |',
+      '|---|---:|---:|---|',
+      ...report.lineItemDiagnostics.map((item) =>
+        `| ${String(item.fixture)} | ${String(item.expectedCount)} | ${String(item.actualCount)} | ${item.matched ? 'yes' : 'no'} |`,
+      ),
+      '',
+      '## Currency policy',
+      '',
+      report.currencyPolicy,
       '',
       '## Limitations',
       ...report.limitations.map((item) => `- ${item}`),
     ].join('\n');
-
     writeFileSync(join(outputDir, 'benchmark-report.md'), markdown);
 
-    expect(report.exportSuccess.xlsx).toBeGreaterThan(0);
-    expect(report.exportSuccess.invoiceCsv).toBeGreaterThan(0);
-    expect(report.exportSuccess.lineItemsCsv).toBeGreaterThan(0);
-    expect(report.exportSuccess.json).toBeGreaterThan(0);
+    expect(report.qualityGate.textEnglishCriticalFieldAccuracy.passed, 'Text-based English fixtures must reach 95% critical-field accuracy').toBe(true);
+    expect(report.qualityGate.indianGstCriticalFieldAccuracy.passed, 'Indian GST fixtures must reach 90% critical-field accuracy').toBe(true);
+    expect(report.qualityGate.multiInvoiceSplittingAccuracy.passed, 'Multi-invoice splitting must reach 90% accuracy').toBe(true);
+    expect(report.qualityGate.noRegression.passed, 'Previously passing invoice header and total fields must not regress').toBe(true);
+    for (const [name, metric] of Object.entries(report.exportVerification)) {
+      expect(metric.passed, `${name} export verification must be 100%`).toBe(true);
+    }
+    expect(report.qualityGate.overallPassed, 'All v1.5.1 release-quality thresholds must pass').toBe(true);
   });
 });

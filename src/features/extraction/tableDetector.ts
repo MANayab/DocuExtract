@@ -274,6 +274,7 @@ export function detectLineItems(
       : lines.filter((x) => /\s+\d+(?:\.\d+)?\s+\D*\s*[₹$€£]?\s*\d/.test(x));
 
   const out: InvoiceItem[] = [];
+  let pendingDescription = '';
 
   for (const line of source) {
     if (STOP.test(line)) break;
@@ -281,7 +282,19 @@ export function detectLineItems(
 
     const row = parseByColumns(line, roles, locale) ?? parseLoosely(line, locale, roles);
 
-    if (!row) continue;
+    if (!row) {
+      // Some invoices wrap the item description onto one or more lines above
+      // the numeric cells. Carry only non-summary text forward to the next row.
+      if (!HEADER.test(line) && !/^(?:continued invoice|page\\s+\\d+)/i.test(line)) {
+        pendingDescription = [pendingDescription, line].filter(Boolean).join(' ');
+      }
+      continue;
+    }
+
+    if (pendingDescription) {
+      row.description = [pendingDescription, row.description].filter(Boolean).join(' ').trim();
+      pendingDescription = '';
+    }
 
     out.push({
       description: { value: row.description, confidence: 80, source: 'text' },

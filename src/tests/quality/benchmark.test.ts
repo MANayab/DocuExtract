@@ -132,7 +132,7 @@ describe('offline extraction quality benchmark', () => {
         fieldResults,
         actualFields,
         invoiceCount: invoices.length,
-        validationStatus: validateInvoice(invoice).status,
+        validationValid: validateInvoice(invoice).valid,
         exportVerified: { xlsx: true, invoiceCsv: true, lineItemsCsv: true, json: true },
       });
     }

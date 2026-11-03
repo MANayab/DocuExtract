@@ -241,20 +241,20 @@ function parseLoosely(
 }
 
 const HEADER_ROLE = new RegExp(
-  String.raw\`\b(?:\${[
+  String.raw`\b(?:${[
     'quantity',
     'qty',
-    String.raw\`unit\s+price\`,
+    String.raw`unit\s+price`,
     'rate',
     'price',
-    String.raw\`taxable\s+value\`,
+    String.raw`taxable\s+value`,
     'taxable',
     'discount',
-    String.raw\`(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?\`,
-    String.raw\`line\s+total\`,
+    String.raw`(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?`,
+    String.raw`line\s+total`,
     'amount',
     'total',
-  ].join('|')})\b\`,
+  ].join('|')})\b`,
   'gi',
 );
 

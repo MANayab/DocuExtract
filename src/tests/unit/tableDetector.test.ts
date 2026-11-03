@@ -127,7 +127,11 @@ describe('deterministic line-item parsing', () => {
         'implementation support 2 500 1000',
         'Subtotal: 1000',
       ]),
-      'Description Quantity Unit Price Line Total\nIndustrial consulting and\nimplementation support 2 500 1000',
+      [
+        'Description Quantity Unit Price Line Total',
+        'Industrial consulting and',
+        'implementation support 2 500 1000',
+      ].join('\\n'),
     );
 
     expect(items).toHaveLength(1);

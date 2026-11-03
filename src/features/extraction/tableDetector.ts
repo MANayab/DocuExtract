@@ -6,7 +6,10 @@ import { spansToLines } from '../pdf/textLines';
 
 const CURRENCY = '(?:₹|\\$|€|£|Rs\\.?|INR)';
 const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d(?:[\\d., ]*\\d)?\\s*\\)?%?$`, 'i');
-const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d(?:[\d., ]*\d)?\)?/g;
+// Do not allow ordinary spaces inside a token: in unaligned PDF text, single spaces
+// separate quantity, rate and amount columns. Punctuation grouping (1,000 / 1.000)
+// remains part of one numeric token and is normalized by normalizeNumber.
+const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d(?:[\d.,]*\d)?\)?/g;
 const HEADER =
   /(?:description|item|particulars|product).*(?:qty|quantity).*(?:price|rate|amount)|item.*qty/i;
 const STOP =

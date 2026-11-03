@@ -222,6 +222,22 @@ npm run preview
 | `npm run test:watch`   | Run Vitest in watch mode.                                                                                       |
 | `npm run test:e2e`     | Run Playwright end-to-end tests.                                                                                |
 
+## Quality benchmark and v1.5.1 release gate
+
+Run the offline benchmark with `npm run benchmark`. It generates repository-owned PDFs and sends them through the production `extractPdf`, invoice-splitting and parser pipeline; it does not mock extraction.
+
+The benchmark reports and enforces these release thresholds:
+
+- Text-based English fixtures: at least 95% critical-field accuracy.
+- Indian GST-style fixtures: at least 90% critical-field accuracy.
+- Multi-invoice fixture splitting: at least 90% exact split accuracy.
+- XLSX, invoice-summary CSV, line-items CSV and JSON: 100% verified export coverage, including expected row counts and fixture values.
+- Previously passing invoice number, invoice date, seller, subtotal, tax and grand-total fields must remain at 100% accuracy.
+
+The report includes per-field accuracy, fixture-level line-item counts and values, export checks, zero-error invoice percentage, and a pass/fail result for every gate. CI fails if any release threshold is missed. A green build without a passing benchmark is not release-quality approval.
+
+German and Hindi OCR are experimental for this benchmark until representative fixtures and trusted extraction results are available; incomplete or untrusted OCR output must remain marked for review. HSN/SAC is not currently represented in the `InvoiceItem` data model and is not claimed as benchmark-verified.
+
 ## Testing
 
 ```bash

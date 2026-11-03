@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Expected values are derived from generateFixtures.ts. Empty strings and empty arrays represent fields intentionally absent from a fixture.",
+  "description": "Expected values are derived from generateFixtures.ts. Empty strings and empty arrays represent fields intentionally absent from a fixture. Quality groups are textEnglish, indianGst and multiInvoice; missing fields remain intentional fixture values. Line-item taxRate and taxAmount are included where the current invoice schema exposes them; HSN/SAC is not currently represented by InvoiceItem.",
   "fixtures": [
     {
       "id": "basic",
@@ -13,8 +13,18 @@
         "taxAmount": 180,
         "grandTotal": 1180,
         "currency": "INR",
-        "lineItems": [{ "description": "Widget", "quantity": 2, "rate": 500, "amount": 1000 }]
-      }
+        "lineItems": [
+          {
+            "description": "Widget",
+            "quantity": 2,
+            "rate": 500,
+            "amount": 1000,
+            "taxRate": 0,
+            "taxAmount": 0
+          }
+        ]
+      },
+      "qualityGroup": "textEnglish"
     },
     {
       "id": "gst",
@@ -27,8 +37,18 @@
         "taxAmount": 180,
         "grandTotal": 1180,
         "currency": "INR",
-        "lineItems": [{ "description": "Service", "quantity": 2, "rate": 500, "amount": 1180 }]
-      }
+        "lineItems": [
+          {
+            "description": "Service",
+            "quantity": 2,
+            "rate": 500,
+            "amount": 1180,
+            "taxRate": 0,
+            "taxAmount": 180
+          }
+        ]
+      },
+      "qualityGroup": "indianGst"
     },
     {
       "id": "multi-page",
@@ -41,8 +61,18 @@
         "taxAmount": 180,
         "grandTotal": 1180,
         "currency": "INR",
-        "lineItems": [{ "description": "Consulting", "quantity": 2, "rate": 500, "amount": 1000 }]
-      }
+        "lineItems": [
+          {
+            "description": "Consulting",
+            "quantity": 2,
+            "rate": 500,
+            "amount": 1000,
+            "taxRate": 0,
+            "taxAmount": 0
+          }
+        ]
+      },
+      "qualityGroup": "textEnglish"
     },
     {
       "id": "discount",
@@ -55,8 +85,18 @@
         "taxAmount": 0,
         "grandTotal": 800,
         "currency": "INR",
-        "lineItems": [{ "description": "Item", "quantity": 2, "rate": 500, "amount": 900 }]
-      }
+        "lineItems": [
+          {
+            "description": "Item",
+            "quantity": 2,
+            "rate": 500,
+            "amount": 900,
+            "taxRate": 0,
+            "taxAmount": 0
+          }
+        ]
+      },
+      "qualityGroup": "textEnglish"
     },
     {
       "id": "missing-fields",
@@ -69,13 +109,24 @@
         "taxAmount": 0,
         "grandTotal": 100,
         "currency": "INR",
-        "lineItems": [{ "description": "Item", "quantity": 1, "rate": 100, "amount": 100 }]
-      }
+        "lineItems": [
+          {
+            "description": "Item",
+            "quantity": 1,
+            "rate": 100,
+            "amount": 100,
+            "taxRate": 0,
+            "taxAmount": 0
+          }
+        ]
+      },
+      "qualityGroup": "textEnglish"
     },
     {
       "id": "malformed",
       "kind": "malformed",
-      "expectedError": "PDF_CORRUPT"
+      "expectedError": "PDF_CORRUPT",
+      "qualityGroup": "excluded"
     },
     {
       "id": "empty",
@@ -90,7 +141,53 @@
         "grandTotal": 0,
         "currency": "INR",
         "lineItems": []
-      }
+      },
+      "qualityGroup": "textEnglish"
+    },
+    {
+      "id": "multi-invoice",
+      "kind": "multi-invoice",
+      "qualityGroup": "multiInvoice",
+      "expectedInvoices": [
+        {
+          "invoiceNumber": "INV-MULTI-A-001",
+          "invoiceDate": "2026-09-17",
+          "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+          "subtotal": 100,
+          "taxAmount": 18,
+          "grandTotal": 118,
+          "currency": "INR",
+          "lineItems": [
+            {
+              "description": "Part A",
+              "quantity": 1,
+              "rate": 100,
+              "amount": 100,
+              "taxRate": 0,
+              "taxAmount": 0
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-MULTI-B-002",
+          "invoiceDate": "2026-09-17",
+          "sellerName": "Fictional Meridian Supplies Pvt Ltd",
+          "subtotal": 100,
+          "taxAmount": 18,
+          "grandTotal": 118,
+          "currency": "INR",
+          "lineItems": [
+            {
+              "description": "Part B",
+              "quantity": 2,
+              "rate": 50,
+              "amount": 100,
+              "taxRate": 0,
+              "taxAmount": 0
+            }
+          ]
+        }
+      ]
     }
   ]
 }

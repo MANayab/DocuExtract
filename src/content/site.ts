@@ -1,3 +1,5 @@
+import packageJson from '../../package.json';
+
 /**
  * Single source of truth for the site's marketing copy. The React UI, the
  * pre-rendered HTML that crawlers read, and the JSON-LD structured data are
@@ -14,7 +16,7 @@ export const SITE = {
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',
-  version: '1.5.0',
+  version: packageJson.version,
   themeColor: '#2563eb',
   keywords:
     'pdf invoice to excel, invoice data extraction, gst invoice to excel, invoice ocr, convert invoice pdf to csv, private invoice parser',

@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## [1.5.1] — Quality-gate work in progress
+## [1.5.1] — 2026-11-03
 
 ### Currency policy
 
@@ -22,7 +22,7 @@ All notable changes to this project are documented here.
 - HSN/SAC is not yet represented in the `InvoiceItem` schema, so it is not claimed as extracted or benchmark-verified.
 - German and Hindi OCR remain experimental until representative fixture coverage and trusted field-level results are available.
 
-## [1.5.0] — In preparation
+## [1.5.0] — Released
 
 ### Added
 

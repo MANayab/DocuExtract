@@ -167,11 +167,7 @@ function parseByColumns(line: string, headerRoles: Role[] | null, locale: Locale
 }
 
 /** Fallback for single-spaced text where no column gaps exist. */
-function parseLoosely(
-  line: string,
-  locale: LocaleCode,
-  headerRoles: Role[] | null,
-): Row | null {
+function parseLoosely(line: string, locale: LocaleCode, headerRoles: Role[] | null): Row | null {
   const matches = [...line.matchAll(NUMBER_TOKEN)];
   const nums = matches.map((m) => normalizeNumber(m[0], locale));
 

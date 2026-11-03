@@ -259,7 +259,7 @@ describe('offline extraction quality benchmark', () => {
         const invoice = invoices[index];
         if (!invoice) {
           fixtureHasErrors = true;
-          for (const [field, expectedValue] of Object.entries(expectedInvoice)) {
+          for (const field of Object.keys(expectedInvoice)) {
             const count = fieldCounts.get(field) ?? { correct: 0, total: 0 };
             count.total += 1;
             fieldCounts.set(field, count);

@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented here.
 
+## [1.5.1] — Quality-gate work in progress
+
+### Currency policy
+
+- Currency symbols and recognized currency codes are extracted explicitly. When no marker is present, the parser deliberately falls back to INR at low confidence and attaches a review warning; this is not treated as confirmed invoice evidence.
+- The benchmark now expects INR for fixtures with no currency marker, matching the existing extraction policy. The field remains review-required until a user confirms it.
+
+### Extraction quality and CI gate
+
+- Fixed deterministic line-item tokenization for single-spaced PDF text: quantity, rate, amount and GST/discount columns are no longer swallowed into one whitespace-containing number token.
+- Use header column order when positioned column gaps are unavailable, including tax amount and discount columns; carry wrapped description lines into the next numeric row.
+- Added a real two-invoice PDF fixture and focused parser regression tests for basic, GST, discount, sparse and wrapped-description rows.
+- The offline benchmark now fails CI unless text-English critical-field accuracy is at least 95%, Indian GST accuracy at least 90%, multi-invoice splitting at least 90%, and each XLSX / invoice CSV / line-items CSV / JSON export is verified at 100%. Previously passing invoice number, date, seller, subtotal, tax and grand-total fields must not regress.
+- The OCR asset-size audit now runs on pushes to `release/v1.5.1` and on pull requests targeting `main`; it is not counted as passed when skipped.
+
+### Known limits
+
+- HSN/SAC is not yet represented in the `InvoiceItem` schema, so it is not claimed as extracted or benchmark-verified.
+- German and Hindi OCR remain experimental until representative fixture coverage and trusted field-level results are available.
+
 ## [1.5.0] — In preparation
 
 ### Added

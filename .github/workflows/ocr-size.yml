@@ -1,6 +1,8 @@
 name: OCR asset size audit
 
 on:
+  push:
+    branches: [release/v1.5.1]
   pull_request:
     branches: [main]
 
@@ -13,7 +15,6 @@ permissions:
 
 jobs:
   measure:
-    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'feat/v1.4.0-ocr-languages-2'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch

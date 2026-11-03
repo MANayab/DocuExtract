@@ -10,13 +10,14 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "format:check": "prettier --check .",
+    "format:check": "node scripts/format-check.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prebuild": "node scripts/prepare-ocr-assets.mjs",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "benchmark": "vitest run src/tests/quality/benchmark.test.ts"
   },
   "dependencies": {
     "@tesseract.js-data/deu": "1.0.0",

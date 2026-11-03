@@ -232,10 +232,9 @@ describe('offline extraction quality benchmark', () => {
       const segments = splitInvoices(raw);
       const invoices = segments.map((segment) => parseInvoice(segment.raw));
       const expected = fixture.expectedInvoices ?? (fixture.critical ? [fixture.critical] : []);
-      expect(
-        expected.length,
-        `${fixture.id} must define expected invoice values`,
-      ).toBeGreaterThan(0);
+      expect(expected.length, `${fixture.id} must define expected invoice values`).toBeGreaterThan(
+        0,
+      );
 
       expectedInvoicesTotal += expected.length;
       actualInvoicesTotal += invoices.length;
@@ -377,9 +376,9 @@ describe('offline extraction quality benchmark', () => {
       };
       expect(json.invoices).toHaveLength(invoices.length);
       expect(json.invoices.every((entry) => Boolean(entry.invoice))).toBe(true);
-      expect(json.invoices.map((entry) => entry.invoice.invoiceNumber.value).filter(Boolean)).toEqual(
-        invoices.map((invoice) => invoice.invoiceNumber.value).filter(Boolean),
-      );
+      expect(
+        json.invoices.map((entry) => entry.invoice.invoiceNumber.value).filter(Boolean),
+      ).toEqual(invoices.map((invoice) => invoice.invoiceNumber.value).filter(Boolean));
       expect(
         json.invoices.flatMap((entry) => entry.invoice.items.map((item) => item.description.value)),
       ).toEqual(expectedDescriptions);
@@ -564,18 +563,20 @@ describe('offline extraction quality benchmark', () => {
       '',
       '| Critical field | Correct | Total | Accuracy |',
       '|---|---:|---:|---:|',
-      ...Object.entries(report.fieldAccuracy).map(([field, value]) =>
-        `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`,
+      ...Object.entries(report.fieldAccuracy).map(
+        ([field, value]) =>
+          `| ${field} | ${value.correct} | ${value.total} | ${value.percentage}% |`,
       ),
       '',
       '## Line-item diagnostics',
       '',
       '| Fixture | Expected items | Actual items | Exact match |',
       '|---|---:|---:|---|',
-      ...report.lineItemDiagnostics.map((item) =>
-        `| ${String(item.fixture)} | ${String(item.expectedCount)} | ${String(item.actualCount)} | ${
-          item.matched ? 'yes' : 'no'
-        } |`,
+      ...report.lineItemDiagnostics.map(
+        (item) =>
+          `| ${String(item.fixture)} | ${String(item.expectedCount)} | ${String(item.actualCount)} | ${
+            item.matched ? 'yes' : 'no'
+          } |`,
       ),
       '',
       '## Currency policy',

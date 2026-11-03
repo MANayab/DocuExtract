@@ -7,6 +7,7 @@ import { invoicesToJson } from '../../features/export/jsonExporter';
 import { invoicesToXlsx } from '../../features/export/xlsxExporter';
 import { parseInvoice } from '../../features/extraction/invoiceParser';
 import { splitInvoices } from '../../features/extraction/splitInvoices';
+import { loadPdf } from '../../features/pdf/pdfLoader';
 import { extractPdf } from '../../features/pdf/pdfTextExtractor';
 import { validateInvoice } from '../../features/validation/invoiceValidator';
 import { generateFixture, type FixtureKind } from '../fixtures/generateFixtures';
@@ -42,6 +43,26 @@ const outputDir = join(process.cwd(), 'output');
 
 function equal(actual: unknown, expected: unknown) {
   return JSON.stringify(actual) === JSON.stringify(expected);
+}
+
+async function extractBenchmarkPdf(file: File) {
+  try {
+    return await extractPdf(file);
+  } catch (error) {
+    try {
+      await loadPdf(await file.arrayBuffer());
+    } catch (parserError) {
+      const details =
+        parserError instanceof Error
+          ? `${parserError.message}\\n${parserError.stack ?? ''}`
+          : String(parserError);
+      throw new Error(`PDF.js failed to load benchmark fixture ${file.name}: ${details}`, {
+        cause: error,
+      });
+    }
+
+    throw error;
+  }
 }
 
 describe('offline extraction quality benchmark', () => {
@@ -103,7 +124,7 @@ describe('offline extraction quality benchmark', () => {
         continue;
       }
 
-      const raw = await extractPdf(file);
+      const raw = await extractBenchmarkPdf(file);
       const segments = splitInvoices(raw);
       const invoices = segments.map((segment) => parseInvoice(segment.raw));
       const invoice = invoices[0];

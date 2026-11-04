@@ -6,7 +6,8 @@ import packageJson from '../../../package.json';
 import lockfile from '../../../package-lock.json';
 import { describe, expect, it } from 'vitest';
 
-const read = (file: string) => readFileSync(resolve(process.cwd(), file), 'utf8');
+const read = (file: string) =>
+  readFileSync(resolve(process.cwd(), file), 'utf8');
 const version = String(packageJson.version);
 
 describe('documentation consistency', () => {

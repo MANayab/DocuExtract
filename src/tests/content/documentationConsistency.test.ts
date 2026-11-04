@@ -20,7 +20,9 @@ describe('documentation consistency', () => {
     expect(read('CHANGELOG.md')).toContain('## [' + version + '] —');
   });
 
-  it('lists every released changelog version in the roadmap and keeps Next unreleased', () => {
+  it(
+    'lists every released changelog version in the roadmap and keeps Next unreleased',
+    () => {
     const changelog = read('CHANGELOG.md');
     const roadmap = read('docs/ROADMAP.md');
     const released = [
@@ -37,7 +39,8 @@ describe('documentation consistency', () => {
     for (const item of released) {
       expect(next).not.toContain('v' + item);
     }
-  });
+    },
+  );
 
   it('rejects released preparation markers and stale OCR wording', () => {
     const changelog = read('CHANGELOG.md');

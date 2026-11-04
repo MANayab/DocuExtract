@@ -85,7 +85,6 @@ export function App() {
     return (
       <div className="dx-app">
         <Header onHome={goHome} />
-      <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
         <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
         <main id="main">
           <ReviewScreen
@@ -143,6 +142,7 @@ export function App() {
         Skip to content
       </a>
       <Header onHome={goHome} />
+      <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
 
       <main id="main">
         <section className="dx-hero">

@@ -22,7 +22,7 @@ All notable changes to this project are documented here.
 - HSN/SAC is not yet represented in the `InvoiceItem` schema, so it is not claimed as extracted or benchmark-verified.
 - German and Hindi OCR remain experimental until representative fixture coverage and trusted field-level results are available.
 
-## [1.5.0] — Released
+## [1.5.0] — 2026-10-31
 
 ### Added
 
@@ -38,7 +38,7 @@ All notable changes to this project are documented here.
 - Review remains the final authority. Templates are reading rules and do not replace validation or manual review.
 - If anchors do not match, DocuExtract preserves the general extraction result instead of forcing a template.
 
-## [1.4.0] — In preparation
+## [1.4.0] — 2026-10-29
 
 ### Added
 
@@ -55,9 +55,6 @@ All notable changes to this project are documented here.
 - Defer OCR manifest/model requests until OCR is explicitly requested; text-only PDFs do not fetch OCR assets.
 - Permit retry after a failed manifest or language-model load without silently changing languages.
 
-### QA notes
-
-- Mixed text/scanned-page OCR, cancellation, model-failure recovery and per-page cleanup remain pending until implemented and verified. This version is not released.
 
 ## [1.3.1] — 2026-10-12
 
@@ -65,7 +62,7 @@ All notable changes to this project are documented here.
 
 - Production version source synchronized to 1.3.1.
 
-## [1.3.0] — Prepared release
+## [1.3.0] — 2026-10-11
 
 ### Fixed
 
@@ -75,7 +72,7 @@ All notable changes to this project are documented here.
 
 - OCR rotation/deskew and invoice-boundary edge cases remain limitations or unverified behaviors; this release does not claim to fix them. See [the v1.3.0 QA audit](docs/audit/v1.3.0-audit.md).
 
-## [1.2.0] — Release candidate
+## [1.2.0] — 2026-10-10
 
 ### Added
 
@@ -97,7 +94,7 @@ All notable changes to this project are documented here.
 - **Combined exports.** One Excel workbook with one row per invoice (plus Line Items, Parties, Taxes, Validation, Extraction Metadata for all invoices), a Status and Review Notes column, CSV for invoices or line items (UTF-8 BOM for Excel), and JSON with validation status.
 - **Multiple invoices per PDF.** A PDF is split where the invoice number changes; multi-page invoices stay together.
 - **Labels above values.** Invoice number and dates are read when printed below their labels, using cell positions.
-- **Per-line GST columns.** Header-driven mapping of HSN, taxable value, tax rate (CGST % + SGST % summed) and tax amount; validators accept tax-inclusive line totals.
+- **Per-line GST columns.** Header-driven mapping of taxable value, tax rate (CGST % + SGST % summed) and tax amount; validators accept tax-inclusive line totals. HSN/SAC is not represented in the invoice item data model and is not claimed as extracted.
 - **Optional local OCR** for scanned PDFs (Tesseract in a Web Worker, WASM core and English data served from this site, no CDN). OCR values are marked `ocr`, capped at 75% confidence, and always need review. Build-time asset script and `docs/OCR.md`.
 - **Search and AI discoverability.** Meta tags, canonical, Open Graph / Twitter cards, JSON-LD (`WebSite`, `WebApplication`, `FAQPage`), pre-rendered HTML, `sitemap.xml`, `robots.txt`, `llms.txt`, web manifest and icons; Search Console guide in `docs/SEO.md`.
 - New responsive design system and review screen with confidence bands and neutral styling for optional fields that are absent.

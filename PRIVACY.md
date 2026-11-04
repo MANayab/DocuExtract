@@ -1,19 +1,11 @@
 # Privacy
 
-DocuExtract is designed as a zero-backend browser application. The application code processes selected PDF files locally in the browser and does not send invoice content to an application server, database, analytics service, or telemetry endpoint.
+DocuExtract is a zero-backend browser application. The application code processes selected PDF files locally in the browser and does not send invoice content to an application server, database, analytics service or telemetry endpoint.
 
-The application does not intentionally store invoice data in localStorage, sessionStorage, or URLs. Processing uses in-memory browser objects and releases the PDF document after extraction.
+Invoice data is not intentionally stored in URLs, localStorage or sessionStorage. Processing uses in-memory browser objects and releases PDF resources after extraction.
 
-This document is not a promise about every network request made by a browser, extension, hosting platform, or future dependency. Users with strict privacy requirements should verify network activity in their own environment before processing sensitive documents.
+The allowed persisted settings are the theme preference and, with explicit consent, seller-template reading rules. Template records are intended to contain seller match keys and reading-rule anchors, not invoice amounts or copied invoice text.
 
-## OCR
+OCR page images are processed locally. The worker, WebAssembly engine and selected language data are served from this application's own origin. The application does not request a third-party OCR CDN.
 
-When OCR is used, the page images, Tesseract worker, WebAssembly engine and selected language data are handled locally and served from this application's own origin. The selected model is requested only when OCR starts; text-only PDFs do not request OCR assets. Nothing is requested from a third-party CDN, and OCR language data is not cached in browser storage.
-
-## Hosting
-
-The site is served by GitHub Pages. GitHub may keep ordinary web-server logs for page requests; those logs do not contain your invoices because invoices are never sent.
-
-## Seller templates
-
-Consent-based seller templates are stored only in this browser's local storage after an explicit user action. Template records contain seller match keys and reading-rule anchors only; they are designed not to contain invoice amounts or copied invoice text. Invoice files and extracted invoice data remain in memory and are not stored in URLs, localStorage or sessionStorage by the application.
+The static site is served by GitHub Pages. Users with strict privacy requirements should verify network activity in their own environment. This document describes the application code and does not control browser extensions, hosting logs or future dependency behavior.

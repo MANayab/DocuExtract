@@ -1,16 +1,15 @@
 # Security
 
 ## Implemented controls
-- Browser-only processing; no application backend.
-- 25 MB file and 100 page limits; OCR limit is 20 pages.
-- PDF parsing occurs in pdf.js's own dedicated Web Worker, bundled locally; PDF-supplied script evaluation is disabled (`isEvalSupported: false`).
-- Formula-injection characters (`= + - @`, tab, carriage return) are prefixed before every XLSX and CSV cell is written.
-- OCR runs in a Web Worker with the Tesseract engine, WASM core and language data served from the same origin; `wasm-unsafe-eval` is the only relaxation in the Content-Security-Policy and no remote origin is allowed.
-- Every exported cell (XLSX and CSV) passes through one sanitizer inside the workbook model.
-- Structured data and pre-rendered HTML are generated from typed content and escaped; JSON-LD cannot close its own script element.
-- No invoice content is logged with `console` in production builds.
-- No invoice data is placed in URLs, localStorage, or sessionStorage.
+
+- Browser-only processing with no application backend.
+- PDF limits of 25 MB and 100 pages; OCR processing is limited to 20 scanned pages.
+- pdf.js runs locally and PDF-supplied script evaluation is disabled.
+- Formula-injection characters are sanitized before XLSX and CSV cells are written.
+- OCR uses locally served same-origin worker, WebAssembly and language assets. The CSP has no remote origins.
 - React rendering avoids raw HTML injection.
-- A Content-Security-Policy meta tag restricts scripts, connections and workers to the application's own origin. GitHub Pages cannot set HTTP response headers, so header-only directives such as `frame-ancestors` are not available.
+- No invoice data is intentionally placed in URLs, localStorage or sessionStorage.
+- Seller-template rules may be persisted only after explicit consent; invoice files and extracted invoice data are not persisted there.
+- CI runs type checking, linting, tests and build validation before deployment.
 
 Report suspected vulnerabilities privately to the repository maintainer before public disclosure when practical.

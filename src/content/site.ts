@@ -45,7 +45,7 @@ export function features(ocrBundled: boolean): Feature[] {
     {
       id: 'gst',
       title: 'GST-aware',
-      body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line tax columns such as HSN, taxable value and tax rate.',
+      body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line taxable value, tax rate and tax amount. HSN/SAC extraction is not currently supported.',
     },
     {
       id: 'validated',
@@ -113,12 +113,12 @@ export function faqItems(ocrBundled: boolean): FaqItem[] {
     },
     {
       q: 'Does it work with GST invoices?',
-      a: 'Yes. It reads GSTIN numbers, CGST, SGST and IGST amounts and per-line tax columns (HSN, taxable value, tax rate and tax amount), then checks that line items, tax and totals reconcile. Always review the result before filing returns.',
+      a: 'Yes. It reads GSTIN numbers, CGST, SGST and IGST amounts and per-line tax columns (taxable value, tax rate and tax amount), then checks that line items, tax and totals reconcile. Always review the result before filing returns.',
     },
     {
       q: 'Can it read scanned invoices?',
       a: ocrBundled
-        ? 'Yes. Scanned or image-only PDFs can be read with built-in English, German or Hindi OCR that runs locally in your browser. Choose the scanned-PDF language independently of invoice locale. OCR is less accurate than direct text extraction, so results need review and confidence is capped at 75%.'
+        ? 'Yes. Scanned or image-only PDFs can be read with built-in English, German or Hindi OCR that runs locally in your browser. Choose the scanned-PDF language independently of invoice locale. German and Hindi extraction accuracy is experimental. OCR is less accurate than direct text extraction, so results need review and confidence is capped at 75%.'
         : 'Not in this build. Scanned or image-only PDFs need OCR, which is optional and not bundled here; they are listed as needing OCR instead of being guessed.',
     },
     {

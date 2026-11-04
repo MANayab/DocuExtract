@@ -22,7 +22,7 @@ All notable changes to this project are documented here.
 - HSN/SAC is not yet represented in the `InvoiceItem` schema, so it is not claimed as extracted or benchmark-verified.
 - German and Hindi OCR remain experimental until representative fixture coverage and trusted field-level results are available.
 
-## [1.5.0] — Released
+## [1.5.0] — 2026-10-31
 
 ### Added
 
@@ -38,7 +38,7 @@ All notable changes to this project are documented here.
 - Review remains the final authority. Templates are reading rules and do not replace validation or manual review.
 - If anchors do not match, DocuExtract preserves the general extraction result instead of forcing a template.
 
-## [1.4.0] — In preparation
+## [1.4.0] — 2026-10-29
 
 ### Added
 
@@ -55,9 +55,6 @@ All notable changes to this project are documented here.
 - Defer OCR manifest/model requests until OCR is explicitly requested; text-only PDFs do not fetch OCR assets.
 - Permit retry after a failed manifest or language-model load without silently changing languages.
 
-### QA notes
-
-- Mixed text/scanned-page OCR, cancellation, model-failure recovery and per-page cleanup remain pending until implemented and verified. This version is not released.
 
 ## [1.3.1] — 2026-10-12
 
@@ -65,7 +62,7 @@ All notable changes to this project are documented here.
 
 - Production version source synchronized to 1.3.1.
 
-## [1.3.0] — Prepared release
+## [1.3.0] — 2026-10-11
 
 ### Fixed
 
@@ -75,7 +72,7 @@ All notable changes to this project are documented here.
 
 - OCR rotation/deskew and invoice-boundary edge cases remain limitations or unverified behaviors; this release does not claim to fix them. See [the v1.3.0 QA audit](docs/audit/v1.3.0-audit.md).
 
-## [1.2.0] — Release candidate
+## [1.2.0] — 2026-10-10
 
 ### Added
 

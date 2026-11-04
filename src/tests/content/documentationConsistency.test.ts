@@ -39,7 +39,6 @@ describe('documentation consistency', () => {
       for (const item of released) {
         expect(next).not.toContain('v' + item);
       }
-
     },
   );
 

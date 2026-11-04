@@ -8,7 +8,8 @@ GlobalWorkerOptions.workerSrc = workerUrl;
 // Browser builds resolve this against Vite's configured base path, so GitHub
 // Pages uses /DocuExtract/standard_fonts/. Vitest/Node reads the pinned package
 // data directly from disk instead of attempting a browser fetch.
-const standardFontDataUrl = import.meta.env.SSR
+const isNodeRuntime = typeof process !== 'undefined' && Boolean(process.versions?.node);
+const standardFontDataUrl = isNodeRuntime
   ? `${process.cwd()}/node_modules/pdfjs-dist/standard_fonts/`
   : new URL(`${import.meta.env.BASE_URL}standard_fonts/`, import.meta.url).href;
 

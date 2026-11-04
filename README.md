@@ -30,6 +30,7 @@ No backend. No account. No database. No analytics. No telemetry.
 - [Support matrix](#support-matrix)
 - [Known limitations](#known-limitations)
 - [OCR for scanned PDFs](#ocr-for-scanned-pdfs-optional)
+- [Offline PWA](#offline-pwa)
 - [Search and AI discoverability](#search-and-ai-discoverability)
 - [Quick start](#quick-start)
 - [Scripts](#scripts)
@@ -299,6 +300,19 @@ npm run build
 ```
 
 Full guide, limits and troubleshooting: [docs/OCR.md](docs/OCR.md).
+
+## Offline PWA
+
+DocuExtract v1.6.0 adds an offline application shell for the installed or regularly visited GitHub Pages app.
+
+- The service worker caches only same-origin application code and public runtime assets under `/DocuExtract/`.
+- English, German and Hindi OCR models are **not pre-downloaded by the application shell**. A selected model is cached on demand after a successful same-origin OCR request, and each language uses an isolated versioned cache.
+- Invoice PDFs, extracted fields, line items, corrections, exports and seller-template data are never written by the service worker to Cache Storage, `localStorage` or `sessionStorage`.
+- Cache names are versioned. Superseded application-shell caches are removed during activation without touching non-DocuExtract caches.
+- A downloaded update waits for the user. DocuExtract never automatically reloads a tab because active invoice work is memory-only. The update prompt can be deferred, and activation tells the user to reload manually when work is safe.
+- If a download, installation or update check fails, the current page remains usable and the user can retry when online.
+
+Offline support cannot make a never-before-downloaded OCR language available without a network connection. Open the app online once and run OCR in each language you want available offline.
 
 ## Search and AI discoverability
 

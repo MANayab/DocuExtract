@@ -58,7 +58,7 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 | **Local-only processing**          | PDFs are parsed in the browser with pdf.js. No upload, no server round trip.                                                                                                                        |
 | **Batch dashboard**                | Drop up to 50 PDFs at once. Live queue, KPI cards, per-invoice status (Validated, Review, Failed, Scanned) and duplicate detection.                                                                 |
 | **Multi-invoice PDFs**             | A PDF that holds several invoices is split automatically; multi-page invoices stay together.                                                                                                        |
-| **GST-aware**                      | GSTIN per party, CGST / SGST / IGST, and per-line HSN, taxable value, tax rate and tax amount columns.                                                                                              |
+| **GST-aware**                      | GSTIN per party, CGST / SGST / IGST, and per-line taxable value, tax rate and tax amount columns. HSN/SAC extraction is not currently supported.                                                                                              |
 | **Labels above values**            | Reads layouts where "Invoice No." sits above its value, not just `Label: value` lines.                                                                                                              |
 | **Optional local OCR**             | Scanned PDFs can be read with Tesseract running in your browser, from files served by this site (no CDN). Always marked lower confidence.                                                           |
 | **Combined exports**               | One Excel workbook (one row per invoice plus line items, parties, taxes, validation, metadata), CSV for invoices or line items, JSON.                                                               |
@@ -312,7 +312,7 @@ DocuExtract is a static single-page app. There is no server component, so there 
 flowchart TB
     subgraph Browser["User's browser (all processing happens here)"]
         direction TB
-        UI["React 18 UI<br/>Tailwind CSS"]
+        UI["React 18 UI<br/>Hand-written CSS"]
         subgraph Core["Processing pipeline"]
             direction LR
             PDF["pdf.js<br/>text extraction"] --> EXT["Heuristic<br/>extractor"] --> VAL["Zod<br/>validation"]

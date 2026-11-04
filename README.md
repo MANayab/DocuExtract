@@ -28,7 +28,7 @@ No backend. No account. No database. No analytics. No telemetry.
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Support matrix](#support-matrix)
-- [Known limitations](#known-limitations-v120)
+- [Known limitations](#known-limitations)
 - [OCR for scanned PDFs](#ocr-for-scanned-pdfs-optional)
 - [Search and AI discoverability](#search-and-ai-discoverability)
 - [Quick start](#quick-start)
@@ -176,13 +176,13 @@ The offline quality benchmark expects INR for fixtures with no currency marker b
 | Multi-page                | **Yes**, up to 100 pages.                                                                                                                   |
 | Multiple invoices per PDF | **Yes.** Split by invoice number change; multi-page invoices stay together.                                                                 |
 
-## Known limitations (v1.4.0)
+## Known limitations
 
-- **OCR supports English, German and Hindi**, limited to 20 OCR pages per PDF, and slower and less reliable than text PDFs. Every OCR-derived invoice is marked **Review** with confidence capped at 75%.
+- **OCR supports English, German and Hindi**. German and Hindi extraction accuracy is experimental. OCR is limited to 20 OCR pages per PDF; OCR-derived invoices are marked **Review** with confidence capped at 75%.
 - OCR needs a one-time build step to bundle the Tesseract files ([docs/OCR.md](docs/OCR.md)). Without it, scanned PDFs are detected but not read.
 - Multi-invoice splitting relies on the invoice number changing between pages. A PDF where invoices share a number, or print none, is read as one invoice.
 - Line items need visible column gaps and a header row. Tables without a header, or with wrapped two-line headers, may need manual correction on the review screen.
-- Numeric dates such as `05/09/2026` are read as **DD/MM/YYYY**; check the highlighted field when your invoices use MM/DD.
+- Numeric dates follow the selected locale and ambiguous numeric dates require review.
 - Extraction is heuristic. Always review before using values for accounting or tax.
 
 ## Quick start
@@ -291,10 +291,10 @@ flowchart LR
 
 ## OCR for scanned PDFs (optional)
 
-OCR runs entirely in the browser from files served by your own site. Enable it once:
+OCR runs entirely in the browser from files served by your own site. English, German and Hindi assets are prepared from pinned dependencies during the build:
 
 ```bash
-npm install --save-exact '@tesseract.js-data/eng'
+npm ci
 npm run build
 ```
 
@@ -359,25 +359,19 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md). Please do not open
 
 ## Roadmap
 
-```mermaid
-gantt
-    title DocuExtract roadmap
-    dateFormat  YYYY-MM
-    axisFormat  %b %Y
-    section Released
-    v1.0.0 Text-PDF extraction, XLSX/CSV/JSON, review screen :done, v1, 2026-06, 2026-09
-    v1.1.0 Batch, multi-invoice, GST columns, labels above, OCR, dashboard, SEO :done, v11, 2026-10, 2026-10
-    section Next
-    Locale-aware dates and numbers                           :done, loc, 2026-10, 2026-10
-    Selectable English, German and Hindi OCR                    :done, lang, 2026-10, 2026-10
-    Vendor templates stored only with explicit consent       :tpl, 2026-11, 60d
-    section Ideas
-    Dedicated pages per use case (SEO)                       :seo, 2027-02, 30d
-    Installable offline PWA                                  :pwa, 2027-02, 45d
-```
+Released through v1.5.1:
 
-> [!NOTE]
-> Dates are indicative, not commitments. Track real progress in [Issues](https://github.com/MANayab/DocuExtract/issues).
+- v1.0.0: browser-only text-PDF extraction, review, validation and export.
+- v1.1.0: batch processing, multi-invoice splitting, GST handling, English local OCR and combined exports.
+- v1.2.0: locale-aware date and number parsing.
+- v1.3.0 and v1.3.1: parsing hardening and version-source corrections.
+- v1.4.0: selectable English, German and Hindi local OCR, mixed-page handling and OCR asset auditing.
+- v1.5.0: consent-based seller templates with validated local import/export.
+- v1.5.1: extraction-quality improvements, offline quality gates and version consistency.
+
+Next: v1.6.0 is planned as an offline PWA. The scope is service-worker app-shell and local-asset caching, OCR models cached only after use, an update prompt and Playwright offline coverage. Invoice files and extracted data must never be cached.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
 
 ## Tech stack
 

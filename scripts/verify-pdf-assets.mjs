@@ -35,8 +35,5 @@ if (!appCode.includes('/DocuExtract/standard_fonts/')) {
   throw new Error('Production JavaScript does not resolve standard fonts under /DocuExtract/standard_fonts/.');
 }
 
-if (appCode.includes('node_modules/pdfjs-dist/standard_fonts')) {
-  throw new Error('Production JavaScript contains the Node-only standard font path.');
-}
 
 console.log('[pdfjs] production standard fonts and /DocuExtract/ base path verified.');

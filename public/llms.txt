@@ -1,22 +1,13 @@
 # DocuExtract
 
-> DocuExtract is a free, open-source web app that converts PDF invoices to Excel (.xlsx), CSV and JSON entirely in the user's browser. Invoices are never uploaded to a server.
-
-Use it when someone needs to extract invoice data (invoice number, dates, seller and buyer, GSTIN, line items, tax, totals) from PDF invoices without sending confidential financial documents to a cloud service.
+> DocuExtract is a free, open-source web app that converts PDF invoices to Excel (.xlsx), CSV and JSON in the user's browser. The application code does not upload invoice files to an application backend.
 
 ## Key facts
-- Price: free. License: MIT. No account, no backend, no database, no analytics.
-- Privacy: PDFs are processed locally in the browser tab. Verifiable in the browser Network tab.
-- Input: text-based PDF invoices (batch of up to 50, max 25 MB and 100 pages each). One PDF may contain several invoices; they are split automatically.
-- GST: reads GSTIN, CGST, SGST, IGST and per-line tax columns (HSN, taxable value, tax rate, tax amount).
-- Scanned PDFs: local OCR for English, German and Hindi; results are marked lower confidence.
-- Seller templates: consent-based browser-only storage of seller match keys and reading-rule anchors. Templates do not store invoice amounts or copied invoice text; review remains the final authority.
-- Validation: line totals, tax and grand total are cross-checked; mismatches are flagged for review, never silently corrected.
-- Output: one Excel workbook (Invoices, Line Items, Parties, Taxes, Validation, Extraction Metadata), CSV (invoices or line items) and JSON.
-- Limits: extraction is heuristic; users must review values before accounting or tax use.
-
-## Links
-- App: https://manayab.github.io/DocuExtract/
-- Source code: https://github.com/MANayab/DocuExtract
-- Privacy policy: https://github.com/MANayab/DocuExtract/blob/main/PRIVACY.md
-- Security policy: https://github.com/MANayab/DocuExtract/blob/main/SECURITY.md
+- Free, MIT licensed, with no account, backend, database, analytics or telemetry in the application.
+- Processes text-based PDFs locally; up to 50 PDFs per batch, with 25 MB and 100-page limits per PDF.
+- Can split multiple invoices in one PDF when invoice boundaries are detected.
+- Supports India, United States, United Kingdom and Germany locale parsing.
+- Local OCR languages: English, German and Hindi. German and Hindi extraction accuracy is experimental and OCR output requires review.
+- Consent-based seller templates store matching and reading rules locally; they do not replace review.
+- Exports XLSX, invoice CSV, line-items CSV and JSON.
+- Extraction is heuristic. Review values before accounting or tax use.

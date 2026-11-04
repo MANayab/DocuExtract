@@ -1,7 +1,9 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ExcelJS from 'exceljs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+afterEach(() => vi.restoreAllMocks());
 import { invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
 import { invoicesToJson } from '../../features/export/jsonExporter';
 import { invoicesToXlsx } from '../../features/export/xlsxExporter';
@@ -140,6 +142,11 @@ function compareFields(actual: ExpectedFields, expected: ExpectedFields) {
 
 describe('offline extraction quality benchmark', () => {
   it('enforces v1.5.1 field-level, splitting and export quality thresholds', async () => {
+    const standardFontWarningSpies = [
+      vi.spyOn(console, 'warn'),
+      vi.spyOn(console, 'error'),
+      vi.spyOn(console, 'log'),
+    ];
     const report = {
       generatedAt: new Date().toISOString(),
       source:
@@ -611,5 +618,14 @@ describe('offline extraction quality benchmark', () => {
       report.qualityGate.overallPassed,
       'All v1.5.1 release-quality thresholds must pass',
     ).toBe(true);
+
+    const standardFontWarnings = standardFontWarningSpies
+      .flatMap((spy) => spy.mock.calls)
+      .map((args) => args.map(String).join(' '))
+      .filter((message) => /standardFontDataUrl/i.test(message));
+    expect(
+      standardFontWarnings,
+      'PDF.js benchmark extraction must not warn that standardFontDataUrl is missing',
+    ).toEqual([]);
   });
 });

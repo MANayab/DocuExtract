@@ -16,12 +16,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Regenerate lockfile without running lifecycle scripts
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Apply non-breaking npm audit fixes to lockfile only
+        run: npm audit fix --package-lock-only --ignore-scripts
       - name: Upload regenerated lockfile
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: refreshed-package-lock
+          name: audited-package-lock
           path: package-lock.json
           if-no-files-found: error
           retention-days: 3

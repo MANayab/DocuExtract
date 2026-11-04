@@ -6,7 +6,8 @@ import packageJson from '../../../package.json';
 import lockfile from '../../../package-lock.json';
 import { describe, expect, it } from 'vitest';
 
-const read = (file: string) => readFileSync(resolve(process.cwd(), file), 'utf8');
+const read = (file: string) =>
+  readFileSync(resolve(process.cwd(), file), 'utf8');
 const version = String(packageJson.version);
 
 describe('documentation consistency', () => {
@@ -15,34 +16,27 @@ describe('documentation consistency', () => {
     expect(lockfile.packages[''].version).toBe(version);
   });
 
-  it('keeps the README badge and first changelog release synchronized', () => {
+  it('keeps the README badge and changelog release synchronized', () => {
     expect(read('README.md')).toContain('version-' + version + '-');
     expect(read('CHANGELOG.md')).toContain('## [' + version + '] —');
   });
 
-  it(
-    'lists every released changelog version in the roadmap and keeps Next unreleased',
-    () => {
-      const changelog = read('CHANGELOG.md');
-      const roadmap = read('docs/ROADMAP.md');
-      const released = [
-        ...changelog.matchAll(
-          /^## \[(\d+\.\d+\.\d+)\] — \d{4}-\d{2}-\d{2}$/gm,
-        ),
-      ].map((match) => match[1]);
+  it('lists all released versions in the roadmap', () => {
+    const changelog = read('CHANGELOG.md');
+    const roadmap = read('docs/ROADMAP.md');
+    const released = [...changelog.matchAll(/^## \[(\d+\.\d+\.\d+)\]/gm)];
 
-      for (const item of released) {
-        expect(roadmap).toContain('v' + item);
-      }
+    for (const match of released) {
+      expect(roadmap).toContain('v' + match[1]);
+    }
 
-      const next = roadmap.split(/^## Next$/m)[1]?.split(/^## /m)[0] ?? '';
-      for (const item of released) {
-        expect(next).not.toContain('v' + item);
-      }
-    },
-  );
+    const next = roadmap.split(/^## Next$/m)[1]?.split(/^## /m)[0] ?? '';
+    for (const match of released) {
+      expect(next).not.toContain('v' + match[1]);
+    }
+  });
 
-  it('rejects released preparation markers and stale OCR wording', () => {
+  it('rejects unreleased changelog markers and stale OCR wording', () => {
     const changelog = read('CHANGELOG.md');
     expect(changelog).not.toMatch(
       /^## \[\d+\.\d+\.\d+\] — In preparation$/m,

@@ -2,8 +2,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ExcelJS from 'exceljs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-
-afterEach(() => vi.restoreAllMocks());
 import { invoicesToCsv, lineItemsToCsv } from '../../features/export/csvExporter';
 import { invoicesToJson } from '../../features/export/jsonExporter';
 import { invoicesToXlsx } from '../../features/export/xlsxExporter';
@@ -14,6 +12,8 @@ import { extractPdf } from '../../features/pdf/pdfTextExtractor';
 import { validateInvoice } from '../../features/validation/invoiceValidator';
 import { generateFixture, type FixtureKind } from '../fixtures/generateFixtures';
 import manifest from './benchmark-fixtures.json';
+
+afterEach(() => vi.restoreAllMocks());
 
 type ExpectedLine = {
   description: string;

@@ -7,7 +7,7 @@ export interface PwaController {
   activateUpdate(): void;
 }
 
-export function registerPwa(): PwaController {
+function createPwaController(): PwaController {
   let state: PwaUpdateState = 'checking';
   const listeners = new Set<(state: PwaUpdateState) => void>();
   let registration: ServiceWorkerRegistration | undefined;
@@ -44,4 +44,11 @@ export function registerPwa(): PwaController {
     .catch(() => setState('error'));
 
   return controller;
+}
+
+let singleton: PwaController | undefined;
+
+export function getPwaController(): PwaController {
+  singleton ??= createPwaController();
+  return singleton;
 }

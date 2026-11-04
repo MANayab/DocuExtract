@@ -46,39 +46,64 @@ jobs:
               return [];
             });
           };
+          const compareVersion = (left, right) => {
+            const a = String(left).split('.').map(Number);
+            const b = String(right).split('.').map(Number);
+            for (let i = 0; i < 3; i++) {
+              if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) - (b[i] ?? 0);
+            }
+            return 0;
+          };
           for (const [name, item] of Object.entries(audit.vulnerabilities ?? {})) {
-            const installed = Object.entries(lock.packages ?? {})
-              .filter(([path]) => path === 'node_modules/' + name || path.endsWith('/node_modules/' + name))
-              .map(([path, pkg]) => `${pkg.version} at ${path}`)
-              .join('; ') || 'not found in lockfile';
+            const installedEntries = Object.entries(lock.packages ?? {})
+              .filter(([path]) => path === 'node_modules/' + name || path.endsWith('/node_modules/' + name));
+            const installed = installedEntries.map(([path, pkg]) => `${pkg.version} at ${path}`).join('; ') || 'not found in lockfile';
             const titles = [...new Set(collectAdvisories(name))].join('; ') ||
               'No advisory object on this dependency node; follow its dependency chain in npm-audit.json';
             const fix = item.fixAvailable;
-            const fixed = fix && typeof fix === 'object' ? `${fix.name ?? name}@${fix.version}` : fix === true ? 'npm audit fix candidate' : 'None reported';
+            const fixedName = fix && typeof fix === 'object' ? (fix.name ?? name) : name;
+            const fixedVersion = fix && typeof fix === 'object' ? fix.version : fix === true ? 'npm audit fix candidate' : 'None reported';
+            const currentFixedPackage = lock.packages?.['node_modules/' + fixedName]?.version;
             let classification = 'No fix available';
-            if (fix && typeof fix === 'object' && fix.isSemVerMajor) classification = 'Requires breaking upgrade';
-            else if (fix) classification = 'Safe upgrade';
-            else if (!item.isDirect) classification = 'Transitive — needs upstream fix';
-            rows.push({name, installed, title: titles, severity: item.severity, dependency: item.isDirect ? 'Direct' : 'Transitive', range: item.range ?? 'Not specified', fixed, classification});
+            if (fix && typeof fix === 'object' && currentFixedPackage && compareVersion(fixedVersion, currentFixedPackage) < 0) {
+              classification = 'Transitive — needs upstream fix';
+            } else if (fix && typeof fix === 'object' && fix.isSemVerMajor) {
+              classification = 'Requires breaking upgrade';
+            } else if (fix) {
+              classification = 'Safe upgrade';
+            } else if (!item.isDirect) {
+              classification = 'Transitive — needs upstream fix';
+            }
+            rows.push({
+              name, installed, title: titles, severity: item.severity,
+              dependency: item.isDirect ? 'Direct' : 'Transitive',
+              range: item.range ?? 'Not specified',
+              fixed: fixedVersion === 'None reported' ? fixedVersion : `${fixedName}@${fixedVersion}`,
+              classification,
+            });
           }
           const order = {critical:0, high:1, moderate:2, low:3};
           rows.sort((a,b) => order[a.severity]-order[b.severity] || a.name.localeCompare(b.name));
           const esc = value => String(value).replaceAll('|','\\|').replaceAll('\n',' ');
           const table = ['| Package | Installed version(s) and dependency path(s) | Vulnerability title / advisory | Severity | Dependency | Affected range | Fixed version / candidate | Classification |','|---|---|---|---|---|---|---|---|', ...rows.map(r => '| '+[r.name,r.installed,r.title,r.severity,r.dependency,r.range,r.fixed,r.classification].map(esc).join(' | ')+' |')].join('\n');
           const counts = audit.metadata?.vulnerabilities ?? {};
-          const summary = '# Dependency security audit\n\nGenerated from the committed package-lock.json using npm audit --json. No dependencies were modified. The attached npm-audit.json is the complete raw npm report.\n\n' +
+          const reachability = {
+            tinypool: 'Critical. Development/test-only worker pool. Worker options originate from repository-owned Vitest configuration and test code; no invoice/user input reaches this API. Not shipped in the production bundle.',
+            vitest: 'Critical. Development/test-only runner. Project scripts use `vitest run`; the vulnerable API/UI server is not started. Not shipped in the production bundle. Keep test-runner upgrades on the security roadmap.',
+            vite: 'High. Development/build tooling. The deployed GitHub Pages site is static and does not run the Vite dev server. Local developers may still expose a dev-server attack surface while running it; do not bind it publicly.',
+            zod: 'High. Runtime dependency used for explicit local seller-template imports. The importer enforces a 256 KB input cap before JSON.parse; every array schema has an explicit maximum (100 templates, 20 field mappings, 8 table columns). No network endpoint accepts these payloads. The reported unbounded-array remote exhaustion path is not reachable; a malicious local file can still cause bounded validation work. Track Zod v4 migration separately.',
+          };
+          const criticalHigh = [...new Set(rows.filter(r => r.severity === 'critical' || r.severity === 'high').map(r => r.name))];
+          const reachabilityTable = ['| Package | Production reachability / exposure assessment |','|---|---|',
+            ...criticalHigh.map(name => '| '+name+' | '+(reachability[name] ?? 'Review the raw advisory and dependency path; no production exploit path has been established.')+' |')].join('\n');
+          const summary = '# Dependency security audit\n\nThis non-mutating audit describes the dependency tree committed on this branch. The audit job itself does not modify package files. The attached `npm-audit.json` is the complete raw npm report.\n\n' +
             '## Severity totals\n\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\n') + '\n\n' +
             '## Vulnerability details\n\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
-            '\n\n## Critical/high reachability review\n\n' +
-            '- **Vitest / Tinypool (critical):** development/test-only dependencies. The application build does not ship them. The CI test command is `vitest run`; it does not start the vulnerable Vitest API/UI server. Not an end-user production attack path; CI/test supply-chain risk still warrants patching.\n' +
-            '- **Vite (high):** development/build tooling. Production is a static GitHub Pages build; the Vite dev server is not deployed. The documented filesystem/dev-server paths are not production invoice-processing paths.\n' +
-            '- **PostCSS (high):** build-time CSS processor. Inputs are repository-owned CSS/configuration, not invoice PDFs or user-supplied CSS. No runtime CSS processing path is exposed.\n' +
-            '- **Playwright (high):** development/CI browser tooling. The vulnerable browser-download certificate path is relevant to CI supply-chain integrity, not the deployed app; upgrade the runner dependency.\n' +
-            '- **source-map-js (high):** transitive build/test tooling. Source maps are generated from repository-owned source; no user-provided source maps are parsed by the app.\n' +
-            '- **Zod (high):** runtime template-import validation. `parseTemplateImport` rejects payloads above 256 KB before JSON parsing; schemas cap templates at 100, field mappings at 20 and table columns at 8, with bounded text fields. This bounds the oversized-collection input implicated by the advisory. Keep the v3-to-v4 migration separate unless compatibility is proven.\n' +
-            '\nExcelJS/uuid is a moderate transitive finding, not a critical/high finding. Review the UUID API usage separately before applying an override. npm audit itself cannot prove exploitability.\n';
+            '\n\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
+            '\n\n## Remediation note\n\nSafe same-major or patched transitive updates are applied in the lockfile where compatible. Major upgrades are not forced. Remaining findings with major-only remediation are documented as such and require separate compatibility work.\n';
           fs.writeFileSync('dependency-audit-report.md', summary);
           console.log(summary);
+          console.log('npm audit exit code:', audit_status);
           NODE
           echo "npm audit completed with exit code ${audit_status}; report retained for review."
       - name: Upload full audit evidence

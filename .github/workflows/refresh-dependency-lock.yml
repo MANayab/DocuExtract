@@ -1,0 +1,27 @@
+name: Refresh dependency lockfile
+on:
+  push:
+    branches:
+      - chore/dependency-security-audit
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Regenerate lockfile without running lifecycle scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Upload regenerated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: refreshed-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 3

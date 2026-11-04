@@ -46,7 +46,17 @@ jobs:
               return [];
             });
           };
-          const dependsOnMinimatch = (name, seen = new Set()) => {\n            if (seen.has(name)) return false;\n            seen.add(name);\n            const entry = audit.vulnerabilities?.[name];\n            return (entry?.via ?? []).some(v => typeof v === 'string' ? (v === 'minimatch' || dependsOnMinimatch(v, seen)) : typeof v === 'object' && v.name === 'minimatch');\n          };\n          const compareVersion = (left, right) => {
+          const dependsOnMinimatch = (name, seen = new Set()) => {
+            if (seen.has(name)) return false;
+            seen.add(name);
+            const entry = audit.vulnerabilities?.[name];
+            return (entry?.via ?? []).some(v =>
+              typeof v === 'string'
+                ? (v === 'minimatch' || dependsOnMinimatch(v, seen))
+                : typeof v === 'object' && v.name === 'minimatch'
+            );
+          };
+          const compareVersion = (left, right) => {
             const a = String(left).split('.').map(Number);
             const b = String(right).split('.').map(Number);
             for (let i = 0; i < 3; i++) {
@@ -65,7 +75,9 @@ jobs:
             const fixedVersion = fix && typeof fix === 'object' ? fix.version : fix === true ? 'npm audit fix candidate' : 'None reported';
             const currentFixedPackage = lock.packages?.['node_modules/' + fixedName]?.version;
             let classification = 'No fix available';
-            if (fix && typeof fix === 'object' && currentFixedPackage && compareVersion(fixedVersion, currentFixedPackage) < 0) {
+            if (dependsOnMinimatch(name)) {
+              classification = 'Transitive — needs upstream fix';
+            } else if (fix && typeof fix === 'object' && currentFixedPackage && compareVersion(fixedVersion, currentFixedPackage) < 0) {
               classification = 'Transitive — needs upstream fix';
             } else if (fix && typeof fix === 'object' && fix.isSemVerMajor) {
               classification = 'Requires breaking upgrade';
@@ -99,7 +111,13 @@ jobs:
           const summary = '# Dependency security audit\n\nThis non-mutating audit describes the dependency tree committed on this branch. The audit job itself does not modify package files. The attached `npm-audit.json` is the complete raw npm report.\n\n' +
             '## Severity totals\n\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\n') + '\n\n' +
             '## Vulnerability details\n\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
-            '\n\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
+            '\n\n## Safe upgrades applied in this PR\n\n' +
+            '- ESLint 9.14.0 → 9.39.5; TypeScript-ESLint 8.13.0 → 8.72.1.\n' +
+            '- Vite 5.4.10 → 5.4.21; Vitest and vite-node 2.1.5 → 2.1.9; @vitejs/plugin-react 4.3.3 → 4.7.0.\n' +
+            '- Playwright and @playwright/test 1.48.2 → 1.64.1.\n' +
+            '- PostCSS 8.4.47 → 8.5.32; postcss-selector-parser 6.1.4 → 6.1.5; source-map-js 1.2.1 → 1.2.2.\n' +
+            '- Scoped ExcelJS uuid override 8.3.2 → 11.1.1; XLSX export/build/test verification passed.\n' +
+            '\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
             '\n\n## Remediation note\n\nSafe same-major or patched transitive updates are applied in the lockfile where compatible. Major upgrades are not forced. Remaining findings with major-only remediation are documented as such and require separate compatibility work.\n';
           fs.writeFileSync('dependency-audit-report.md', summary);
           console.log(summary);

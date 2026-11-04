@@ -1,0 +1,73 @@
+name: Dependency security audit
+on:
+  push:
+    branches:
+      - chore/dependency-security-audit
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Non-mutating npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Generate complete dependency audit report
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > npm-audit.json
+          audit_status=$?
+          set -e
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const audit = JSON.parse(fs.readFileSync('npm-audit.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const rows = [];
+          for (const [name, item] of Object.entries(audit.vulnerabilities ?? {})) {
+            const installed = lock.packages?.['node_modules/' + name]?.version ?? 'not found in lockfile';
+            const via = (item.via ?? []).filter(v => typeof v === 'object');
+            const titles = via.map(v => v.title ?? v.name ?? 'Advisory details unavailable').join('; ') || 'See npm advisory';
+            const urls = via.map(v => v.url).filter(Boolean);
+            const fix = item.fixAvailable;
+            const fixed = fix && typeof fix === 'object' ? fix.version : fix === true ? 'npm audit fix candidate' : 'None reported';
+            let classification = 'No fix available';
+            if (item.isDirect) classification = fix && typeof fix === 'object' && fix.isSemVerMajor ? 'Requires breaking upgrade' : fix ? 'Safe upgrade' : 'No fix available';
+            else classification = fix && typeof fix === 'object' && fix.isSemVerMajor ? 'Requires breaking upgrade' : fix ? 'Safe upgrade' : 'Transitive — needs upstream fix';
+            rows.push({name, installed, title: titles, severity: item.severity, dependency: item.isDirect ? 'Direct' : 'Transitive', range: item.range ?? 'Not specified', fixed, classification, urls: urls.join('<br>')});
+          }
+          const order = {critical:0, high:1, moderate:2, low:3};
+          rows.sort((a,b) => order[a.severity]-order[b.severity] || a.name.localeCompare(b.name));
+          const esc = value => String(value).replaceAll('|','\\|').replaceAll('\n',' ');
+          const table = ['| Package | Installed | Vulnerability title | Severity | Dependency | Affected range | Fixed version | Classification | Advisory |','|---|---:|---|---|---|---|---|---|---|', ...rows.map(r => '| '+[r.name,r.installed,r.title,r.severity,r.dependency,r.range,r.fixed,r.classification,r.urls || 'Not supplied by npm'].map(esc).join(' | ')+' |')].join('\n');
+          const counts = audit.metadata?.vulnerabilities ?? {};
+          const summary = '# Dependency security audit\n\nGenerated from the committed package-lock.json using npm audit --json. No dependencies were modified.\n\n' +
+            '## Severity totals\n\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\n') + '\n\n' +
+            '## Vulnerability details\n\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
+            '\n\n## Reachability review\n\nCritical/high advisory reachability must be reviewed against the actual DocuExtract runtime and build paths. npm audit cannot establish application exploitability; no vulnerability is classified as not exploitable without manual source-level evidence.\n';
+          fs.writeFileSync('dependency-audit-report.md', summary);
+          console.log(summary);
+          console.log('npm audit exit code:', process.env.AUDIT_EXIT_CODE ?? 'captured');
+          NODE
+          echo "npm audit completed with exit code ${audit_status}; report retained for review."
+      - name: Upload full audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-audit
+          path: |
+            npm-audit.json
+            dependency-audit-report.md
+          if-no-files-found: error
+          retention-days: 30

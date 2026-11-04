@@ -45,7 +45,7 @@ export function features(ocrBundled: boolean): Feature[] {
     {
       id: 'gst',
       title: 'GST-aware',
-      body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line tax columns such as HSN, taxable value and tax rate.',
+      body: 'Reads GSTIN numbers, CGST, SGST and IGST, and per-line taxable value, tax rate and tax amount. HSN/SAC extraction is not currently supported.',
     },
     {
       id: 'validated',
@@ -113,7 +113,7 @@ export function faqItems(ocrBundled: boolean): FaqItem[] {
     },
     {
       q: 'Does it work with GST invoices?',
-      a: 'Yes. It reads GSTIN numbers, CGST, SGST and IGST amounts and per-line tax columns (HSN, taxable value, tax rate and tax amount), then checks that line items, tax and totals reconcile. Always review the result before filing returns.',
+      a: 'Yes. It reads GSTIN numbers, CGST, SGST and IGST amounts and per-line tax columns (taxable value, tax rate and tax amount), then checks that line items, tax and totals reconcile. Always review the result before filing returns.',
     },
     {
       q: 'Can it read scanned invoices?',

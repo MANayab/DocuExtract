@@ -58,3 +58,27 @@ test('serves the SEO essentials', async ({ page, request }) => {
     expect(response.ok(), file).toBe(true);
   }
 });
+
+test('PDF.js standard font requests stay same-origin under the GitHub Pages base path', async ({
+  page,
+}) => {
+  const standardFontRequests: string[] = [];
+  page.context().on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.includes('/standard_fonts/')) standardFontRequests.push(url.href);
+  });
+
+  await page.goto('/');
+  await page.setInputFiles('input[type="file"]', await pdf('basic', 'standard-fonts.pdf'));
+  await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  const appOrigin = new URL(page.url()).origin;
+  expect(
+    standardFontRequests.every((request) => {
+      const url = new URL(request);
+      return url.origin === appOrigin && url.pathname.startsWith('/DocuExtract/standard_fonts/');
+    }),
+  ).toBe(true);
+});

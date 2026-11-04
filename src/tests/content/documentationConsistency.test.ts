@@ -23,22 +23,23 @@ describe('documentation consistency', () => {
   it(
     'lists every released changelog version in the roadmap and keeps Next unreleased',
     () => {
-    const changelog = read('CHANGELOG.md');
-    const roadmap = read('docs/ROADMAP.md');
-    const released = [
-      ...changelog.matchAll(
-        /^## \[(\d+\.\d+\.\d+)\] — \d{4}-\d{2}-\d{2}$/gm,
-      ),
-    ].map((match) => match[1]);
+      const changelog = read('CHANGELOG.md');
+      const roadmap = read('docs/ROADMAP.md');
+      const released = [
+        ...changelog.matchAll(
+          /^## \[(\d+\.\d+\.\d+)\] — \d{4}-\d{2}-\d{2}$/gm,
+        ),
+      ].map((match) => match[1]);
 
-    for (const item of released) {
-      expect(roadmap).toContain('v' + item);
-    }
+      for (const item of released) {
+        expect(roadmap).toContain('v' + item);
+      }
 
-    const next = roadmap.split(/^## Next$/m)[1]?.split(/^## /m)[0] ?? '';
-    for (const item of released) {
-      expect(next).not.toContain('v' + item);
-    }
+      const next = roadmap.split(/^## Next$/m)[1]?.split(/^## /m)[0] ?? '';
+      for (const item of released) {
+        expect(next).not.toContain('v' + item);
+      }
+
     },
   );
 

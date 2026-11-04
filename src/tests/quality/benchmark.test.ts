@@ -622,7 +622,7 @@ describe('offline extraction quality benchmark', () => {
     const standardFontWarnings = standardFontWarningSpies
       .flatMap((spy) => spy.mock.calls)
       .map((args) => args.map(String).join(' '))
-      .filter((message) => /standardFontDataUrl/i.test(message));
+      .filter((message) => /standardFontDataUrl|Unable to load font data at:.*standard_fonts/i.test(message));
     expect(
       standardFontWarnings,
       'PDF.js benchmark extraction must not warn that standardFontDataUrl is missing',

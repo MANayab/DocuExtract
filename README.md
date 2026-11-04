@@ -111,7 +111,7 @@ flowchart LR
 
 ### Request lifecycle
 
-Everything below happens on the user's device. The only network traffic is the initial load of the static site.
+Invoice files and extracted values are processed on the user's device and are not uploaded by application code. The static app is loaded from GitHub Pages; when OCR is requested, its worker, WebAssembly core and selected language assets may also be fetched from the same origin.
 
 ```mermaid
 sequenceDiagram

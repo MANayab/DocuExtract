@@ -18,14 +18,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Apply non-breaking npm audit fixes to lockfile only
-        shell: bash
-        run: |
-          set +e
-          npm audit fix --package-lock-only --ignore-scripts
-          audit_fix_status=$?
-          set -e
-          echo "npm audit fix exit code: ${audit_fix_status}; unresolved advisories requiring breaking changes remain documented."
+      - name: Regenerate lockfile from reviewed exact versions and safe overrides
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Commit lockfile changes on this feature branch
         shell: bash
         run: |

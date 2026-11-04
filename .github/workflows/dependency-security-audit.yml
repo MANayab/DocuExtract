@@ -46,7 +46,7 @@ jobs:
               return [];
             });
           };
-          const compareVersion = (left, right) => {
+          const dependsOnMinimatch = (name, seen = new Set()) => {\n            if (seen.has(name)) return false;\n            seen.add(name);\n            const entry = audit.vulnerabilities?.[name];\n            return (entry?.via ?? []).some(v => typeof v === 'string' ? (v === 'minimatch' || dependsOnMinimatch(v, seen)) : typeof v === 'object' && v.name === 'minimatch');\n          };\n          const compareVersion = (left, right) => {
             const a = String(left).split('.').map(Number);
             const b = String(right).split('.').map(Number);
             for (let i = 0; i < 3; i++) {

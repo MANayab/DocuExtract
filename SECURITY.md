@@ -13,3 +13,10 @@
 - CI runs type checking, linting, tests and build validation before deployment.
 
 Report suspected vulnerabilities privately to the repository maintainer before public disclosure when practical.
+
+
+## Offline service worker boundary
+
+The service worker is served and scoped under `/DocuExtract/`, accepts only same-origin application requests, and must not cache PDF uploads, invoice data, exports or templates. OCR language assets are cached separately by language after use. A waiting update is user-controlled; the application does not automatically reload a tab that may contain active invoice work.
+
+Dependency-security audit findings are reported separately by CI. A green application test suite does not mean every transitive development-tool vulnerability has been eliminated; remaining findings must be documented with their reachability rather than suppressed.

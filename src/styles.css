@@ -412,7 +412,6 @@ table { border-collapse: collapse; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
-
 /* ---- Offline PWA ------------------------------------------------------- */
 .dx-pwa {
   position: sticky;

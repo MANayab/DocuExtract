@@ -55,9 +55,7 @@ self.addEventListener('message', (event) => {
 });
 
 function isSameOriginAsset(url) {
-  return (
-    url.origin === self.location.origin && url.pathname.startsWith(BASE)
-  );
+  return url.origin === self.location.origin && url.pathname.startsWith(BASE);
 }
 
 function isSensitive(url) {

@@ -11,6 +11,20 @@ const ocrBundled = existsSync(resolve(process.cwd(), 'public/ocr/manifest.json')
  * Injects the SEO <head> tags, JSON-LD and pre-rendered content from
  * src/content so crawlers and AI assistants get real HTML without running JS.
  */
+const pwaPrecache = (): Plugin => ({
+  name: 'docuextract-pwa-precache',
+  generateBundle(_options, bundle) {
+    const assets = Object.keys(bundle).filter(
+      (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\./.test(fileName),
+    );
+    this.emitFile({
+      type: 'asset',
+      fileName: 'precache-manifest.json',
+      source: JSON.stringify({ assets }),
+    });
+  },
+});
+
 const seo = (): Plugin => ({
   name: 'docuextract-seo',
   transformIndexHtml(html) {
@@ -22,7 +36,7 @@ const seo = (): Plugin => ({
 
 export default defineConfig({
   base: '/DocuExtract/',
-  plugins: [react(), seo()],
+  plugins: [react(), seo(), pwaPrecache()],
   define: { __OCR_BUNDLED__: JSON.stringify(ocrBundled) },
   build: {
     target: 'es2022',

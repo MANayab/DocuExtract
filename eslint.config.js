@@ -11,7 +11,11 @@ export default tseslint.config(
       'node_modules/**',
       'coverage/**',
       'playwright-report/**',
-      'test-results/**', 'public/ocr/**', 'ocr-data/**', 'public/ocr/**', 'ocr-data/**',
+      'test-results/**',
+      'public/ocr/**',
+      'ocr-data/**',
+      'public/ocr/**',
+      'ocr-data/**',
     ],
   },
 
@@ -56,6 +60,16 @@ export default tseslint.config(
       sourceType: 'module',
       globals: {
         ...globals.node,
+      },
+    },
+  },
+
+  {
+    files: ['public/sw.js'],
+
+    languageOptions: {
+      globals: {
+        ...globals.serviceworker,
       },
     },
   },

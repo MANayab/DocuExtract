@@ -64,10 +64,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(storage.databases.filter(Boolean)).toEqual([]);
 });
 
-test('caches OCR models on demand and returns a clear offline error for an uncached language', async ({
-  page,
-  context,
-}) => {
+test(
+  'caches OCR models on demand and returns a clear offline error for an uncached language',
+  async ({ page, context }) => {
   await waitForWorker(page);
 
   const online = await page.evaluate(async () => {
@@ -104,7 +103,8 @@ test('caches OCR models on demand and returns a clear offline error for an uncac
   expect(results.cached).toBe(true);
   expect(results.uncachedStatus).toBe(503);
   expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
-});
+  },
+);
 
 test('failed update checks do not reload or discard the current page', async ({ page }) => {
   await waitForWorker(page);

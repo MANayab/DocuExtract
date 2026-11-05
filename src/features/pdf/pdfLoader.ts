@@ -5,9 +5,18 @@ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 // so the UI thread stays responsive.
 GlobalWorkerOptions.workerSrc = workerUrl;
 
+// Browser builds resolve this against Vite's configured base path, so GitHub
+// Pages uses /DocuExtract/standard_fonts/. Vitest/Node reads the pinned package
+// data directly from disk instead of attempting a browser fetch.
+const isNodeRuntime = typeof process !== 'undefined' && Boolean(process.versions?.node);
+const standardFontDataUrl = isNodeRuntime
+  ? `${process.cwd()}/node_modules/pdfjs-dist/standard_fonts/`
+  : String(import.meta.env.BASE_URL) + 'standard_fonts/';
+
 export async function loadPdf(data: ArrayBuffer) {
   const task = getDocument({
     data,
+    standardFontDataUrl,
     // Never evaluate PDF-supplied code; also keeps the CSP free of unsafe-eval.
     isEvalSupported: false,
   });

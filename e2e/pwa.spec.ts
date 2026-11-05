@@ -23,6 +23,11 @@ async function waitForWorker(page: Page) {
   });
   await page.reload();
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  const scope = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    return registration.scope;
+  });
+  expect(scope).toBe('http://127.0.0.1:4173/DocuExtract/');
   await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
     timeout: 30_000,
   });
@@ -33,6 +38,21 @@ test('reloads offline and performs extraction without caching invoice data', asy
   context,
 }) => {
   await waitForWorker(page);
+  const precache = await page.evaluate(async () => {
+    const response = await fetch('/DocuExtract/precache-manifest.json');
+    const manifest = (await response.json()) as { assets: string[] };
+    const shellName = (await caches.keys()).find((name) => name.endsWith('-shell'));
+    if (!shellName) throw new Error('The application shell cache is missing.');
+    const shell = await caches.open(shellName);
+    const missing = await Promise.all(
+      manifest.assets.map(async (asset) =>
+        (await shell.match('/DocuExtract/' + asset)) ? null : asset,
+      ),
+    );
+    return { assets: manifest.assets, missing: missing.filter(Boolean) };
+  });
+  expect(precache.assets.some((asset) => /pdfTextExtractor-.*\\.js$/.test(asset))).toBe(true);
+  expect(precache.missing).toEqual([]);
 
   await context.setOffline(true);
   await page.reload();

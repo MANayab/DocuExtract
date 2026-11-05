@@ -48,6 +48,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
       typeof indexedDB.databases === 'function'
         ? await indexedDB.databases()
         : [];
+
     return {
       cacheEntries,
       local: Object.values(localStorage),
@@ -69,36 +70,39 @@ test(
   async ({ page, context }) => {
     await waitForWorker(page);
 
-  const online = await page.evaluate(async () => {
-    const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
-      cache: 'no-store',
+    const online = await page.evaluate(async () => {
+      const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
+        cache: 'no-store',
+      });
+      return response.ok;
     });
-    return response.ok;
-  });
     expect(online).toBe(true);
 
     const cacheNames = await page.evaluate(() => caches.keys());
     expect(cacheNames.some((name) => name.endsWith('-ocr-eng'))).toBe(true);
     expect(
       cacheNames.some(
-      (name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'),
+        (name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'),
       ),
     ).toBe(false);
 
     await context.setOffline(true);
     const results = await page.evaluate(async () => {
-    const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
-      cache: 'no-store',
-    }).then((response) => response.ok);
-    const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', {
-      cache: 'no-store',
+      const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
+        cache: 'no-store',
+      }).then((response) => response.ok);
+      const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', {
+        cache: 'no-store',
+      });
+      const body =
+        uncached.status === 503 ? await uncached.json() : { error: undefined };
+
+      return {
+        cached,
+        uncachedStatus: uncached.status,
+        uncachedBody: body,
+      };
     });
-    return {
-      cached,
-      uncachedStatus: uncached.status,
-      uncachedBody: await uncached.json(),
-    };
-  });
 
     expect(results.cached).toBe(true);
     expect(results.uncachedStatus).toBe(503);

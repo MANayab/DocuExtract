@@ -21,6 +21,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Temporary formatter output for diagnosis only
+        run: npx prettier --write e2e/pwa.spec.ts public/sw.js vite.config.ts
+      - name: Upload temporary formatter output
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-prettier-output
+          path: |
+            e2e/pwa.spec.ts
+            public/sw.js
+            vite.config.ts
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck

@@ -1,5 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { generateFixture } from '../src/tests/fixtures/generateFixtures';
+
+const appHeading = /PDF Invoice to Excel/i;
 
 const pdf = async (name: string) => ({
   name,
@@ -7,63 +9,112 @@ const pdf = async (name: string) => ({
   buffer: Buffer.from(await generateFixture('basic')),
 });
 
-async function waitForWorker(page: import('@playwright/test').Page) {
+async function waitForWorker(page: Page) {
   await page.goto('/');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
-  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
-test('reloads offline and performs extraction without caching invoice data', async ({ page, context }) => {
+test('reloads offline and performs extraction without caching invoice data', async ({
+  page,
+  context,
+}) => {
   await waitForWorker(page);
-  await page.reload();
-  await page.waitForLoadState('networkidle');
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: /PDF invoices/i })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
+    timeout: 30_000,
+  });
 
   await page.setInputFiles('input[type="file"]', await pdf('offline.pdf'));
-  await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByRole('heading', { name: 'Review extracted fields' }),
+  ).toBeVisible({ timeout: 30_000 });
 
-  const cacheEntries = await page.evaluate(async () => {
-    const names = await caches.keys();
-    const entries = await Promise.all(names.map(async (name) => ({ name, keys: (await (await caches.open(name)).keys()).map((request) => request.url) })));
-    return entries.flatMap((entry) => entry.keys);
+  const storage = await page.evaluate(async () => {
+    const cacheNames = await caches.keys();
+    const cacheEntries = (
+      await Promise.all(
+        cacheNames.map(async (name) =>
+          (await (await caches.open(name)).keys()).map((request) => request.url),
+        ),
+      )
+    ).flat();
+    const databases =
+      typeof indexedDB.databases === 'function'
+        ? await indexedDB.databases()
+        : [];
+    return {
+      cacheEntries,
+      local: Object.values(localStorage),
+      session: Object.values(sessionStorage),
+      databases: databases.map((database) => database.name),
+    };
   });
-  expect(cacheEntries.some((url) => /offline\.pdf|invoice/i.test(url))).toBe(false);
+
+  expect(storage.cacheEntries.some((url) => /offline\.pdf|invoice/i.test(url))).toBe(
+    false,
+  );
+  expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
+  expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);
+  expect(storage.databases.filter(Boolean)).toEqual([]);
 });
 
-test('caches OCR models on demand and keeps languages isolated', async ({ page, context }) => {
+test('caches OCR models on demand and returns a clear offline error for an uncached language', async ({
+  page,
+  context,
+}) => {
   await waitForWorker(page);
-  await page.evaluate(async () => {
-    await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz');
+
+  const online = await page.evaluate(async () => {
+    const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
+      cache: 'no-store',
+    });
+    return response.ok;
   });
+  expect(online).toBe(true);
 
   const cacheNames = await page.evaluate(() => caches.keys());
   expect(cacheNames.some((name) => name.endsWith('-ocr-eng'))).toBe(true);
-  expect(cacheNames.some((name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'))).toBe(false);
+  expect(
+    cacheNames.some(
+      (name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'),
+    ),
+  ).toBe(false);
 
   await context.setOffline(true);
   const results = await page.evaluate(async () => {
-    const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz').then((response) => response.ok).catch(() => false);
-    const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz').then((response) => response.ok).catch(() => false);
-    return { cached, uncached };
+    const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
+      cache: 'no-store',
+    }).then((response) => response.ok);
+    const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', {
+      cache: 'no-store',
+    });
+    return {
+      cached,
+      uncachedStatus: uncached.status,
+      uncachedBody: await uncached.json(),
+    };
   });
+
   expect(results.cached).toBe(true);
-  expect(results.uncached).toBe(false);
+  expect(results.uncachedStatus).toBe(503);
+  expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
 });
 
-test('offline navigation recovers after a failed update check without automatic reload', async ({ page }) => {
+test('failed update checks do not reload or discard the current page', async ({ page }) => {
   await waitForWorker(page);
-  const url = page.url();
+  const before = page.url();
+
   await page.evaluate(async () => {
     const registration = await navigator.serviceWorker.ready;
-    const original = registration.update.bind(registration);
-    Object.defineProperty(registration, 'update', { value: async () => { throw new Error('offline'); } });
     await registration.update().catch(() => undefined);
-    Object.defineProperty(registration, 'update', { value: original });
-  }).catch(() => undefined);
-  expect(page.url()).toBe(url);
-  await expect(page.getByRole('heading', { name: /PDF invoices/i })).toBeVisible();
+  });
+
+  expect(page.url()).toBe(before);
+  await expect(page.getByRole('heading', { name: appHeading })).toBeVisible();
 });

@@ -20,7 +20,12 @@ self.addEventListener('activate', (event) => {
       const names = await caches.keys();
       await Promise.all(
         names
-          .filter((name) => name.startsWith('docuextract-') && name !== SHELL)
+          .filter(
+            (name) =>
+              name.startsWith('docuextract-') &&
+              name !== SHELL &&
+              !name.startsWith(OCR_PREFIX),
+          )
           .map((name) => caches.delete(name)),
       );
       await self.clients.claim();
@@ -93,7 +98,10 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () => {
-        return (await caches.match(BASE + 'index.html')) || (await caches.match(BASE));
+        return (
+          (await caches.match(BASE + 'index.html')) ||
+          (await caches.match(BASE))
+        );
       }),
     );
     return;

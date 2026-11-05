@@ -47,12 +47,15 @@ test(
         throw new Error('The application shell cache is missing.');
       }
       const shell = await caches.open(shellName);
-      const missing = await Promise.all(
-        manifest.assets.map(async (asset) =>
-          (await shell.match('/DocuExtract/' + asset)) ? null : asset,
-        ),
+      const cachedUrls = new Set(
+        (await shell.keys()).map((request) => request.url),
       );
-      return { assets: manifest.assets, missing: missing.filter(Boolean) };
+      const missing = manifest.assets
+        .map((asset) =>
+          new URL('/DocuExtract/' + asset, window.location.origin).href,
+        )
+        .filter((url) => !cachedUrls.has(url));
+      return { assets: manifest.assets, missing, cached: [...cachedUrls] };
     });
     expect(
       precache.assets.some((asset) => /pdfTextExtractor-.*\.js$/.test(asset)),

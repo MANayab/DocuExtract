@@ -7,10 +7,27 @@ const SHELL_URLS = [BASE, BASE + 'index.html', BASE + 'manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL)
-      .then((cache) => cache.addAll(SHELL_URLS))
-      .then(() => undefined),
+    (async () => {
+      const cache = await caches.open(SHELL);
+      const manifestResponse = await fetch(BASE + 'precache-manifest.json', {
+        cache: 'no-store',
+      });
+      if (!manifestResponse.ok) {
+        throw new Error('The offline asset manifest could not be downloaded.');
+      }
+      const manifest = await manifestResponse.json();
+      const hashedAssets = Array.isArray(manifest.assets)
+        ? manifest.assets
+            .filter(
+              (asset) =>
+                typeof asset === 'string' &&
+                asset.startsWith('assets/') &&
+                /-[A-Za-z0-9_-]{8,}\\./.test(asset),
+            )
+            .map((asset) => BASE + asset)
+        : [];
+      await cache.addAll([...SHELL_URLS, ...hashedAssets]);
+    })(),
   );
 });
 

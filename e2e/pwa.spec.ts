@@ -95,17 +95,32 @@ test(
       ),
     ).toBe(false);
 
+    const beforeOffline = await page.evaluate(async () => {
+      const names = await caches.keys();
+      const entries = await Promise.all(
+        names.map(async (name) => ({
+          name,
+          requests: (await (await caches.open(name)).keys()).map(
+            (request) => request.url,
+          ),
+        })),
+      );
+      return { controlled: Boolean(navigator.serviceWorker.controller), entries };
+    });
+    expect(beforeOffline.controlled).toBe(true);
+    expect(
+      beforeOffline.entries.flatMap((entry) => entry.requests).some((url) => url.includes('/hin.traineddata.gz')),
+    ).toBe(false);
+
     await context.setOffline(true);
+    expect(await page.evaluate(() => navigator.onLine)).toBe(false);
     const results = await page.evaluate(async () => {
       const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
         cache: 'no-store',
       }).then((response) => response.ok);
-      const uncached = await fetch(
-        '/DocuExtract/ocr/lang/hin.traineddata.gz?uncached=' + Date.now(),
-        {
-          cache: 'no-store',
-        },
-      );
+      const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', {
+        cache: 'no-store',
+      });
       const body =
         uncached.status === 503 ? await uncached.json() : { error: undefined };
 

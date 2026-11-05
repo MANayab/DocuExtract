@@ -11,7 +11,7 @@ GlobalWorkerOptions.workerSrc = workerUrl;
 const isNodeRuntime = typeof process !== 'undefined' && Boolean(process.versions?.node);
 const standardFontDataUrl = isNodeRuntime
   ? `${process.cwd()}/node_modules/pdfjs-dist/standard_fonts/`
-  : new URL(`${import.meta.env.BASE_URL}standard_fonts/`, import.meta.url).href;
+  : String(import.meta.env.BASE_URL) + 'standard_fonts/';
 
 export async function loadPdf(data: ArrayBuffer) {
   const task = getDocument({

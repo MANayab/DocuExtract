@@ -83,6 +83,10 @@ self.addEventListener('fetch', (event) => {
         const cached = await cache.match(request);
         if (cached) return cached;
 
+        // A known offline browser state is definitive enough to avoid asking the
+        // network stack for a model that this installation has never cached.
+        if (navigator.onLine === false) return offlineOcrResponse(language);
+
         try {
           const response = await fetch(request, { cache: 'no-store' });
           if (response.ok) await cache.put(request, response.clone());

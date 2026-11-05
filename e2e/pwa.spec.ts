@@ -11,8 +11,18 @@ const pdf = async (name: string) => ({
 
 async function waitForWorker(page: Page) {
   await page.goto('/');
-  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    if (!navigator.serviceWorker.controller) {
+      await new Promise<void>((resolve) =>
+        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+          once: true,
+        }),
+      );
+    }
+  });
   await page.reload();
+  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
     timeout: 30_000,
   });
@@ -69,18 +79,6 @@ test(
   'caches OCR models on demand and returns a clear offline error for an uncached language',
   async ({ page, context }) => {
     await waitForWorker(page);
-    await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.ready;
-      if (!navigator.serviceWorker.controller) {
-        await new Promise<void>((resolve) =>
-          navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
-            once: true,
-          }),
-        );
-      }
-      await registration.update().catch(() => undefined);
-    });
-
     const online = await page.evaluate(async () => {
       const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
         cache: 'no-store',
@@ -102,9 +100,12 @@ test(
       const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
         cache: 'no-store',
       }).then((response) => response.ok);
-      const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz?uncached=' + Date.now(), {
-        cache: 'no-store',
-      });
+      const uncached = await fetch(
+        '/DocuExtract/ocr/lang/hin.traineddata.gz?uncached=' + Date.now(),
+        {
+          cache: 'no-store',
+        },
+      );
       const body =
         uncached.status === 503 ? await uncached.json() : { error: undefined };
 

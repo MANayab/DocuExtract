@@ -1,0 +1,31 @@
+name: Temporary PR 18 formatter output
+
+on:
+  push:
+    branches:
+      - feat/v1.6.0-offline-pwa
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Format the three files
+        run: npx prettier --write e2e/pwa.spec.ts public/sw.js vite.config.ts
+      - name: Collect formatted files
+        run: |
+          mkdir -p formatted
+          cp e2e/pwa.spec.ts public/sw.js vite.config.ts formatted/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr18-formatted-files
+          path: formatted/
+          retention-days: 1

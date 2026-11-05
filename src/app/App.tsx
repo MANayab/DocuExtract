@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/locale-panel.css';
 import { ErrorPanel } from '../components/ErrorPanel';
+import { PwaStatus } from '../components/PwaStatus';
+import { getPwaController } from '../features/pwa/register';
 import { ExportPanel } from '../components/ExportPanel';
 import { FileUploader } from '../components/FileUploader';
 import { Footer } from '../components/layout/Footer';
@@ -26,6 +28,7 @@ type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
 
 export function App() {
   const { store, records } = useBatchStore();
+  const pwa = getPwaController();
   const ocrAvailable = useOcrAvailable();
   const [view, setView] = useState<View>({ kind: 'dashboard' });
   const [notices, setNotices] = useState<string[]>([]);
@@ -82,6 +85,7 @@ export function App() {
     return (
       <div className="dx-app">
         <Header onHome={goHome} />
+        <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
         <main id="main">
           <ReviewScreen
             record={reviewing}
@@ -138,6 +142,7 @@ export function App() {
         Skip to content
       </a>
       <Header onHome={goHome} />
+      <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
 
       <main id="main">
         <section className="dx-hero">

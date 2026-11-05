@@ -411,25 +411,3 @@ table { border-collapse: collapse; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
-
-/* ---- Offline PWA ------------------------------------------------------- */
-.dx-pwa {
-  position: sticky;
-  top: 64px;
-  z-index: 45;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 10px 16px;
-  background: var(--info-bg);
-  color: var(--ink);
-  border-bottom: 1px solid var(--info-line);
-  font-size: 0.9rem;
-}
-
-.dx-pwa--warn {
-  background: var(--warn-bg);
-  border-color: var(--warn-line);
-}

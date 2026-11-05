@@ -39,9 +39,7 @@ self.addEventListener('activate', (event) => {
         names
           .filter(
             (name) =>
-              name.startsWith('docuextract-') &&
-              name !== SHELL &&
-              !name.startsWith(OCR_PREFIX),
+              name.startsWith('docuextract-') && name !== SHELL && !name.startsWith(OCR_PREFIX),
           )
           .map((name) => caches.delete(name)),
       );
@@ -59,16 +57,11 @@ function isSameOriginAsset(url) {
 }
 
 function isSensitive(url) {
-  return (
-    /\.(pdf|xlsx|csv|json)$/i.test(url.pathname) ||
-    url.pathname.includes('/templates/')
-  );
+  return /\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
 }
 
 function ocrLanguage(url) {
-  const match = url.pathname.match(
-    /\/ocr\/lang\/(eng|deu|hin)\.traineddata(?:\.gz)?$/,
-  );
+  const match = url.pathname.match(/\/ocr\/lang\/(eng|deu|hin)\.traineddata(?:\.gz)?$/);
   return match ? match[1] : null;
 }
 
@@ -77,9 +70,7 @@ function offlineOcrResponse(language) {
     JSON.stringify({
       error: 'OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE',
       language,
-      message:
-        language +
-        ' OCR model has not been downloaded yet. Connect once and retry.',
+      message: language + ' OCR model has not been downloaded yet. Connect once and retry.',
     }),
     { status: 503, headers: { 'Content-Type': 'application/json' } },
   );
@@ -119,10 +110,7 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () => {
-        return (
-          (await caches.match(BASE + 'index.html')) ||
-          (await caches.match(BASE))
-        );
+        return (await caches.match(BASE + 'index.html')) || (await caches.match(BASE));
       }),
     );
     return;
@@ -140,10 +128,7 @@ self.addEventListener('fetch', (event) => {
 
       try {
         const response = await fetch(request);
-        if (
-          response.ok &&
-          /\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest)$/i.test(url.pathname)
-        ) {
+        if (response.ok && /\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest)$/i.test(url.pathname)) {
           await cache.put(request, response.clone());
         }
         return response;

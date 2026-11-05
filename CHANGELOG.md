@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+### Offline PWA (in progress)
+
+- Added a same-origin application-shell service worker for `/DocuExtract/`.
+- Added on-demand OCR language caching for English, German and Hindi, with separate language caches.
+- Added user-controlled update messaging; no automatic reload is intended while invoice work may be active.
+- Added explicit offline handling for an OCR language that has not yet been downloaded.
+- Kept version 1.5.1 during implementation; this unreleased section is not a published v1.6.0 release.
+
+### Verification status
+
+- Complete release verification remains gated on the current CI runs and browser tests. Pending, cancelled or missing runs are not represented as passes.
+
 ## [1.5.1] — 2026-11-03
 
 ### Currency policy

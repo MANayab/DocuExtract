@@ -43,7 +43,9 @@ test(
       const shellName = (await caches.keys()).find((name) =>
         name.endsWith('-shell'),
       );
-      if (!shellName) throw new Error('The application shell cache is missing.');
+      if (!shellName) {
+        throw new Error('The application shell cache is missing.');
+      }
       const shell = await caches.open(shellName);
       const missing = await Promise.all(
         manifest.assets.map(async (asset) =>
@@ -73,7 +75,9 @@ test(
       const cacheEntries = (
         await Promise.all(
           cacheNames.map(async (name) =>
-            (await (await caches.open(name)).keys()).map((request) => request.url),
+            (await (await caches.open(name)).keys()).map(
+              (request) => request.url,
+            ),
           ),
         )
       ).flat();
@@ -93,8 +97,12 @@ test(
     expect(
       storage.cacheEntries.some((url) => /offline\.pdf|invoice/i.test(url)),
     ).toBe(false);
-    expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
-    expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);
+    expect(
+      storage.local.some((value) => /offline\.pdf/i.test(value)),
+    ).toBe(false);
+    expect(
+      storage.session.some((value) => /offline\.pdf/i.test(value)),
+    ).toBe(false);
     expect(storage.databases.filter(Boolean)).toEqual([]);
   },
 );
@@ -129,7 +137,10 @@ test(
           ),
         })),
       );
-      return { controlled: Boolean(navigator.serviceWorker.controller), entries };
+      return {
+        controlled: Boolean(navigator.serviceWorker.controller),
+        entries,
+      };
     });
     expect(beforeOffline.controlled).toBe(true);
     expect(
@@ -160,7 +171,9 @@ test(
 
     expect(results.cached).toBe(true);
     expect(results.uncachedStatus).toBe(503);
-    expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
+    expect(results.uncachedBody.error).toBe(
+      'OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE',
+    );
   },
 );
 

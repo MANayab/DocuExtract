@@ -15,9 +15,7 @@ const pwaPrecache = (): Plugin => ({
   name: 'docuextract-pwa-precache',
   generateBundle(_options, bundle) {
     const assets = Object.keys(bundle).filter(
-      (fileName) =>
-        fileName.startsWith('assets/') &&
-        /-[A-Za-z0-9_-]{8,}\./.test(fileName),
+      (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\./.test(fileName),
     );
     this.emitFile({
       type: 'asset',

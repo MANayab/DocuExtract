@@ -57,9 +57,10 @@ test(
         .filter((url) => !cachedUrls.has(url));
       return { assets: manifest.assets, missing, cached: [...cachedUrls] };
     });
-    expect(
-      precache.assets.some((asset) => /pdfTextExtractor-.*\.js$/.test(asset)),
-    ).toBe(true);
+    const extractorAsset = precache.assets.find((asset) =>
+      /pdfTextExtractor-.*\.js$/.test(asset),
+    );
+    expect(extractorAsset).toBeDefined();
     expect(precache.missing).toEqual([]);
 
     await context.setOffline(true);
@@ -67,6 +68,18 @@ test(
     await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
       timeout: 30_000,
     });
+    if (!extractorAsset) {
+      throw new Error('The PDF text extractor chunk is missing from the build manifest.');
+    }
+    const offlineExtractor = await page.evaluate(async (asset) => {
+      const response = await fetch('/DocuExtract/' + asset);
+      return {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+      };
+    }, extractorAsset);
+    expect(offlineExtractor.status).toBe(200);
+    expect(offlineExtractor.contentType).toContain('javascript');
 
     await page.setInputFiles('input[type="file"]', await pdf('offline.pdf'));
     await expect(

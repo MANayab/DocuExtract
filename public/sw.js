@@ -130,7 +130,12 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.open(SHELL).then(async (cache) => {
-      const cached = await cache.match(request);
+      // Ignore Vary and query differences for immutable, content-hashed build
+      // assets so module-loader requests resolve to the precached response.
+      const cached = await cache.match(request, {
+        ignoreSearch: true,
+        ignoreVary: true,
+      });
       if (cached) return cached;
 
       try {

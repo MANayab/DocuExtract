@@ -67,7 +67,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
 test(
   'caches OCR models on demand and returns a clear offline error for an uncached language',
   async ({ page, context }) => {
-  await waitForWorker(page);
+    await waitForWorker(page);
 
   const online = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
@@ -75,18 +75,18 @@ test(
     });
     return response.ok;
   });
-  expect(online).toBe(true);
+    expect(online).toBe(true);
 
-  const cacheNames = await page.evaluate(() => caches.keys());
-  expect(cacheNames.some((name) => name.endsWith('-ocr-eng'))).toBe(true);
-  expect(
-    cacheNames.some(
+    const cacheNames = await page.evaluate(() => caches.keys());
+    expect(cacheNames.some((name) => name.endsWith('-ocr-eng'))).toBe(true);
+    expect(
+      cacheNames.some(
       (name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'),
-    ),
-  ).toBe(false);
+      ),
+    ).toBe(false);
 
-  await context.setOffline(true);
-  const results = await page.evaluate(async () => {
+    await context.setOffline(true);
+    const results = await page.evaluate(async () => {
     const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
       cache: 'no-store',
     }).then((response) => response.ok);
@@ -100,9 +100,9 @@ test(
     };
   });
 
-  expect(results.cached).toBe(true);
-  expect(results.uncachedStatus).toBe(503);
-  expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
+    expect(results.cached).toBe(true);
+    expect(results.uncachedStatus).toBe(503);
+    expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
   },
 );
 

@@ -55,7 +55,9 @@ function offlineOcrResponse(language) {
     JSON.stringify({
       error: 'OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE',
       language,
-      message: language + ' OCR model has not been downloaded yet. Connect once and retry.',
+      message:
+        language +
+        ' OCR model has not been downloaded yet. Connect once and retry.',
     }),
     { status: 503, headers: { 'Content-Type': 'application/json' } },
   );

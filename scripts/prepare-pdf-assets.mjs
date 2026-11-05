@@ -6,9 +6,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = path.resolve(process.cwd());
 const source = path.join(root, 'node_modules', 'pdfjs-dist', 'standard_fonts');
 const output = path.join(root, 'public', 'standard_fonts');
 

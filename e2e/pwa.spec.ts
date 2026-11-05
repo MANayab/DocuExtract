@@ -167,15 +167,15 @@ test(
 test(
   'failed update checks do not reload or discard the current page',
   async ({ page }) => {
-  await waitForWorker(page);
-  const before = page.url();
+    await waitForWorker(page);
+    const before = page.url();
 
-  await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    await registration.update().catch(() => undefined);
-  });
+    await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.update().catch(() => undefined);
+    });
 
-  expect(page.url()).toBe(before);
+    expect(page.url()).toBe(before);
     await expect(page.getByRole('heading', { name: appHeading })).toBeVisible();
   },
 );

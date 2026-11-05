@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
               (asset) =>
                 typeof asset === 'string' &&
                 asset.startsWith('assets/') &&
-                /-[A-Za-z0-9_-]{8,}\\./.test(asset),
+                /-[A-Za-z0-9_-]{8,}\./.test(asset),
             )
             .map((asset) => BASE + asset)
         : [];
@@ -55,7 +55,9 @@ self.addEventListener('message', (event) => {
 });
 
 function isSameOriginAsset(url) {
-  return url.origin === self.location.origin && url.pathname.startsWith(BASE);
+  return (
+    url.origin === self.location.origin && url.pathname.startsWith(BASE)
+  );
 }
 
 function isSensitive(url) {

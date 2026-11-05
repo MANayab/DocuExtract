@@ -14,11 +14,11 @@ async function waitForWorker(page: Page) {
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
     if (!navigator.serviceWorker.controller) {
-      await new Promise<void>((resolve) =>
-        navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), {
+      await new Promise<void>((resolve) => {
+        navigator.serviceWorker.addEventListener('controllerchange', resolve, {
           once: true,
-        }),
-      );
+        });
+      });
     }
   });
   await page.reload();
@@ -109,7 +109,9 @@ test(
     });
     expect(beforeOffline.controlled).toBe(true);
     expect(
-      beforeOffline.entries.flatMap((entry) => entry.requests).some((url) => url.includes('/hin.traineddata.gz')),
+      beforeOffline.entries
+        .flatMap((entry) => entry.requests)
+        .some((url) => url.includes('/hin.traineddata.gz')),
     ).toBe(false);
 
     await context.setOffline(true);
@@ -118,9 +120,10 @@ test(
       const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
         cache: 'no-store',
       }).then((response) => response.ok);
-      const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', {
-        cache: 'no-store',
-      });
+      const uncached = await fetch(
+        '/DocuExtract/ocr/lang/hin.traineddata.gz',
+        { cache: 'no-store' },
+      );
       const body =
         uncached.status === 503 ? await uncached.json() : { error: undefined };
 

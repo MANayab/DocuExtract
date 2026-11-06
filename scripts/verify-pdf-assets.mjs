@@ -40,6 +40,22 @@ if (worker.includes('__DOCUEXTRACT_BUILD_ID__') || !worker.includes(`const BUILD
   throw new Error('Built service worker does not contain the generated precache build ID.');
 }
 
+const ocrDirectory = path.join(dist, 'ocr');
+if (fs.existsSync(path.join(ocrDirectory, 'manifest.json'))) {
+  const expectedOcrRuntime = [
+    'ocr/manifest.json',
+    'ocr/worker.min.js',
+    ...fs
+      .readdirSync(path.join(ocrDirectory, 'core'))
+      .filter((name) => !name.startsWith('.'))
+      .map((name) => `ocr/core/${name}`),
+  ];
+  const missingOcrRuntime = expectedOcrRuntime.filter((name) => !manifest.assets.includes(name));
+  if (missingOcrRuntime.length) {
+    throw new Error(`PWA precache manifest is missing OCR runtime assets: ${missingOcrRuntime.join(', ')}`);
+  }
+}
+
 const expectedFonts = fontFiles.map((name) => `standard_fonts/${name}`);
 const missingFonts = expectedFonts.filter((name) => !manifest.assets.includes(name));
 if (missingFonts.length) {

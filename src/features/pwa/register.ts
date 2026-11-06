@@ -17,6 +17,7 @@ export interface PwaController {
 
 interface PrecacheManifest {
   buildId?: string;
+  assets?: string[];
 }
 
 function createPwaController(): PwaController {
@@ -47,9 +48,53 @@ function createPwaController(): PwaController {
       const manifest = (await response.json()) as PrecacheManifest;
       if (!manifest.buildId) throw new Error('Offline asset manifest has no build ID.');
 
+      if (!Array.isArray(manifest.assets)) {
+        throw new Error('Offline asset manifest has no asset list.');
+      }
+
+      const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
+      const shellUrls = [
+        baseUrl.href,
+        new URL('index.html', baseUrl).href,
+        new URL('manifest.webmanifest', baseUrl).href,
+        new URL('precache-manifest.json', baseUrl).href,
+      ];
+      const assetUrls = manifest.assets.map((asset) => {
+        if (typeof asset !== 'string' || asset.includes('..')) {
+          throw new Error('Offline asset manifest contains an invalid path.');
+        }
+        const url = new URL(asset, baseUrl);
+        if (url.origin !== baseUrl.origin || !url.pathname.startsWith(baseUrl.pathname)) {
+          throw new Error('Offline asset manifest contains a non-local path.');
+        }
+        return url.href;
+      });
       const expectedCache = `docuextract-${manifest.buildId}-shell`;
-      const cacheNames = await caches.keys();
-      setState(cacheNames.includes(expectedCache) ? 'offline-ready' : 'preparing');
+      const shell = await caches.open(expectedCache);
+      const requiredUrls = [...shellUrls, ...assetUrls];
+      const missingUrls = (
+        await Promise.all(
+          requiredUrls.map(async (url) => {
+            const cached = await shell.match(url);
+            return cached?.ok ? null : url;
+          }),
+        )
+      ).filter((url): url is string => url !== null);
+
+      if (missingUrls.length > 0 && navigator.onLine) {
+        await Promise.all(
+          missingUrls.map(async (url) => {
+            const asset = await fetch(url, { cache: 'no-store' });
+            if (!asset.ok) throw new Error(`Offline asset could not be restored: ${url}`);
+            await shell.put(url, asset.clone());
+          }),
+        );
+      }
+
+      const complete = await Promise.all(
+        requiredUrls.map(async (url) => (await shell.match(url))?.ok === true),
+      );
+      setState(complete.every(Boolean) ? 'offline-ready' : 'preparing');
     } catch {
       setState('error');
     }
@@ -84,6 +129,12 @@ function createPwaController(): PwaController {
   }
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    void refreshOfflineReadiness();
+  });
+  window.addEventListener('online', () => {
+    void refreshOfflineReadiness();
+  });
+  window.addEventListener('pageshow', () => {
     void refreshOfflineReadiness();
   });
 

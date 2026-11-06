@@ -5,9 +5,8 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { seoHead, staticContent } from './src/content/seo';
 
-const packageVersion = JSON.parse(
-  readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
-).version as string;
+const packageVersion = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'))
+  .version as string;
 
 /** True when scripts/prepare-ocr-assets.mjs bundled Tesseract files before this build. */
 const ocrBundled = existsSync(resolve(process.cwd(), 'public/ocr/manifest.json'));
@@ -24,12 +23,12 @@ const pwaPrecache = (): Plugin => {
     apply: 'build',
     generateBundle(_options, bundle) {
       const assets = Object.keys(bundle).filter(
-        (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\./.test(fileName),
+        (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\\./.test(fileName),
       );
       const fontDirectory = resolve(process.cwd(), 'public/standard_fonts');
       const standardFonts = existsSync(fontDirectory)
         ? readdirSync(fontDirectory)
-            .filter((fileName) => /\.(pfb|ttf)$/i.test(fileName))
+            .filter((fileName) => /\\.(pfb|ttf)$/i.test(fileName))
             .sort()
             .map((fileName) => `standard_fonts/${fileName}`)
         : [];
@@ -42,12 +41,8 @@ const pwaPrecache = (): Plugin => {
       const ocrDirectory = resolve(process.cwd(), 'public/ocr');
       const ocrRuntime = existsSync(ocrDirectory)
         ? [
-            ...(existsSync(resolve(ocrDirectory, 'manifest.json'))
-              ? ['ocr/manifest.json']
-              : []),
-            ...(existsSync(resolve(ocrDirectory, 'worker.min.js'))
-              ? ['ocr/worker.min.js']
-              : []),
+            ...(existsSync(resolve(ocrDirectory, 'manifest.json')) ? ['ocr/manifest.json'] : []),
+            ...(existsSync(resolve(ocrDirectory, 'worker.min.js')) ? ['ocr/worker.min.js'] : []),
             ...(existsSync(resolve(ocrDirectory, 'core'))
               ? readdirSync(resolve(ocrDirectory, 'core'))
                   .filter((fileName) => !fileName.startsWith('.'))
@@ -66,14 +61,11 @@ const pwaPrecache = (): Plugin => {
             .digest('hex'),
         );
       const fingerprintInput = [
-        precacheAssets.join('\\n'),
-        publicAssetHashes.join('\\n'),
+        precacheAssets.join('\\\\n'),
+        publicAssetHashes.join('\\\\n'),
         workerTemplate,
-      ].join('\\n');
-      const fingerprint = createHash('sha256')
-        .update(fingerprintInput)
-        .digest('hex')
-        .slice(0, 10);
+      ].join('\\\\n');
+      const fingerprint = createHash('sha256').update(fingerprintInput).digest('hex').slice(0, 10);
       buildId = `${packageVersion}-${fingerprint}`;
 
       this.emitFile({
@@ -87,9 +79,7 @@ const pwaPrecache = (): Plugin => {
       const serviceWorkerPath = resolve(process.cwd(), 'dist/sw.js');
       const serviceWorker = readFileSync(serviceWorkerPath, 'utf8');
       if (!serviceWorker.includes('__DOCUEXTRACT_BUILD_ID__')) {
-        throw new Error(
-          'The built service worker is missing the generated build ID placeholder.',
-        );
+        throw new Error('The built service worker is missing the generated build ID placeholder.');
       }
       writeFileSync(
         serviceWorkerPath,
@@ -113,9 +103,7 @@ export default defineConfig({
   plugins: [react(), seo(), pwaPrecache()],
   define: {
     __OCR_BUNDLED__: JSON.stringify(ocrBundled),
-    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(
-      process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release',
-    ),
+    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release'),
   },
   build: {
     target: 'es2022',

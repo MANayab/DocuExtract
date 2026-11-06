@@ -34,9 +34,9 @@ GitHub Pages serves static files and does not provide repository-controlled HTTP
 
 ## Offline service-worker boundary
 
-The build generates a versioned precache manifest from hashed Vite assets and PDF.js standard fonts. OCR models are cached in separate per-language caches after the user selects or uses a language online. Old shell caches are retained across updates to protect already-open tabs that may still request old hashed chunks. This avoids unsafe eager cache deletion but can increase browser storage use; a bounded safe cleanup policy remains to be designed and tested.
+The build generates a versioned precache manifest from hashed Vite assets and PDF.js standard fonts. OCR models are cached in separate per-language caches after the user selects or uses a language online. Each generated page carries its build ID; active tabs report that ID to the worker. Old shell caches are retained while a tab reports that it needs the build. If any client is suspended or does not respond, cleanup is deferred. Once every live tab reports, inactive shell caches are deleted and inactive OCR caches are migrated before deletion. The new browser suite covers this lifecycle, but exact-head execution is still required before treating it as verified.
 
-A waiting update is user-controlled. The worker is not allowed to cache invoice PDFs, extracted fields, corrections, review state, exports or seller profiles. The offline browser suite still needs full two-build update acceptance/deferral/recovery and multi-tab lifecycle coverage.
+A waiting update is user-controlled. The worker is not allowed to cache invoice PDFs, extracted fields, corrections, review state, exports or seller profiles. Offline readiness checks all required shell entries and attempts to restore missing assets when connectivity returns. Browser eviction while offline cannot be prevented; the application does not promise offline operation after all required assets have been evicted.
 
 ## Reporting
 

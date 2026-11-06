@@ -107,13 +107,13 @@ const scannedPdf = async (language: 'eng' | 'deu' | 'hin', page: Page) => {
       selectedLanguage === 'hin'
         ? [
             ['विवरण', 'मात्रा', 'दर', 'राशि'],
-            ['चावल २५ किलो बैग', '२', '१०,०००', '२०,०००'],
-            ['चीनी ५० किलो बैग', '१', '१,२००', '१,२००'],
+            ['चावल का बैग', '२', '१०,०००', '२०,०००'],
+            ['चीनी का बैग', '१', '१,२००', '१,२००'],
           ]
         : [
             ['Beschreibung', 'Menge', 'Preis', 'Betrag'],
-            ['Reis 25 kg Sack', '2', '10.000,00', '20.000,00'],
-            ['Zucker 50 kg Sack', '1', '1.200,00', '1.200,00'],
+            ['Reis Sack', '2', '10.000,00', '20.000,00'],
+            ['Zucker Sack', '1', '1.200,00', '1.200,00'],
           ];
     const x = [100, 1150, 1450, 1800];
     for (const row of rows) {
@@ -232,8 +232,8 @@ const assertNoInvoiceMarkersPersisted = async (
       '2026-0457',
       'Grünfeld Handel GmbH',
       'Sonnenaufgang Einzelhandel',
-      'Reis 25 kg Sack',
-      'Zucker 50 kg Sack',
+      'Reis Sack',
+      'Zucker Sack',
       '21.200,00',
       '1.060,00',
       '22.260,00',
@@ -243,8 +243,8 @@ const assertNoInvoiceMarkersPersisted = async (
       '20260457',
       'हरित क्षेत्र व्यापारी',
       'सूर्योदय खुदरा',
-      'चावल 25 किलो बैग',
-      'चीनी 50 किलो बैग',
+      'चावल का बैग',
+      'चीनी का बैग',
       '21,200',
       '1,060',
       '22,260',
@@ -335,8 +335,8 @@ const scannedAnchors = async (page: Page, language: 'eng' | 'deu' | 'hin') => {
       subtotal: '21200',
       tax: '1060',
       total: '22260',
-      firstItem: 'Reis 25 kg Sack',
-      secondItem: 'Zucker 50 kg Sack',
+      firstItem: 'Reis Sack',
+      secondItem: 'Zucker Sack',
     },
     hin: {
       invoiceNumber: '20260457',
@@ -344,8 +344,8 @@ const scannedAnchors = async (page: Page, language: 'eng' | 'deu' | 'hin') => {
       subtotal: '21200',
       tax: '1060',
       total: '22260',
-      firstItem: 'चावल 25 किलो बैग',
-      secondItem: 'चीनी 50 किलो बैग',
+      firstItem: 'चावल का बैग',
+      secondItem: 'चीनी का बैग',
     },
   }[language];
 

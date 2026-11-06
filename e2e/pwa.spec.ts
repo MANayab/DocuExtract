@@ -133,7 +133,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await readFile(xlsxPath));
   expect(JSON.stringify(workbook.getWorksheet('Invoices')?.getSheetValues())).toContain(
-    'INV-BASIC-001',
+    'PRIVACY-INV-DO-NOT-PERSIST-001',
   );
 
   const invoiceCsvEvent = page.waitForEvent('download');

@@ -30,7 +30,11 @@ self.addEventListener('install', (event) => {
           (asset) =>
             typeof asset === 'string' &&
             !asset.includes('..') &&
-            (asset.startsWith('assets/') || asset.startsWith('standard_fonts/')),
+            (asset.startsWith('assets/') ||
+              asset.startsWith('standard_fonts/') ||
+              asset === 'ocr/manifest.json' ||
+              asset === 'ocr/worker.min.js' ||
+              asset.startsWith('ocr/core/')),
         );
         if (allowedAssets.length !== manifest.assets.length || allowedAssets.length === 0) {
           throw new Error('The offline asset manifest contains invalid or missing assets.');
@@ -67,7 +71,8 @@ function isSameOriginAsset(url) {
 }
 
 function isSensitive(url) {
-  const appManifest = url.pathname === BASE + 'precache-manifest.json';
+  const appManifest =
+    url.pathname === BASE + 'precache-manifest.json' || url.pathname === BASE + 'ocr/manifest.json';
   return (
     !appManifest &&
     (/\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/'))

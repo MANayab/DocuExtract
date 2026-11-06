@@ -42,8 +42,12 @@ const pwaPrecache = (): Plugin => {
       const ocrDirectory = resolve(process.cwd(), 'public/ocr');
       const ocrRuntime = existsSync(ocrDirectory)
         ? [
-            ...(existsSync(resolve(ocrDirectory, 'manifest.json')) ? ['ocr/manifest.json'] : []),
-            ...(existsSync(resolve(ocrDirectory, 'worker.min.js')) ? ['ocr/worker.min.js'] : []),
+            ...(existsSync(resolve(ocrDirectory, 'manifest.json'))
+              ? ['ocr/manifest.json']
+              : []),
+            ...(existsSync(resolve(ocrDirectory, 'worker.min.js'))
+              ? ['ocr/worker.min.js']
+              : []),
             ...(existsSync(resolve(ocrDirectory, 'core'))
               ? readdirSync(resolve(ocrDirectory, 'core'))
                   .filter((fileName) => !fileName.startsWith('.'))
@@ -83,7 +87,9 @@ const pwaPrecache = (): Plugin => {
       const serviceWorkerPath = resolve(process.cwd(), 'dist/sw.js');
       const serviceWorker = readFileSync(serviceWorkerPath, 'utf8');
       if (!serviceWorker.includes('__DOCUEXTRACT_BUILD_ID__')) {
-        throw new Error('The built service worker is missing the generated build ID placeholder.');
+        throw new Error(
+          'The built service worker is missing the generated build ID placeholder.',
+        );
       }
       writeFileSync(
         serviceWorkerPath,
@@ -107,7 +113,9 @@ export default defineConfig({
   plugins: [react(), seo(), pwaPrecache()],
   define: {
     __OCR_BUNDLED__: JSON.stringify(ocrBundled),
-    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release'),
+    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(
+      process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release',
+    ),
   },
   build: {
     target: 'es2022',

@@ -17,7 +17,10 @@ export function PwaStatus({
     return (
       <aside className="dx-pwa" role="status" aria-live="polite">
         <strong>Offline ready</strong>
-        <span>Application files and PDF standard fonts are cached on this device. Invoice data is not included.</span>
+        <span>
+          Application files and PDF standard fonts are cached on this device. Invoice data is not
+          included.
+        </span>
       </aside>
     );
   }

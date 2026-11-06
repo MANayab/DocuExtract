@@ -17,13 +17,20 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx prettier --write e2e/pwa-update.spec.ts e2e/pwa.spec.ts e2e/ocr-assets.spec.ts e2e/privacy.spec.ts
+      - name: Capture before and after formatter output
+        run: |
+          mkdir -p /tmp/prettier-before /tmp/prettier-after
+          cp e2e/ocr-assets.spec.ts vite.config.ts /tmp/prettier-before/
+          npx prettier --write e2e/ocr-assets.spec.ts vite.config.ts
+          cp e2e/ocr-assets.spec.ts vite.config.ts /tmp/prettier-after/
+          diff -u /tmp/prettier-before/ocr-assets.spec.ts /tmp/prettier-after/ocr-assets.spec.ts > /tmp/ocr-assets.diff || true
+          diff -u /tmp/prettier-before/vite.config.ts /tmp/prettier-after/vite.config.ts > /tmp/vite-config.diff || true
       - uses: actions/upload-artifact@v4
         with:
-          name: final-prettier-e2e
+          name: formatter-diff-and-output
           path: |
-            e2e/pwa-update.spec.ts
-            e2e/pwa.spec.ts
-            e2e/ocr-assets.spec.ts
-            e2e/privacy.spec.ts
+            /tmp/prettier-before/
+            /tmp/prettier-after/
+            /tmp/ocr-assets.diff
+            /tmp/vite-config.diff
           retention-days: 1

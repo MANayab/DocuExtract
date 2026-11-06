@@ -7,16 +7,7 @@ export function matchVendorTemplate(
   invoice: Invoice,
   templates: readonly VendorTemplate[],
 ): VendorTemplate | undefined {
-  const gstin = normalize(String(invoice.seller.taxId.value ?? ''));
   const sellerName = normalize(String(invoice.seller.name.value ?? ''));
-
-  const exactGstin = templates.find(
-    (template) =>
-      Boolean(template.seller.gstin) &&
-      Boolean(gstin) &&
-      normalize(template.seller.gstin ?? '') === gstin,
-  );
-  if (exactGstin) return exactGstin;
 
   return templates.find(
     (template) =>
@@ -26,18 +17,17 @@ export function matchVendorTemplate(
   );
 }
 
+/**
+ * Kept as a conservative label-presence check for template diagnostics.
+ * A match does not itself apply extraction rules; parser integration remains
+ * a separate, explicitly documented limitation.
+ */
 export function anchorsMatch(invoice: Invoice, template: VendorTemplate): boolean {
-  const haystack = [
-    invoice.seller.name.value,
-    invoice.seller.taxId.value,
-    invoice.invoiceNumber.value,
-    invoice.invoiceDate.value,
-    invoice.grandTotal.value,
-  ]
+  const haystack = [invoice.seller.name.value]
     .map((value) => String(value).toLowerCase())
-    .join('\n');
+    .join('\\n');
 
-  return template.fieldMappings.every((mapping) =>
+  return template.fieldMappings.length > 0 && template.fieldMappings.every((mapping) =>
     haystack.includes(mapping.labelAnchor.toLowerCase()),
   );
 }

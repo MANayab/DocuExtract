@@ -23,7 +23,10 @@ const firstColumn = (value: string) => value.split(/\s{2,}/)[0]?.trim() ?? '';
 
 /** Text value following a label on the same line. */
 function labelled(text: string, labels: string[]): string {
-  const r = new RegExp('(?<![A-Za-z0-9])(?:' + alternation(labels) + ')(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)', 'i');
+  const r = new RegExp(
+    '(?<![A-Za-z0-9])(?:' + alternation(labels) + ')(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)',
+    'i',
+  );
   return firstColumn(text.match(r)?.[1] ?? '');
 }
 

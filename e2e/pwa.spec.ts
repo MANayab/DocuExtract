@@ -83,6 +83,20 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(extractorAsset).toBeDefined();
   expect(precache.missing).toEqual([]);
 
+  const integrityAsset = precache.assets.find((asset) => asset.startsWith('assets/'));
+  if (!integrityAsset) throw new Error('The build manifest contains no application chunks.');
+  await context.setOffline(true);
+  await page.evaluate(async (asset) => {
+    const response = await fetch('/DocuExtract/precache-manifest.json');
+    const manifest = (await response.json()) as { buildId: string };
+    const cache = await caches.open(`docuextract-${manifest.buildId}-shell`);
+    await cache.delete(new URL('/DocuExtract/' + asset, window.location.origin).href);
+    window.dispatchEvent(new Event('pageshow'));
+  }, integrityAsset);
+  await expect(page.getByText(/Preparing offline support/)).toBeVisible({ timeout: 30_000 });
+  await context.setOffline(false);
+  await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({
@@ -105,8 +119,11 @@ test('reloads offline and performs extraction without caching invoice data', asy
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
-  await expect(page.getByLabel('Description 1')).toHaveValue('Widget');
+  await expect(page.getByLabel('Invoice number')).toHaveValue('PRIVACY-INV-DO-NOT-PERSIST-001');
+  await expect(page.getByLabel('Description 1')).toHaveValue('PRIVACY-LINE-DO-NOT-PERSIST');
+  await page.getByLabel('Invoice number').fill('PRIVACY-INV-DO-NOT-PERSIST-001');
+  await page.getByLabel('Seller name').fill('PRIVACY-SELLER-DO-NOT-PERSIST');
+  await page.getByLabel('Description 1').fill('PRIVACY-LINE-DO-NOT-PERSIST');
 
   const xlsxEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download Excel' }).click();
@@ -124,14 +141,14 @@ test('reloads offline and performs extraction without caching invoice data', asy
   const invoiceCsvDownload = await invoiceCsvEvent;
   const invoiceCsvPath = await invoiceCsvDownload.path();
   if (!invoiceCsvPath) throw new Error('Playwright did not expose the invoice CSV file.');
-  expect(await readFile(invoiceCsvPath, 'utf8')).toContain('INV-BASIC-001');
+  expect(await readFile(invoiceCsvPath, 'utf8')).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
 
   const lineCsvEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV · line items' }).click();
   const lineCsvDownload = await lineCsvEvent;
   const lineCsvPath = await lineCsvDownload.path();
   if (!lineCsvPath) throw new Error('Playwright did not expose the line-item CSV file.');
-  expect(await readFile(lineCsvPath, 'utf8')).toContain('Widget');
+  expect(await readFile(lineCsvPath, 'utf8')).toContain('PRIVACY-LINE-DO-NOT-PERSIST');
 
   const jsonEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'JSON' }).click();
@@ -139,10 +156,22 @@ test('reloads offline and performs extraction without caching invoice data', asy
   const jsonPath = await jsonDownload.path();
   if (!jsonPath) throw new Error('Playwright did not expose the JSON file.');
   const exportedJson = JSON.parse(await readFile(jsonPath, 'utf8')) as unknown;
-  expect(JSON.stringify(exportedJson)).toContain('INV-BASIC-001');
-  expect(JSON.stringify(exportedJson)).toContain('Widget');
+  expect(JSON.stringify(exportedJson)).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
+  expect(JSON.stringify(exportedJson)).toContain('PRIVACY-LINE-DO-NOT-PERSIST');
 
-  const storage = await page.evaluate(async () => {
+  await page.reload();
+  await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('PRIVACY-INV-DO-NOT-PERSIST-001')).toHaveCount(0);
+
+  const syntheticMarkers = [
+    'INV-BASIC-001',
+    'Fictional Meridian Supplies Pvt Ltd',
+    'Widget',
+    'PRIVACY-INV-DO-NOT-PERSIST-001',
+    'PRIVACY-SELLER-DO-NOT-PERSIST',
+    'PRIVACY-LINE-DO-NOT-PERSIST',
+  ];
+  const storage = await page.evaluate(async (markers) => {
     const cacheNames = await caches.keys();
     const cacheEntries = (
       await Promise.all(
@@ -152,44 +181,63 @@ test('reloads offline and performs extraction without caching invoice data', asy
       )
     ).flat();
     const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
-    const cacheBodies = (
-      await Promise.all(
-        cacheNames.map(async (name) => {
-          const cache = await caches.open(name);
-          const requests = await cache.keys();
-          return Promise.all(
-            requests.map(async (request) => {
-              const response = await cache.match(request);
-              const contentType = response?.headers.get('content-type') ?? '';
-              return /javascript|css|html|json|text/i.test(contentType) ? response?.text() : '';
-            }),
-          );
-        }),
-      )
-    ).flat();
+    const cacheMarkerMatches: { cache: string; url: string; marker: string }[] = [];
+    const containsBytes = (source: Uint8Array, target: Uint8Array) => {
+      for (let start = 0; start <= source.length - target.length; start++) {
+        let match = true;
+        for (let index = 0; index < target.length; index++) {
+          if (source[start + index] !== target[index]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) return true;
+      }
+      return false;
+    };
+
+    for (const name of cacheNames) {
+      const cache = await caches.open(name);
+      for (const request of await cache.keys()) {
+        const response = await cache.match(request);
+        if (!response) continue;
+        const body = new Uint8Array(await response.arrayBuffer());
+        for (const marker of markers) {
+          const ascii = new TextEncoder().encode(marker);
+          const utf16 = new Uint8Array(marker.length * 2);
+          for (let index = 0; index < marker.length; index++) {
+            utf16[index * 2] = marker.charCodeAt(index);
+          }
+          if (containsBytes(body, ascii) || containsBytes(body, utf16)) {
+            cacheMarkerMatches.push({ cache: name, url: request.url, marker });
+          }
+        }
+      }
+    }
     const resourceUrls = performance.getEntriesByType('resource').map((entry) => entry.name);
 
     return {
       cacheEntries,
+      cacheMarkerMatches,
       local: Object.values(localStorage),
       session: Object.values(sessionStorage),
       databases: databases.map((database) => database.name),
-      cacheBodies,
       resourceUrls,
       location: window.location.href,
     };
-  });
+  }, syntheticMarkers);
 
-  expect(storage.cacheEntries.some((url) => /offline\.pdf|invoice/i.test(url))).toBe(false);
-  expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
-  expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);
+  expect(storage.cacheEntries.some((url) => /offline\\.pdf|invoice/i.test(url))).toBe(false);
+  expect(storage.cacheMarkerMatches).toEqual([]);
+  expect(storage.local.some((value) => /offline\\.pdf/i.test(value))).toBe(false);
+  expect(storage.session.some((value) => /offline\\.pdf/i.test(value))).toBe(false);
   expect(storage.databases.filter(Boolean)).toEqual([]);
-  const syntheticMarkers = ['INV-BASIC-001', 'Fictional Meridian Supplies Pvt Ltd', 'Widget'];
   const persisted = JSON.stringify(storage);
-  for (const marker of syntheticMarkers) expect(persisted).not.toContain(marker);
-  expect(JSON.stringify(observedRequests)).not.toContain('INV-BASIC-001');
-  expect(JSON.stringify(observedRequests)).not.toContain('Fictional Meridian Supplies Pvt Ltd');
-  expect(JSON.stringify(observedRequests)).not.toContain('Widget');
+  for (const marker of syntheticMarkers) {
+    expect(persisted).not.toContain(marker);
+    expect(JSON.stringify(observedRequests)).not.toContain(marker);
+    expect(JSON.stringify(storage.resourceUrls)).not.toContain(marker);
+  }
 });
 
 test('prepares a selected OCR language without processing an invoice and reports uncached offline models', async ({

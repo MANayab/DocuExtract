@@ -1,6 +1,6 @@
 # Third-party licenses
 
-Direct dependencies used by this project:
+Direct and development dependencies pinned by `package.json` at v1.6.0 (selected package metadata; re-verify all transitive packages and bundled model notices before commercial distribution):
 
 | Package | Version | License |
 |---|---:|---|
@@ -16,19 +16,19 @@ Direct dependencies used by this project:
 | file-saver | 2.0.5 | MIT |
 | zod | 3.23.8 | MIT |
 | typescript | 5.6.3 | Apache-2.0 |
-| vite | 5.4.10 | MIT |
-| @vitejs/plugin-react | 4.3.3 | MIT |
+| vite | 5.4.21 | MIT |
+| @vitejs/plugin-react | 4.7.0 | MIT |\n| @playwright/test | 1.64.1 | Apache-2.0 |\n| @types/node | 20.17.6 | MIT |
 | tailwindcss | 3.4.14 | MIT |
-| postcss | 8.4.47 | MIT |
+| postcss | 8.5.32 | MIT |
 | autoprefixer | 10.4.20 | MIT |
-| vitest | 2.1.5 | MIT |
+| vitest | 2.1.9 | MIT |
 | @testing-library/react | 16.0.1 | MIT |
 | @testing-library/jest-dom | 6.6.3 | MIT |
 | @testing-library/user-event | 14.5.2 | MIT |
 | jsdom | 25.0.1 | MIT |
-| playwright | 1.48.2 | Apache-2.0 |
+| playwright | 1.64.1 | Apache-2.0 |
 | pdf-lib | 1.17.1 | MIT |
-| eslint | 9.14.0 | MIT |
+| eslint | 9.39.5 | MIT |
 | prettier | 3.3.3 | MIT |
 | @types/react | 18.3.12 | MIT |
 | @types/react-dom | 18.3.1 | MIT |
@@ -37,7 +37,7 @@ Direct dependencies used by this project:
 | eslint-plugin-react-refresh | 0.4.14 | MIT |
 | @eslint/js | 9.14.0 | MIT |
 | globals | 15.12.0 | MIT |
-| typescript-eslint | 8.13.0 | MIT |
+| typescript-eslint | 8.72.1 | MIT |
 
 
 ## OCR model data notices

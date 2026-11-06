@@ -68,15 +68,6 @@ const pwaPrecache = (): Plugin => {
       const fingerprint = createHash('sha256').update(fingerprintInput).digest('hex').slice(0, 10);
       buildId = `${packageVersion}-${fingerprint}`;
 
-      const indexHtml = bundle['index.html'];
-      if (!indexHtml || indexHtml.type !== 'asset' || typeof indexHtml.source !== 'string') {
-        throw new Error('The built index.html is missing from the Vite bundle.');
-      }
-      if (!indexHtml.source.includes('__DOCUEXTRACT_BUILD_ID__')) {
-        throw new Error('index.html is missing the generated build ID placeholder.');
-      }
-      indexHtml.source = indexHtml.source.replace('__DOCUEXTRACT_BUILD_ID__', buildId);
-
       this.emitFile({
         type: 'asset',
         fileName: 'precache-manifest.json',
@@ -93,6 +84,18 @@ const pwaPrecache = (): Plugin => {
       writeFileSync(
         serviceWorkerPath,
         serviceWorker.replaceAll('__DOCUEXTRACT_BUILD_ID__', buildId),
+      );
+
+      // Vite's HTML output is written after generateBundle hooks, so inject
+      // the page build ID from closeBundle once dist/index.html exists.
+      const indexHtmlPath = resolve(process.cwd(), 'dist/index.html');
+      const indexHtml = readFileSync(indexHtmlPath, 'utf8');
+      if (!indexHtml.includes('__DOCUEXTRACT_BUILD_ID__')) {
+        throw new Error('The built index.html is missing the generated build ID placeholder.');
+      }
+      writeFileSync(
+        indexHtmlPath,
+        indexHtml.replace('__DOCUEXTRACT_BUILD_ID__', buildId),
       );
     },
   };

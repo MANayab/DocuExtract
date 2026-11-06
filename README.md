@@ -367,7 +367,7 @@ Files are processed locally by this application and are not uploaded by applicat
 | ------------------- | ---------------------------------------------------------------------------- |
 | Network             | No upload of invoice data. No analytics or telemetry.                        |
 | Storage             | Invoice data is not persisted to URLs, `localStorage`, `sessionStorage` or IndexedDB. Consent-based seller-name profiles use `localStorage`. |
-| Cache Storage       | Application assets, PDF.js fonts and selected OCR models only; invoice data is excluded. Older shell caches may remain for active tabs. |
+| Cache Storage       | Application assets, PDF.js fonts and selected OCR models only; invoice data is excluded. Old build caches remain while active tabs need them, then are pruned after every tab reports its build. |
 | Memory              | Source PDFs and extracted records remain in memory while the batch is active; removing records releases app references, not a guarantee of forensic erasure. |
 | Spreadsheet exports | Cells that could trigger formulas are sanitized (CSV and formula injection). |
 | Rendering           | React rendering does not use `dangerouslySetInnerHTML`.                      |

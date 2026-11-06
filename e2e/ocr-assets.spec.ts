@@ -251,8 +251,12 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       );
 
       const origin = new URL(page.url()).origin;
-      expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
-      expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(true);
+      expect(
+        diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js')),
+      ).toBe(true);
+      expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(
+        true,
+      );
       expect(
         diagnostics.ocrRequests.some((request) =>
           request.path.includes(`/ocr/lang/${language}.traineddata`),

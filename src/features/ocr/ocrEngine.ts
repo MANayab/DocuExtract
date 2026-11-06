@@ -101,9 +101,7 @@ export async function ocrPdf(
   // Use GET: the service worker deliberately handles GET requests only and
   // caches the selected language model from this exact production request path.
   // A HEAD probe bypasses that route and can falsely report a missing model.
-  const modelProbe = await fetch(modelPath, { method: 'GET', cache: 'no-store' }).catch(
-    () => null,
-  );
+  const modelProbe = await fetch(modelPath, { method: 'GET', cache: 'no-store' }).catch(() => null);
   if (!modelProbe?.ok) {
     const offlineHint =
       modelProbe?.status === 503

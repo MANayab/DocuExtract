@@ -170,6 +170,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
     'PRIVACY-INV-DO-NOT-PERSIST-001',
     'PRIVACY-SELLER-DO-NOT-PERSIST',
     'PRIVACY-LINE-DO-NOT-PERSIST',
+    'offline.pdf',
   ];
   const storage = await page.evaluate(async (markers) => {
     const cacheNames = await caches.keys();

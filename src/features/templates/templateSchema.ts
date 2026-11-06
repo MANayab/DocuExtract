@@ -3,16 +3,6 @@ import { z } from 'zod';
 export const TEMPLATE_SCHEMA_VERSION = 1 as const;
 export const TEMPLATE_EXPORT_MAX_BYTES = 256 * 1024;
 
-const safeText = z
-  .string()
-  .trim()
-  .min(1)
-  .max(160)
-  .refine(
-    (value) => !/[<>]/.test(value) && !value.includes('\0'),
-    'Template text cannot contain markup or control characters.',
-  );
-
 export const templateFieldKeySchema = z.enum([
   'invoiceNumber',
   'invoiceDate',
@@ -58,7 +48,7 @@ export const sellerMatcherSchema = z
 export const vendorTemplateSchema = z.object({
   schemaVersion: z.literal(TEMPLATE_SCHEMA_VERSION),
   id: z.string().regex(/^[a-z0-9_-]{8,80}$/),
-  name: safeText,
+  name: safeSellerNameKey,
   seller: sellerMatcherSchema,
   fieldMappings: z
     .array(

@@ -63,7 +63,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'DOCUEXTRACT_ACTIVATE_UPDATE') self.skipWaiting();
+  if (event.data?.type === 'DOCUEXTRACT_ACTIVATE_UPDATE') {
+    self.skipWaiting();
+    return;
+  }
+  if (event.data?.type === 'DOCUEXTRACT_GET_BUILD_ID') {
+    event.ports[0]?.postMessage({ buildId: BUILD_ID });
+  }
 });
 
 function isSameOriginAsset(url) {

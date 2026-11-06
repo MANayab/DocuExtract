@@ -27,7 +27,10 @@ export function anchorsMatch(invoice: Invoice, template: VendorTemplate): boolea
     .map((value) => String(value).toLowerCase())
     .join('\\n');
 
-  return template.fieldMappings.length > 0 && template.fieldMappings.every((mapping) =>
-    haystack.includes(mapping.labelAnchor.toLowerCase()),
+  return (
+    template.fieldMappings.length > 0 &&
+    template.fieldMappings.every((mapping) =>
+      haystack.includes(mapping.labelAnchor.toLowerCase()),
+    )
   );
 }

@@ -9,7 +9,7 @@ import { SITE, faqItems, features } from '../../content/site';
 const publicFile = (name: string) => readFileSync(resolve(process.cwd(), 'public', name), 'utf8');
 
 const embeddedJson = (head: string) => {
-  const match = head.match(/<script type="application\/ld\+json">(.*)<\/script>/s);
+  const match = head.match(/<script type="application\\/ld\\+json">(.*)<\\/script>/s);
   return JSON.parse(match ? match[1] : 'null');
 };
 
@@ -32,22 +32,31 @@ describe('search snippet basics', () => {
   });
 
   it('only injects a Search Console token when one is configured', () => {
-    expect(seoHead(false).includes('google-site-verification')).toBe(String(SITE.googleSiteVerification) !== '');
+    expect(seoHead(false).includes('google-site-verification')).toBe(
+      String(SITE.googleSiteVerification) !== '',
+    );
   });
 });
 
 describe('structured data', () => {
-  it.each([false, true])('is valid JSON and mirrors the visible FAQ exactly (ocr bundled: %s)', (ocr) => {
-    const graph = embeddedJson(seoHead(ocr))['@graph'];
-    const faq = graph.find((node: { '@type': string }) => node['@type'] === 'FAQPage');
+  it.each([false, true])(
+    'is valid JSON and mirrors the visible FAQ exactly (ocr bundled: %s)',
+    (ocr) => {
+      const graph = embeddedJson(seoHead(ocr))['@graph'];
+      const faq = graph.find((node: { '@type': string }) => node['@type'] === 'FAQPage');
 
-    expect(graph.map((node: { '@type': string }) => node['@type'])).toEqual(['WebSite', 'WebApplication', 'FAQPage']);
-    expect(faq.mainEntity).toHaveLength(faqItems(ocr).length);
-    faqItems(ocr).forEach((item, i) => {
-      expect(faq.mainEntity[i].name).toBe(item.q);
-      expect(faq.mainEntity[i].acceptedAnswer.text).toBe(item.a);
-    });
-  });
+      expect(graph.map((node: { '@type': string }) => node['@type'])).toEqual([
+        'WebSite',
+        'WebApplication',
+        'FAQPage',
+      ]);
+      expect(faq.mainEntity).toHaveLength(faqItems(ocr).length);
+      faqItems(ocr).forEach((item, i) => {
+        expect(faq.mainEntity[i].name).toBe(item.q);
+        expect(faq.mainEntity[i].acceptedAnswer.text).toBe(item.a);
+      });
+    },
+  );
 
   it('describes a free web application without invented ratings', () => {
     const app = jsonLd(false)['@graph'][1] as Record<string, unknown>;
@@ -62,7 +71,7 @@ describe('structured data', () => {
     const head = seoHead(false);
     const body = head.slice(head.indexOf('application/ld+json'));
 
-    expect(body.match(/<\/script>/g)).toHaveLength(1);
+    expect(body.match(/<\\/script>/g)).toHaveLength(1);
   });
 });
 
@@ -88,7 +97,7 @@ describe('claims match what the build contains', () => {
 
   it('does not promise OCR when the build has no OCR files', () => {
     expect(scanned(false)).toMatch(/not in this build/i);
-    expect(features(false).some((f) => /\(OCR\)/.test(f.title))).toBe(false);
+    expect(features(false).some((f) => /\\(OCR\\)/.test(f.title))).toBe(false);
   });
 
   it('promises OCR only when it is bundled, and calls it lower accuracy', () => {

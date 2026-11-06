@@ -163,7 +163,7 @@ export function detectHeaderFields(
     'tax amount',
     'total gst',
     'gst total',
-    'steuerbetrag', 'mehrwertsteuer', 'umsatzsteuer', 'mwst', 'कर',
+    'steuer', 'steuerbetrag', 'mehrwertsteuer', 'umsatzsteuer', 'mwst', 'कर',
   ]);
   let taxTotalValue: number | undefined;
 

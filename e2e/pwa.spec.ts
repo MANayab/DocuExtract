@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import ExcelJS from 'exceljs';
+import { readFile } from 'node:fs/promises';
 import { generateFixture } from '../src/tests/fixtures/generateFixtures';
 
 const appHeading = /PDF Invoice to Excel/i;
@@ -37,6 +39,10 @@ test('reloads offline and performs extraction without caching invoice data', asy
   page,
   context,
 }) => {
+  const observedRequests: { url: string; body: string | null }[] = [];
+  page.on('request', (request) => {
+    observedRequests.push({ url: request.url(), body: request.postData() });
+  });
   await waitForWorker(page);
   const precache = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/precache-manifest.json');
@@ -95,6 +101,40 @@ test('reloads offline and performs extraction without caching invoice data', asy
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
   });
+  await expect(page.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
+  await expect(page.getByLabel('Description 1')).toHaveValue('Widget');
+
+  const xlsxEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Download Excel' }).click();
+  const xlsxDownload = await xlsxEvent;
+  const xlsxPath = await xlsxDownload.path();
+  if (!xlsxPath) throw new Error('Playwright did not expose the downloaded XLSX file.');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await readFile(xlsxPath));
+  expect(JSON.stringify(workbook.getWorksheet('Invoices')?.getSheetValues())).toContain('INV-BASIC-001');
+
+  const invoiceCsvEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'CSV · invoices' }).click();
+  const invoiceCsvDownload = await invoiceCsvEvent;
+  const invoiceCsvPath = await invoiceCsvDownload.path();
+  if (!invoiceCsvPath) throw new Error('Playwright did not expose the invoice CSV file.');
+  expect(await readFile(invoiceCsvPath, 'utf8')).toContain('INV-BASIC-001');
+
+  const lineCsvEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'CSV · line items' }).click();
+  const lineCsvDownload = await lineCsvEvent;
+  const lineCsvPath = await lineCsvDownload.path();
+  if (!lineCsvPath) throw new Error('Playwright did not expose the line-item CSV file.');
+  expect(await readFile(lineCsvPath, 'utf8')).toContain('Widget');
+
+  const jsonEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'JSON' }).click();
+  const jsonDownload = await jsonEvent;
+  const jsonPath = await jsonDownload.path();
+  if (!jsonPath) throw new Error('Playwright did not expose the JSON file.');
+  const exportedJson = JSON.parse(await readFile(jsonPath, 'utf8')) as unknown;
+  expect(JSON.stringify(exportedJson)).toContain('INV-BASIC-001');
+  expect(JSON.stringify(exportedJson)).toContain('Widget');
 
   const storage = await page.evaluate(async () => {
     const cacheNames = await caches.keys();
@@ -106,12 +146,31 @@ test('reloads offline and performs extraction without caching invoice data', asy
       )
     ).flat();
     const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+    const cacheBodies = (
+      await Promise.all(
+        cacheNames.map(async (name) => {
+          const cache = await caches.open(name);
+          const requests = await cache.keys();
+          return Promise.all(
+            requests.map(async (request) => {
+              const response = await cache.match(request);
+              const contentType = response?.headers.get('content-type') ?? '';
+              return /javascript|css|html|json|text/i.test(contentType) ? response?.text() : '';
+            }),
+          );
+        }),
+      )
+    ).flat();
+    const resourceUrls = performance.getEntriesByType('resource').map((entry) => entry.name);
 
     return {
       cacheEntries,
       local: Object.values(localStorage),
       session: Object.values(sessionStorage),
       databases: databases.map((database) => database.name),
+      cacheBodies,
+      resourceUrls,
+      location: window.location.href,
     };
   });
 
@@ -119,6 +178,12 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
   expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);
   expect(storage.databases.filter(Boolean)).toEqual([]);
+  const syntheticMarkers = ['INV-BASIC-001', 'Fictional Meridian Supplies Pvt Ltd', 'Widget'];
+  const persisted = JSON.stringify(storage);
+  for (const marker of syntheticMarkers) expect(persisted).not.toContain(marker);
+  expect(JSON.stringify(observedRequests)).not.toContain('INV-BASIC-001');
+  expect(JSON.stringify(observedRequests)).not.toContain('Fictional Meridian Supplies Pvt Ltd');
+  expect(JSON.stringify(observedRequests)).not.toContain('Widget');
 });
 
 test('caches OCR models on demand and returns a clear offline error for an uncached language', async ({

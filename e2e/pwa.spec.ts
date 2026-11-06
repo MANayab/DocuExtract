@@ -186,22 +186,19 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(JSON.stringify(observedRequests)).not.toContain('Widget');
 });
 
-test('caches OCR models on demand and returns a clear offline error for an uncached language', async ({
+test('prepares a selected OCR language without processing an invoice and reports uncached offline models', async ({
   page,
   context,
 }) => {
   await waitForWorker(page);
-  const online = await page.evaluate(async () => {
-    const response = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
-      cache: 'no-store',
-    });
-    return response.ok;
+  await page.selectOption('#ocr-language', 'deu');
+  await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({
+    timeout: 60_000,
   });
-  expect(online).toBe(true);
 
   const cacheNames = await page.evaluate(() => caches.keys());
-  expect(cacheNames.some((name) => name.endsWith('-ocr-eng'))).toBe(true);
-  expect(cacheNames.some((name) => name.endsWith('-ocr-deu') || name.endsWith('-ocr-hin'))).toBe(
+  expect(cacheNames.some((name) => name.endsWith('-ocr-deu'))).toBe(true);
+  expect(cacheNames.some((name) => name.endsWith('-ocr-eng') || name.endsWith('-ocr-hin'))).toBe(
     false,
   );
 
@@ -228,7 +225,7 @@ test('caches OCR models on demand and returns a clear offline error for an uncac
   await context.setOffline(true);
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   const results = await page.evaluate(async () => {
-    const cached = await fetch('/DocuExtract/ocr/lang/eng.traineddata.gz', {
+    const cached = await fetch('/DocuExtract/ocr/lang/deu.traineddata.gz', {
       cache: 'no-store',
     }).then((response) => response.ok);
     const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', { cache: 'no-store' });

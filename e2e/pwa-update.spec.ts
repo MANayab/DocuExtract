@@ -126,7 +126,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const xlsxEvent = secondTab.waitForEvent('download');
   await secondTab.getByRole('button', { name: 'Download Excel' }).click();
   const xlsxDownload = await xlsxEvent;
-  expect(xlsxDownload.suggestedFilename()).toMatch(/\\.xlsx$/);
+  expect(xlsxDownload.suggestedFilename()).toMatch(/\.xlsx$/);
 
   await switchBuild('failed');
   const failedInstall = await page.evaluate(async () => {

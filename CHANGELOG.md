@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-### Fixed and verified in progress
+### Implemented; verification pending
 
 - Route Playwright application navigation through the GitHub Pages `/DocuExtract/` base path and assert the app loads before PWA checks.
 - Use a same-origin GET request for OCR model availability so the service worker can serve and cache the model; show a recoverable offline message for an uncached language.

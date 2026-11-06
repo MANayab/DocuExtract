@@ -71,11 +71,10 @@ const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
 /** Amount (as raw text) following a label; skips matches that are not numbers. */
 function labelledAmounts(text: string, labels: string[]): string[] {
   const prefix =
-    '(?:' + alternation(labels) + ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*';
-  const r = new RegExp(
-    prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)',
-    'gi',
-  );
+    '(?:' +
+    alternation(labels) +
+    ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*';
+  const r = new RegExp(prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)', 'gi');
   return [...text.matchAll(r)].map((m) => m[1]);
 }
 
@@ -132,12 +131,23 @@ export function detectHeaderFields(
         'inv no',
         'bill no',
         'bill number',
-        'rechnungsnummer', 'rechnung nr', 'rechnungsnr', 'चालान संख्या',
+        'rechnungsnummer',
+        'rechnung nr',
+        'rechnungsnr',
+        'चालान संख्या',
       ]);
   const invoiceNumber = invoiceNumberSame || invoiceNumberBelow;
 
   const sameLineDate =
-    labelled(text, ['invoice date', 'date of issue', 'issue date', 'rechnungsdatum', 'ausstellungsdatum', 'चालान दिनांक', 'दिनांक']) ||
+    labelled(text, [
+      'invoice date',
+      'date of issue',
+      'issue date',
+      'rechnungsdatum',
+      'ausstellungsdatum',
+      'चालान दिनांक',
+      'दिनांक',
+    ]) ||
     firstColumn(
       text.match(/(?<!due |payment |ship |delivery )\bdate\b[ \t]*[:#-]?[ \t]*([^\n]+)/i)?.[1] ??
         '',
@@ -145,17 +155,48 @@ export function detectHeaderFields(
   const invoiceDateSame = looksLikeLabel(sameLineDate) ? '' : sameLineDate;
   const invoiceDateBelow = invoiceDateSame
     ? ''
-    : valueBelow(rows, ['invoice date', 'date', 'date of issue', 'issue date', 'rechnungsdatum', 'ausstellungsdatum', 'चालान दिनांक', 'दिनांक']);
+    : valueBelow(rows, [
+        'invoice date',
+        'date',
+        'date of issue',
+        'issue date',
+        'rechnungsdatum',
+        'ausstellungsdatum',
+        'चालान दिनांक',
+        'दिनांक',
+      ]);
   const invoiceDate = invoiceDateSame || invoiceDateBelow;
 
-  const sameLineDue = labelled(text, ['due date', 'payment due', 'fälligkeitsdatum', 'zahlungsziel', 'देय तिथि']);
+  const sameLineDue = labelled(text, [
+    'due date',
+    'payment due',
+    'fälligkeitsdatum',
+    'zahlungsziel',
+    'देय तिथि',
+  ]);
   const dueDateSame = looksLikeLabel(sameLineDue) ? '' : sameLineDue;
-  const dueDateBelow = dueDateSame ? '' : valueBelow(rows, ['due date', 'payment due', 'due on', 'fälligkeitsdatum', 'zahlungsziel', 'देय तिथि']);
+  const dueDateBelow = dueDateSame
+    ? ''
+    : valueBelow(rows, [
+        'due date',
+        'payment due',
+        'due on',
+        'fälligkeitsdatum',
+        'zahlungsziel',
+        'देय तिथि',
+      ]);
   const dueDate = dueDateSame || dueDateBelow;
 
   const currencyMatch = text.match(/₹|\$|€|£|\b(?:INR|USD|EUR|GBP)\b/i)?.[0];
 
-  const subtotal = firstAmount(text, ['subtotal', 'sub total', 'sub-total', 'zwischensumme', 'nettosumme', 'उप-योग']);
+  const subtotal = firstAmount(text, [
+    'subtotal',
+    'sub total',
+    'sub-total',
+    'zwischensumme',
+    'nettosumme',
+    'उप-योग',
+  ]);
 
   const discountTotal = firstAmount(text, ['discount total', 'total discount', 'discount']);
 
@@ -165,7 +206,13 @@ export function detectHeaderFields(
     'tax amount',
     'total gst',
     'gst total',
-    'steuer', 'steuer', 'steuerbetrag', 'mehrwertsteuer', 'umsatzsteuer', 'mwst', 'कर',
+    'steuer',
+    'steuer',
+    'steuerbetrag',
+    'mehrwertsteuer',
+    'umsatzsteuer',
+    'mwst',
+    'कर',
   ]);
   let taxTotalValue: number | undefined;
 
@@ -196,7 +243,13 @@ export function detectHeaderFields(
       'balance due',
       'total amount',
       'total payable',
-      'invoice total', 'gesamtbetrag', 'rechnungsbetrag', 'endbetrag', 'bruttobetrag', 'कुल राशि', 'कुल',
+      'invoice total',
+      'gesamtbetrag',
+      'rechnungsbetrag',
+      'endbetrag',
+      'bruttobetrag',
+      'कुल राशि',
+      'कुल',
     ]) || lastLineAmount(text, 'total');
 
   const taxTotal = amountField(taxTotalRaw, 90, 45, locale);
@@ -259,8 +312,28 @@ function firstHeadingLine(text: string): string {
 export function detectParty(text: string, kind: 'seller' | 'buyer'): Party {
   const plain =
     kind === 'seller'
-      ? ['seller', 'sold by', 'vendor', 'supplier', 'verkäufer', 'lieferant', 'rechnungsaussteller', 'विक्रेता']
-      : ['buyer', 'bill to', 'billed to', 'customer', 'client', 'kunde', 'käufer', 'rechnungsempfänger', 'खरीदार', 'ग्राहक'];
+      ? [
+          'seller',
+          'sold by',
+          'vendor',
+          'supplier',
+          'verkäufer',
+          'lieferant',
+          'rechnungsaussteller',
+          'विक्रेता',
+        ]
+      : [
+          'buyer',
+          'bill to',
+          'billed to',
+          'customer',
+          'client',
+          'kunde',
+          'käufer',
+          'rechnungsempfänger',
+          'खरीदार',
+          'ग्राहक',
+        ];
 
   // "from" is too common a word; only trust it when followed by a colon.
   const labelRegex = new RegExp(

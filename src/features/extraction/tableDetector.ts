@@ -12,9 +12,14 @@ const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d(?:[\\d., ]*\\d)?
 const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d(?:[\d.,]*\d)?\)?/g;
 function isHeader(line: string): boolean {
   const value = line.toLowerCase();
-  const hasDescription = /description|item|particulars|product|beschreibung|artikel|bezeichnung/.test(value) || value.includes('विवरण');
+  const hasDescription =
+    /description|item|particulars|product|beschreibung|artikel|bezeichnung/.test(value) ||
+    value.includes('विवरण');
   const hasQuantity = /qty|quantity|menge/.test(value) || value.includes('मात्रा');
-  const hasAmount = /price|rate|amount|total|betrag|preis|einzelpreis/.test(value) || value.includes('राशि') || value.includes('दर');
+  const hasAmount =
+    /price|rate|amount|total|betrag|preis|einzelpreis/.test(value) ||
+    value.includes('राशि') ||
+    value.includes('दर');
   return hasDescription && hasQuantity && hasAmount;
 }
 const STOP =
@@ -47,10 +52,16 @@ export function roleOf(header: string): Role {
   }
 
   if (/%/.test(h)) return 'taxRate';
-  if (/amount|total|value|amt|betrag|summe/.test(h) || h.includes('राशि') || h.includes('कुल')) return 'amount';
+  if (/amount|total|value|amt|betrag|summe/.test(h) || h.includes('राशि') || h.includes('कुल'))
+    return 'amount';
   if (/rate|price|mrp|preis|einzelpreis/.test(h) || h.includes('दर')) return 'rate';
   if (/hsn|sac|code|uom|\bunit\b/.test(h)) return 'other';
-  if (/description|item|particulars|product|name|details|beschreibung|artikel|bezeichnung/.test(h) || h.includes('विवरण') || h.includes('वस्तु')) return 'text';
+  if (
+    /description|item|particulars|product|name|details|beschreibung|artikel|bezeichnung/.test(h) ||
+    h.includes('विवरण') ||
+    h.includes('वस्तु')
+  )
+    return 'text';
 
   return 'other';
 }
@@ -59,7 +70,8 @@ export function roleOf(header: string): Role {
  * Header cells can merge when columns sit close together ("SGST %  SGST Amt"
  * printed with a small gap). Tax headers are split back into one cell each.
  */
-const TAX_HEADER = /\b(?:cgst|sgst|igst|gst|vat|tax(?!able)|steuer|mwst|umsatzsteuer)\s*(?:%|rate|amt|amount|value)?|कर/gi;
+const TAX_HEADER =
+  /\b(?:cgst|sgst|igst|gst|vat|tax(?!able)|steuer|mwst|umsatzsteuer)\s*(?:%|rate|amt|amount|value)?|कर/gi;
 
 export function splitHeaderCells(cells: string[]): string[] {
   return cells.flatMap((cell) => {

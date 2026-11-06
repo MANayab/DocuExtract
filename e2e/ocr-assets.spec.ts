@@ -311,8 +311,7 @@ const assertNoInvoiceMarkersPersisted = async (
 };
 
 const scannedAnchors = async (page: Page, language: 'eng' | 'deu' | 'hin') => {
-  const fileName =
-    language === 'eng' ? 'scanned-invoice.pdf' : `scanned-invoice-${language}.pdf`;
+  const fileName = language === 'eng' ? 'scanned-invoice.pdf' : `scanned-invoice-${language}.pdf`;
   const reviewButton = page.getByRole('button', { name: `Review ${fileName}` });
   await expect(reviewButton).toBeVisible({ timeout: 30_000 });
   await reviewButton.click();

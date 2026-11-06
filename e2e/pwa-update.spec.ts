@@ -10,7 +10,7 @@ const pdf = async (name: string) => ({
 });
 
 async function waitForController(page: Page) {
-  await page.goto('/');
+  await page.goto('./');
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
     if (!navigator.serviceWorker.controller) {
@@ -23,6 +23,9 @@ async function waitForController(page: Page) {
   });
   await page.reload();
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+  await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
 async function activeBuildId(page: Page): Promise<string> {

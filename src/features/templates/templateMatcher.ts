@@ -16,4 +16,3 @@ export function matchVendorTemplate(
       normalize(template.seller.nameKey ?? '') === sellerName,
   );
 }
-

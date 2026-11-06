@@ -92,13 +92,13 @@ export function ReviewScreen({
       {record.templateApplied && (
         <div className="dx-alert" role="status">
           <div>
-            <p className="dx-strong">Template applied: {record.templateApplied.name}</p>
+            <p className="dx-strong">Seller profile matched: {record.templateApplied.name}. This match does not change extraction; review all fields.</p>
             <button
               type="button"
               className="dx-btn dx-btn--small dx-btn--ghost"
               onClick={onReadWithoutTemplate}
             >
-              Read without template
+              Dismiss match notice
             </button>
           </div>
         </div>

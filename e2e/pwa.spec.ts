@@ -12,7 +12,7 @@ const pdf = async (name: string) => ({
 });
 
 async function waitForWorker(page: Page) {
-  await page.goto('/');
+  await page.goto('./');
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
     if (!navigator.serviceWorker.controller) {

@@ -51,9 +51,12 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  const target = fs.existsSync(filePath) && fs.statSync(filePath).isFile()
-    ? filePath
-    : path.join(buildRoot, 'index.html');
+  const exists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+  if (!exists && path.extname(relative)) {
+    response.writeHead(404).end('Not found');
+    return;
+  }
+  const target = exists ? filePath : path.join(buildRoot, 'index.html');
   const extension = path.extname(target);
   const noStore =
     target.endsWith('/sw.js') ||

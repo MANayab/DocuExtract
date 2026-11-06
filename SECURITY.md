@@ -15,7 +15,7 @@
 
 ## Known security limitations
 
-The fresh non-mutating lockfile audit for PR #20 head `bb888d42c66d680d7a3cff56d816f0a51e6f4abd` is [run #42297464847](https://github.com/MANayab/DocuExtract/actions/runs/42297464847), artifact `dependency-security-audit`. The lockfile has not changed since that audit. It reports **14 package findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded because it generated and uploaded a report; the underlying `npm audit` exit code was 1. This is not a clean audit.
+The fresh non-mutating lockfile audit for PR #20 head `7e127d5ad4df0df4c59fb35075770e2918f19df6` is [run #42305472916](https://github.com/MANayab/DocuExtract/actions/runs/42305472916), artifact `dependency-security-audit`. The lockfile has not changed since that audit. It reports **14 package findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded because it generated and uploaded a report; the underlying `npm audit` exit code was 1. This is not a clean audit.
 
 ### Critical and high findings
 
@@ -37,7 +37,7 @@ The fresh non-mutating lockfile audit for PR #20 head `bb888d42c66d680d7a3cff56d
 | `typescript-eslint@8.72.1` — direct dev dependency, `node_modules/typescript-eslint` | [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) through the minimatch dependency tree. | npm candidate `8.36.0` is older than the installed version; no downgrade/override applied. Tooling-only. |
 | `vite-node@2.1.9` — transitive, `node_modules/vite-node` via Vitest | Inherits the Vite / `launch-editor` / esbuild advisories listed above. | npm proposes `vitest@4.1.12`; dev/test-only. |
 
-The raw `npm-audit.json` and generated Markdown report in [workflow run #42297464847](https://github.com/MANayab/DocuExtract/actions/runs/42297464847) contain all 14 package findings, exact installed paths, audit ranges and npm fix candidates. No finding has been suppressed.
+The raw `npm-audit.json` and generated Markdown report in [workflow run #42305472916](https://github.com/MANayab/DocuExtract/actions/runs/42305472916) contain all 14 package findings, exact installed paths, audit ranges and npm fix candidates. No finding has been suppressed.
 
 No vulnerable dependency was force-upgraded and no residual risk has been accepted. The audit's proposed major migrations are `vitest@4.1.12`, `vite@8.3.6` and `zod@4.6.7`. They require a focused dependent security PR with lockfile review, compatibility changes, typecheck, lint, unit, production build and full browser tests. Any remaining critical/high risk requires the maintainer's explicit decision before commercial launch.
 

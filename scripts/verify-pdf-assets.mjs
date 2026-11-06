@@ -18,7 +18,7 @@ if (!fs.existsSync(fontDir)) {
   throw new Error('Production build is missing dist/standard_fonts/.');
 }
 
-const fontFiles = fs.readdirSync(fontDir).filter((name) => /\\.(pfb|ttf)$/i.test(name));
+const fontFiles = fs.readdirSync(fontDir).filter((name) => /\.(pfb|ttf)$/i.test(name));
 const licenseFiles = fs.readdirSync(fontDir).filter((name) => /^LICENSE_/.test(name));
 
 if (fontFiles.length !== 14 || licenseFiles.length !== 2) {
@@ -48,7 +48,7 @@ if (missingFonts.length) {
 
 const hashedAssets = fs
   .readdirSync(assetsDir)
-  .filter((name) => /-[A-Za-z0-9_-]{8,}\\./.test(name))
+  .filter((name) => /-[A-Za-z0-9_-]{8,}\./.test(name))
   .map((name) => `assets/${name}`);
 const missingAssets = hashedAssets.filter((name) => !manifest.assets.includes(name));
 if (missingAssets.length) {

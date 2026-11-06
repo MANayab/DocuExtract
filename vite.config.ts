@@ -60,7 +60,10 @@ const pwaPrecache = (): Plugin => {
             .update(readFileSync(resolve(process.cwd(), 'public', asset)))
             .digest('hex'),
         );
+      const buildLabel = process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release';
       const fingerprintInput = [
+        packageVersion,
+        buildLabel,
         precacheAssets.join('\\n'),
         publicAssetHashes.join('\\n'),
         workerTemplate,
@@ -112,7 +115,6 @@ export default defineConfig({
   plugins: [react(), seo(), pwaPrecache()],
   define: {
     __OCR_BUNDLED__: JSON.stringify(ocrBundled),
-    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release'),
   },
   build: {
     target: 'es2022',

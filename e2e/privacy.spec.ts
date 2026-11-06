@@ -65,7 +65,7 @@ test('seller profile consent, save, export, import, reload and delete do not per
   for (const marker of privacyMarkers) expect(exportedText).not.toContain(marker);
 
   await consent.check();
-  await page.setInputFiles('input[type="file"]', {
+  await page.setInputFiles('input[accept=".json,application/json"]', {
     name: 'imported-profile.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(importedProfile)),

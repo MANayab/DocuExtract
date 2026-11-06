@@ -61,10 +61,10 @@ const pwaPrecache = (): Plugin => {
             .digest('hex'),
         );
       const fingerprintInput = [
-        precacheAssets.join('\\\\n'),
-        publicAssetHashes.join('\\\\n'),
+        precacheAssets.join('\\n'),
+        publicAssetHashes.join('\\n'),
         workerTemplate,
-      ].join('\\\\n');
+      ].join('\\n');
       const fingerprint = createHash('sha256').update(fingerprintInput).digest('hex').slice(0, 10);
       buildId = `${packageVersion}-${fingerprint}`;
 

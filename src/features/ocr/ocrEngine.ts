@@ -98,15 +98,24 @@ export async function ocrPdf(
 
   const dir = ocrAssetBase();
   const modelPath = `${dir}/lang/${language}.traineddata${manifest.gzip ? '.gz' : ''}`;
-  const modelProbe = await fetch(modelPath, { method: 'HEAD', cache: 'no-store' }).catch(
+  // Use GET: the service worker deliberately handles GET requests only and
+  // caches the selected language model from this exact production request path.
+  // A HEAD probe bypasses that route and can falsely report a missing model.
+  const modelProbe = await fetch(modelPath, { method: 'GET', cache: 'no-store' }).catch(
     () => null,
   );
   if (!modelProbe?.ok) {
+    const offlineHint =
+      modelProbe?.status === 503
+        ? ` The ${language} model is not cached for offline use; connect and select this language, then retry.`
+        : '';
     throw new AppError(
       'OCR_UNAVAILABLE',
-      `OCR failed for ${language}. The selected local model could not be loaded. Check the local ${language} model, then retry.`,
+      `OCR failed for ${language}. The selected local model could not be loaded.${offlineHint} Check the local ${language} model, then retry.`,
     );
   }
+  // The service worker caches a clone while this probe confirms availability.
+  await modelProbe.body?.cancel();
 
   const { createWorker } = await import('tesseract.js');
   const pdf = await loadPdf(await file.arrayBuffer()).catch(() => {

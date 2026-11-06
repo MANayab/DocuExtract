@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { PDFDocument } from 'pdf-lib';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { generateFixture } from '../src/tests/fixtures/generateFixtures';
 
@@ -48,8 +49,10 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }, testInfo) => {
   const diagnostics = diagnosticsByPage.get(page);
   if (!diagnostics) return;
+  const diagnosticsPath = testInfo.outputPath('ocr-browser-diagnostics.json');
+  await writeFile(diagnosticsPath, JSON.stringify(diagnostics, null, 2));
   await testInfo.attach('ocr-browser-diagnostics.json', {
-    body: JSON.stringify(diagnostics, null, 2),
+    path: diagnosticsPath,
     contentType: 'application/json',
   });
 });
@@ -210,18 +213,44 @@ test('loads only the selected same-origin language model and offers retry on 404
 const assertNoInvoiceMarkersPersisted = async (
   page: Page,
   observedRequests: { url: string; body: string | null }[],
+  language: 'eng' | 'deu' | 'hin',
 ) => {
-  const markers = [
-    'scanned-invoice.pdf',
-    'GT-2026-0457',
-    'Greenfield Traders',
-    'Sunrise Retail',
-    'Rice 25kg bag',
-    'Sugar 50kg bag',
-    '21,200.00',
-    '1,060.00',
-    '22,260.00',
-  ];
+  const markersByLanguage = {
+    eng: [
+      'scanned-invoice.pdf',
+      'GT-2026-0457',
+      'Greenfield Traders',
+      'Sunrise Retail',
+      'Rice 25kg bag',
+      'Sugar 50kg bag',
+      '21,200.00',
+      '1,060.00',
+      '22,260.00',
+    ],
+    deu: [
+      'scanned-invoice-deu.pdf',
+      '2026-0457',
+      'Grünfeld Handel GmbH',
+      'Sonnenaufgang Einzelhandel',
+      'Reis 25 kg Sack',
+      'Zucker 50 kg Sack',
+      '21.200,00',
+      '1.060,00',
+      '22.260,00',
+    ],
+    hin: [
+      'scanned-invoice-hin.pdf',
+      '20260457',
+      'हरित क्षेत्र व्यापारी',
+      'सूर्योदय खुदरा',
+      'चावल 25 किलो बैग',
+      'चीनी 50 किलो बैग',
+      '21,200',
+      '1,060',
+      '22,260',
+    ],
+  };
+  const markers = markersByLanguage[language];
   const persisted = await page.evaluate(async (invoiceMarkers) => {
     const cacheNames = await caches.keys();
     const cacheMatches: { cache: string; url: string; marker: string }[] = [];
@@ -281,17 +310,53 @@ const assertNoInvoiceMarkersPersisted = async (
   }
 };
 
-const scannedAnchors = async (page: Page) => {
+const scannedAnchors = async (page: Page, language: 'eng' | 'deu' | 'hin') => {
+  const fileName =
+    language === 'eng' ? 'scanned-invoice.pdf' : `scanned-invoice-${language}.pdf`;
+  const reviewButton = page.getByRole('button', { name: `Review ${fileName}` });
+  await expect(reviewButton).toBeVisible({ timeout: 30_000 });
+  await reviewButton.click();
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByLabel('Invoice number')).toHaveValue('GT-2026-0457');
-  await expect(page.getByLabel('Seller name')).toHaveValue('Greenfield Traders');
-  await expect(page.getByLabel('Subtotal')).toHaveValue('21200');
-  await expect(page.getByLabel('Tax total')).toHaveValue('1060');
-  await expect(page.getByLabel('Grand total')).toHaveValue('22260');
-  await expect(page.getByLabel('Description 1')).toHaveValue('Rice 25kg bag');
-  await expect(page.getByLabel('Description 2')).toHaveValue('Sugar 50kg bag');
+
+  const expected = {
+    eng: {
+      invoiceNumber: 'GT-2026-0457',
+      seller: 'Greenfield Traders',
+      subtotal: '21200',
+      tax: '1060',
+      total: '22260',
+      firstItem: 'Rice 25kg bag',
+      secondItem: 'Sugar 50kg bag',
+    },
+    deu: {
+      invoiceNumber: '2026-0457',
+      seller: 'Grünfeld Handel GmbH',
+      subtotal: '21200',
+      tax: '1060',
+      total: '22260',
+      firstItem: 'Reis 25 kg Sack',
+      secondItem: 'Zucker 50 kg Sack',
+    },
+    hin: {
+      invoiceNumber: '20260457',
+      seller: 'हरित क्षेत्र व्यापारी',
+      subtotal: '21200',
+      tax: '1060',
+      total: '22260',
+      firstItem: 'चावल 25 किलो बैग',
+      secondItem: 'चीनी 50 किलो बैग',
+    },
+  }[language];
+
+  await expect(page.getByLabel('Invoice number')).toHaveValue(expected.invoiceNumber);
+  await expect(page.getByLabel('Seller name')).toHaveValue(expected.seller);
+  await expect(page.getByLabel('Subtotal')).toHaveValue(expected.subtotal);
+  await expect(page.getByLabel('Tax total')).toHaveValue(expected.tax);
+  await expect(page.getByLabel('Grand total')).toHaveValue(expected.total);
+  await expect(page.getByLabel('Description 1')).toHaveValue(expected.firstItem);
+  await expect(page.getByLabel('Description 2')).toHaveValue(expected.secondItem);
 };
 
 for (const language of ['eng', 'deu', 'hin'] as const) {
@@ -306,15 +371,16 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
     await page.getByLabel('Scanned PDF language').selectOption(language);
+    if (language === 'deu') await page.getByLabel('Invoice locale').selectOption('de-DE');
     await expect(page.getByText(`${language} OCR model is cached for offline use.`)).toBeVisible({
       timeout: 60_000,
     });
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
+    await page.setInputFiles('input[type="file"]', await scannedPdf(language, page));
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await page.getByRole('button', { name: 'Run OCR' }).click();
-    await scannedAnchors(page);
+    await scannedAnchors(page, language);
 
     await context.setOffline(true);
     await page.reload();
@@ -332,7 +398,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     });
     await page.getByRole('button', { name: 'Run OCR' }).click();
     await scannedAnchors(page);
-    await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
+    await assertNoInvoiceMarkersPersisted(page, diagnostics.requests, language);
     const appOrigin = new URL(page.url()).origin;
     expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
       true,

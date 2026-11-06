@@ -13,7 +13,7 @@ import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
 import { TemplateManager } from '../components/templates/TemplateManager';
 import { ReviewScreen } from '../components/review/ReviewScreen';
-import { OCR_BUNDLED } from '../config/build';
+import { DOCUEXTRACT_BUILD_LABEL, OCR_BUNDLED } from '../config/build';
 import { LOCALES, type LocaleCode } from '../config/locales';
 import { SITE } from '../content/site';
 import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
@@ -84,7 +84,7 @@ export function App() {
     const invoice = reviewing.invoice;
 
     return (
-      <div className="dx-app">
+      <div className="dx-app" data-build-label={DOCUEXTRACT_BUILD_LABEL}>
         <Header onHome={goHome} />
         <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
         <main id="main">

@@ -92,11 +92,15 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     undefined,
     { timeout: 60_000 },
   );
-  await expect(page.locator('.dx-pwa:visible').getByText('Update available', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole('button', { name: 'Later' }).click();
   await expect(
-    page.locator('.dx-pwa:visible').getByText('Update deferred. Your current tab will not reload automatically.'),
+    page
+      .locator('.dx-pwa:visible')
+      .getByText('Update deferred. Your current tab will not reload automatically.'),
   ).toBeVisible();
   expect(
     await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting)),
@@ -187,7 +191,9 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     undefined,
     { timeout: 60_000 },
   );
-  await expect(page.locator('.dx-pwa:visible').getByText('Update available', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Update now' }).click();
   await page.waitForFunction(
     async (previousBuildId) => {

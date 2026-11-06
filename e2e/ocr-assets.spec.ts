@@ -220,7 +220,9 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
-    await expect(page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
     await page.getByLabel('Scanned PDF language').selectOption(language);
     await expect(page.getByText(`${language} OCR model is cached for offline use.`)).toBeVisible({
       timeout: 60_000,
@@ -239,7 +241,9 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
         timeout: 30_000,
       },
     );
-    await expect(page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
     await page.setInputFiles('input[type="file"]', await scannedPdf());
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,
@@ -276,7 +280,9 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
-    await expect(page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 });
     await context.setOffline(true);
     await page.getByLabel('Scanned PDF language').selectOption(language);
     await page.setInputFiles('input[type="file"]', await scannedPdf());

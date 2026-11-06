@@ -391,6 +391,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     await expect(
       page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
+    await page.getByLabel('Scanned PDF language').selectOption(language);
     await page.setInputFiles('input[type="file"]', await scannedPdf(language, page));
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,

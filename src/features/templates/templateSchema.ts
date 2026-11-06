@@ -43,7 +43,7 @@ const safeAnchor = z
   .min(1)
   .max(80)
   .refine(
-    (value) => !/[<>\\d@₹$€£]/u.test(value) && !value.includes('\\0'),
+    (value) => !/[<>\d@₹$€£]/u.test(value) && !value.includes('\0'),
     'Use a non-sensitive text label, not an invoice value, identifier or amount.',
   );
 

@@ -81,6 +81,7 @@ function createPwaController(): PwaController {
         )
       ).filter((url): url is string => url !== null);
 
+      if (missingUrls.length > 0) setState('preparing');
       if (missingUrls.length > 0 && navigator.onLine) {
         await Promise.all(
           missingUrls.map(async (url) => {

@@ -86,6 +86,7 @@ test('a text-only PDF does not request an OCR language model', async ({ page }) 
   });
 
   expect(modelRequests).toEqual([]);
+  await expect(page.getByRole('button', { name: 'Run OCR' })).toHaveCount(0);
 });
 
 test('loads only the selected same-origin language model and offers retry on 404', async ({

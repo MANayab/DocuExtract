@@ -58,12 +58,20 @@ async function pageBuildId(page: Page): Promise<string> {
   return buildId;
 }
 
-async function switchBuild(build: 'new' | 'failed' | 'retry') {
+async function switchBuild(build: 'old' | 'new' | 'failed' | 'retry') {
   const response = await fetch(`http://127.0.0.1:4173/__pwa_test__/switch/${build}`, {
     method: 'POST',
   });
   expect(response.status).toBe(204);
 }
+
+test.beforeEach(async () => {
+  await switchBuild('old');
+});
+
+test.afterEach(async () => {
+  await switchBuild('old');
+});
 
 test('defers and accepts a real two-build update, preserves an old tab, and recovers from a failed install', async ({
   page,

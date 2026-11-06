@@ -12,3 +12,5 @@ test-results/
 public/ocr/
 public/standard_fonts/
 ocr-data/
+
+.pwa-test-builds/

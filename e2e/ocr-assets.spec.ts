@@ -392,12 +392,12 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     await expect(
       page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
+    await page.setInputFiles('input[type="file"]', await scannedPdf(language, page));
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await page.getByRole('button', { name: 'Run OCR' }).click();
-    await scannedAnchors(page);
+    await scannedAnchors(page, language);
     await assertNoInvoiceMarkersPersisted(page, diagnostics.requests, language);
     const appOrigin = new URL(page.url()).origin;
     expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
@@ -433,7 +433,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     ).toBeVisible({ timeout: 30_000 });
     await context.setOffline(true);
     await page.getByLabel('Scanned PDF language').selectOption(language);
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
+    await page.setInputFiles('input[type="file"]', await scannedPdf(language, page));
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,
     });
@@ -445,8 +445,8 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
 
     await context.setOffline(false);
     await page.getByRole('button', { name: 'Retry OCR' }).click();
-    await scannedAnchors(page);
-    await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
+    await scannedAnchors(page, language);
+    await assertNoInvoiceMarkersPersisted(page, diagnostics.requests, language);
     const appOrigin = new URL(page.url()).origin;
     expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
       true,

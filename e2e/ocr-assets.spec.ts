@@ -3,6 +3,57 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { generateFixture } from '../src/tests/fixtures/generateFixtures';
 
+type OcrDiagnostics = {
+  consoleErrors: string[];
+  failedRequests: string[];
+  requests: { url: string; body: string | null }[];
+  ocrRequests: { origin: string; path: string }[];
+  ocrResponses: { status: number; path: string }[];
+};
+
+const diagnosticsByPage = new WeakMap<Page, OcrDiagnostics>();
+
+test.beforeEach(async ({ page }) => {
+  const diagnostics: OcrDiagnostics = {
+    consoleErrors: [],
+    failedRequests: [],
+    requests: [],
+    ocrRequests: [],
+    ocrResponses: [],
+  };
+  page.on('console', (message) => {
+    if (message.type() === 'error') diagnostics.consoleErrors.push(message.text());
+  });
+  page.on('requestfailed', (request) => {
+    diagnostics.failedRequests.push(
+      `${request.url()}: ${request.failure()?.errorText ?? 'failed'}`,
+    );
+  });
+  page.on('request', (request) => {
+    diagnostics.requests.push({ url: request.url(), body: request.postData() });
+    const url = new URL(request.url());
+    if (url.pathname.includes('/ocr/')) {
+      diagnostics.ocrRequests.push({ origin: url.origin, path: url.pathname });
+    }
+  });
+  page.on('response', (response) => {
+    const url = new URL(response.url());
+    if (url.pathname.includes('/ocr/')) {
+      diagnostics.ocrResponses.push({ status: response.status(), path: url.pathname });
+    }
+  });
+  diagnosticsByPage.set(page, diagnostics);
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  const diagnostics = diagnosticsByPage.get(page);
+  if (!diagnostics) return;
+  await testInfo.attach('ocr-browser-diagnostics.json', {
+    body: JSON.stringify(diagnostics, null, 2),
+    contentType: 'application/json',
+  });
+});
+
 const scannedPdf = async () => ({
   name: 'scanned-invoice.pdf',
   mimeType: 'application/pdf',
@@ -164,32 +215,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
   test(
     `${language} OCR recognizes the real scanned invoice online and after an offline reload`,
     async ({ page, context }) => {
-      const consoleErrors: string[] = [];
-      const failedRequests: string[] = [];
-      const observedRequests: { url: string; body: string | null }[] = [];
-      page.on('request', (request) => {
-        observedRequests.push({ url: request.url(), body: request.postData() });
-      });
-      const ocrRequests: { origin: string; path: string }[] = [];
-      const ocrResponses: { status: number; path: string }[] = [];
-      page.on('console', (message) => {
-        if (message.type() === 'error') consoleErrors.push(message.text());
-      });
-      page.on('requestfailed', (request) => {
-        failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
-      });
-      page.on('request', (request) => {
-        const url = new URL(request.url());
-        if (url.pathname.includes('/ocr/')) {
-          ocrRequests.push({ origin: url.origin, path: url.pathname });
-        }
-      });
-      page.on('response', (response) => {
-        const url = new URL(response.url());
-        if (url.pathname.includes('/ocr/')) {
-          ocrResponses.push({ status: response.status(), path: url.pathname });
-        }
-      });
+      const diagnostics = diagnosticsByPage.get(page)!;
 
       await openApp(page);
       await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
@@ -218,46 +244,26 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       });
       await page.getByRole('button', { name: 'Run OCR' }).click();
       await scannedAnchors(page);
-      await assertNoInvoiceMarkersPersisted(page, observedRequests);
+      await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
 
       const origin = new URL(page.url()).origin;
-      expect(ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
-      expect(ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(true);
+      expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
+      expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(true);
       expect(
-        ocrRequests.some((request) => request.path.includes(`/ocr/lang/${language}.traineddata`)),
+        diagnostics.ocrRequests.some((request) =>
+          request.path.includes(`/ocr/lang/${language}.traineddata`),
+        ),
       ).toBe(true);
-      expect(ocrRequests.every((request) => request.origin === origin)).toBe(true);
-      expect(ocrResponses.filter((response) => response.status >= 400)).toEqual([]);
-      expect(failedRequests.filter((request) => request.includes('/ocr/'))).toEqual([]);
-      await test.info().attach(`ocr-${language}-browser-diagnostics.json`, {
-        body: JSON.stringify({ consoleErrors, failedRequests, ocrRequests, ocrResponses }, null, 2),
-        contentType: 'application/json',
-      });
+      expect(diagnostics.ocrRequests.every((request) => request.origin === origin)).toBe(true);
+      expect(diagnostics.ocrResponses.filter((response) => response.status >= 400)).toEqual([]);
+      expect(diagnostics.failedRequests.filter((request) => request.includes('/ocr/'))).toEqual([]);
     },
   );
 
   test(
     `${language} OCR reports an uncached offline model and succeeds on retry`,
     async ({ page, context }) => {
-      const consoleErrors: string[] = [];
-      const failedRequests: string[] = [];
-      const observedRequests: { url: string; body: string | null }[] = [];
-      page.on('request', (request) => {
-        observedRequests.push({ url: request.url(), body: request.postData() });
-      });
-      const ocrResponses: { status: number; path: string }[] = [];
-      page.on('console', (message) => {
-        if (message.type() === 'error') consoleErrors.push(message.text());
-      });
-      page.on('requestfailed', (request) => {
-        failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
-      });
-      page.on('response', (response) => {
-        const url = new URL(response.url());
-        if (url.pathname.includes('/ocr/')) {
-          ocrResponses.push({ status: response.status(), path: url.pathname });
-        }
-      });
+      const diagnostics = diagnosticsByPage.get(page)!;
 
       await openApp(page);
       await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
@@ -278,11 +284,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       await scannedAnchors(page);
       await assertNoInvoiceMarkersPersisted(page, observedRequests);
 
-      expect(ocrResponses.some((response) => response.status === 503)).toBe(true);
-      await test.info().attach(`ocr-${language}-retry-diagnostics.json`, {
-        body: JSON.stringify({ consoleErrors, failedRequests, ocrResponses }, null, 2),
-        contentType: 'application/json',
-      });
+      expect(diagnostics.ocrResponses.some((response) => response.status === 503)).toBe(true);
     },
   );
 }

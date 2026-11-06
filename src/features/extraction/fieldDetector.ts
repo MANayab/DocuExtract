@@ -73,7 +73,9 @@ function labelledAmounts(text: string, labels: string[]): string[] {
   const prefix =
     '(?:' +
     alternation(labels) +
-    ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*';
+    ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*' +
+    CURRENCY_TOKEN +
+    '?[ \\t]*';
   const r = new RegExp(prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)', 'gi');
   return [...text.matchAll(r)].map((m) => m[1]);
 }

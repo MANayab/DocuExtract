@@ -110,16 +110,18 @@ export function detectHeaderFields(
   rows?: LayoutRow[],
   locale: LocaleCode = DEFAULT_LOCALE,
 ) {
-  const sameLineNumber =
-    labelled(text, [
-      'invoice no', 'invoice number', 'invoice #', 'inv no', 'bill no', 'bill number',
-      'rechnungsnummer', 'rechnung nr', 'rechnungsnr', 'चालान संख्या',
-    ]) ||
-    firstColumn(
-      text.match(/\\binvoice\\s+(?:no(?:\\.|\\b)|number|#)\\s*[:#-]?\\s*([^\\n]+)/i)?.[1] ??
-        text.match(/\\binv(?:oice)?\\s*(?:no\\.?|#)\\s*[:#-]?\\s*([^\\n]+)/i)?.[1] ??
-        '',
-    );
+  const sameLineNumber = labelled(text, [
+    'invoice no',
+    'invoice number',
+    'invoice #',
+    'inv no',
+    'bill no',
+    'bill number',
+    'rechnungsnummer',
+    'rechnung nr',
+    'rechnungsnr',
+    'चालान संख्या',
+  ]);
   const invoiceNumberSame = looksLikeLabel(sameLineNumber) ? '' : sameLineNumber;
   const invoiceNumberBelow = invoiceNumberSame
     ? ''
@@ -163,7 +165,7 @@ export function detectHeaderFields(
     'tax amount',
     'total gst',
     'gst total',
-    'steuer', 'steuerbetrag', 'mehrwertsteuer', 'umsatzsteuer', 'mwst', 'कर',
+    'steuer', 'steuer', 'steuerbetrag', 'mehrwertsteuer', 'umsatzsteuer', 'mwst', 'कर',
   ]);
   let taxTotalValue: number | undefined;
 

@@ -78,7 +78,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(precache.ocrRuntime).toContain('ocr/manifest.json');
   expect(precache.ocrRuntime).toContain('ocr/worker.min.js');
   expect(precache.ocrRuntime.some((asset) => asset.startsWith('ocr/core/'))).toBe(true);
-  await expect(page.getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
   const extractorAsset = precache.assets.find((asset) => /pdfTextExtractor-.*\.js$/.test(asset));
   expect(extractorAsset).toBeDefined();
   expect(precache.missing).toEqual([]);
@@ -93,9 +93,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
     await cache.delete(new URL('/DocuExtract/' + asset, window.location.origin).href);
     window.dispatchEvent(new Event('pageshow'));
   }, integrityAsset);
-  await expect(page.getByText(/Preparing offline support/)).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.dx-pwa:visible').getByText(/Preparing offline support/)).toBeVisible({ timeout: 30_000 });
   await context.setOffline(false);
-  await expect(page.getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
 
   await context.setOffline(true);
   await page.reload();

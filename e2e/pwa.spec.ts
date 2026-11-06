@@ -192,62 +192,62 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(JSON.stringify(observedRequests)).not.toContain('Widget');
 });
 
-test(
-  'prepares a selected OCR language without processing an invoice and reports uncached offline models',
-  async ({ page, context }) => {
-    await waitForWorker(page);
-    await page.selectOption('#ocr-language', 'deu');
-    await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({
-      timeout: 60_000,
-    });
+test('prepares a selected OCR language without processing an invoice and reports uncached offline models', async ({
+  page,
+  context,
+}) => {
+  await waitForWorker(page);
+  await page.selectOption('#ocr-language', 'deu');
+  await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({
+    timeout: 60_000,
+  });
 
-    const cacheNames = await page.evaluate(() => caches.keys());
-    expect(cacheNames.some((name) => name.endsWith('-ocr-deu'))).toBe(true);
-    expect(cacheNames.some((name) => name.endsWith('-ocr-eng') || name.endsWith('-ocr-hin'))).toBe(
-      false,
+  const cacheNames = await page.evaluate(() => caches.keys());
+  expect(cacheNames.some((name) => name.endsWith('-ocr-deu'))).toBe(true);
+  expect(cacheNames.some((name) => name.endsWith('-ocr-eng') || name.endsWith('-ocr-hin'))).toBe(
+    false,
+  );
+
+  const beforeOffline = await page.evaluate(async () => {
+    const names = await caches.keys();
+    const entries = await Promise.all(
+      names.map(async (name) => ({
+        name,
+        requests: (await (await caches.open(name)).keys()).map((request) => request.url),
+      })),
     );
+    return {
+      controlled: Boolean(navigator.serviceWorker.controller),
+      entries,
+    };
+  });
+  expect(beforeOffline.controlled).toBe(true);
+  expect(
+    beforeOffline.entries
+      .flatMap((entry) => entry.requests)
+      .some((url) => url.includes('/hin.traineddata.gz')),
+  ).toBe(false);
 
-    const beforeOffline = await page.evaluate(async () => {
-      const names = await caches.keys();
-      const entries = await Promise.all(
-        names.map(async (name) => ({
-          name,
-          requests: (await (await caches.open(name)).keys()).map((request) => request.url),
-        })),
-      );
-      return {
-        controlled: Boolean(navigator.serviceWorker.controller),
-        entries,
-      };
-    });
-    expect(beforeOffline.controlled).toBe(true);
-    expect(
-      beforeOffline.entries
-        .flatMap((entry) => entry.requests)
-        .some((url) => url.includes('/hin.traineddata.gz')),
-    ).toBe(false);
+  await context.setOffline(true);
+  expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+  const results = await page.evaluate(async () => {
+    const cached = await fetch('/DocuExtract/ocr/lang/deu.traineddata.gz', {
+      cache: 'no-store',
+    }).then((response) => response.ok);
+    const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', { cache: 'no-store' });
+    const body = uncached.status === 503 ? await uncached.json() : { error: undefined };
 
-    await context.setOffline(true);
-    expect(await page.evaluate(() => navigator.onLine)).toBe(false);
-    const results = await page.evaluate(async () => {
-      const cached = await fetch('/DocuExtract/ocr/lang/deu.traineddata.gz', {
-        cache: 'no-store',
-      }).then((response) => response.ok);
-      const uncached = await fetch('/DocuExtract/ocr/lang/hin.traineddata.gz', { cache: 'no-store' });
-      const body = uncached.status === 503 ? await uncached.json() : { error: undefined };
+    return {
+      cached,
+      uncachedStatus: uncached.status,
+      uncachedBody: body,
+    };
+  });
 
-      return {
-        cached,
-        uncachedStatus: uncached.status,
-        uncachedBody: body,
-      };
-    });
-
-    expect(results.cached).toBe(true);
-    expect(results.uncachedStatus).toBe(503);
-    expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
-  },
-);
+  expect(results.cached).toBe(true);
+  expect(results.uncachedStatus).toBe(503);
+  expect(results.uncachedBody.error).toBe('OCR_LANGUAGE_NOT_AVAILABLE_OFFLINE');
+});
 
 test('failed update checks do not reload or discard the current page', async ({ page }) => {
   await waitForWorker(page);

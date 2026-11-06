@@ -285,6 +285,12 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       await assertNoInvoiceMarkersPersisted(page, observedRequests);
 
       expect(diagnostics.ocrResponses.some((response) => response.status === 503)).toBe(true);
+      expect(
+        diagnostics.ocrResponses.some(
+          (response) =>
+            response.path.includes(`/ocr/lang/${language}.traineddata`) && response.status === 200,
+        ),
+      ).toBe(true);
     },
   );
 }

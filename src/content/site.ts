@@ -12,7 +12,7 @@ export const SITE = {
   h1: 'PDF Invoice to Excel',
   tagline: 'Private, browser-only invoice extraction',
   description:
-    'Convert PDF invoices to Excel, CSV or JSON in your browser. Batch upload, GST-aware, OCR for scans and offline app support. Free and open source. Files are processed locally by this application and are not uploaded by application code.',
+    'Convert PDF invoices to Excel, CSV or JSON in your browser. Files are processed locally by this application and are not uploaded by application code.',
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',

@@ -7,7 +7,8 @@ const pdf = async (name: string) => ({
   name,
   mimeType: 'application/pdf',
   buffer: Buffer.from(await generateFixture('basic')),
-});
+  },
+);
 
 async function waitForController(page: Page) {
   await page.goto('/');
@@ -30,7 +31,10 @@ async function activeBuildId(page: Page): Promise<string> {
     () =>
       new Promise<string>((resolve, reject) => {
         const channel = new MessageChannel();
-        const timeout = window.setTimeout(() => reject(new Error('Service worker did not report its build ID.')), 5_000);
+        const timeout = window.setTimeout(
+          () => reject(new Error('Service worker did not report its build ID.')),
+          5_000,
+        );
         channel.port1.onmessage = (event: MessageEvent<{ buildId: string }>) => {
           window.clearTimeout(timeout);
           resolve(event.data.buildId);
@@ -50,7 +54,9 @@ async function switchBuild(build: 'new' | 'failed') {
   expect(response.status).toBe(204);
 }
 
-test('defers and accepts a real two-build update, preserves an old tab, and recovers from a failed install', async ({
+test(
+  'defers and accepts a real two-build update, preserves an old tab, and recovers from a failed install',
+  async ({
   page,
   context,
 }) => {
@@ -80,7 +86,9 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect(page.getByText('Update available')).toBeVisible();
 
   await page.getByRole('button', { name: 'Later' }).click();
-  await expect(page.getByText('Update deferred. Your current tab will not reload automatically.')).toBeVisible();
+  await expect(
+    page.getByText('Update deferred. Your current tab will not reload automatically.'),
+  ).toBeVisible();
   expect(
     await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).waiting)),
   ).toBe(true);
@@ -125,7 +133,10 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const failedInstall = await page.evaluate(async () => {
     const registration = await navigator.serviceWorker.ready;
     return new Promise<boolean>((resolve, reject) => {
-      const timeout = window.setTimeout(() => reject(new Error('Timed out waiting for failed service-worker installation.')), 60_000);
+      const timeout = window.setTimeout(
+        () => reject(new Error('Timed out waiting for failed service-worker installation.')),
+        60_000,
+      );
       registration.addEventListener(
         'updatefound',
         () => {

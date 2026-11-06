@@ -132,16 +132,19 @@ test('reloads offline and performs extraction without caching invoice data', asy
   if (!xlsxPath) throw new Error('Playwright did not expose the downloaded XLSX file.');
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await readFile(xlsxPath));
-  expect(JSON.stringify(workbook.getWorksheet('Invoices')?.getSheetValues())).toContain(
-    'PRIVACY-INV-DO-NOT-PERSIST-001',
-  );
+  const workbookValues = JSON.stringify(workbook.worksheets.map((sheet) => sheet.getSheetValues()));
+  expect(workbookValues).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
+  expect(workbookValues).toContain('PRIVACY-SELLER-DO-NOT-PERSIST');
+  expect(workbookValues).toContain('PRIVACY-LINE-DO-NOT-PERSIST');
 
   const invoiceCsvEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV · invoices' }).click();
   const invoiceCsvDownload = await invoiceCsvEvent;
   const invoiceCsvPath = await invoiceCsvDownload.path();
   if (!invoiceCsvPath) throw new Error('Playwright did not expose the invoice CSV file.');
-  expect(await readFile(invoiceCsvPath, 'utf8')).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
+  const invoiceCsv = await readFile(invoiceCsvPath, 'utf8');
+  expect(invoiceCsv).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
+  expect(invoiceCsv).toContain('PRIVACY-SELLER-DO-NOT-PERSIST');
 
   const lineCsvEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV · line items' }).click();
@@ -158,6 +161,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
   const exportedJson = JSON.parse(await readFile(jsonPath, 'utf8')) as unknown;
   expect(JSON.stringify(exportedJson)).toContain('PRIVACY-INV-DO-NOT-PERSIST-001');
   expect(JSON.stringify(exportedJson)).toContain('PRIVACY-LINE-DO-NOT-PERSIST');
+  expect(JSON.stringify(exportedJson)).toContain('PRIVACY-SELLER-DO-NOT-PERSIST');
 
   await page.reload();
   await expect(page.getByRole('heading', { name: appHeading })).toBeVisible({ timeout: 30_000 });

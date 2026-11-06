@@ -26,10 +26,10 @@ Consent-based seller templates with local storage only after explicit consent an
 ### v1.5.1
 Improved difficult line-item and table extraction, added currency fallback and warnings, added multi-invoice regression coverage and offline extraction-quality gates, and synchronized the app version with package.json.
 
-## Next
+### v1.6.0
+Offline PWA support with a same-origin application shell at `/DocuExtract/`, on-demand OCR model caching for English, German and Hindi, and user-controlled update handling. Invoice PDFs and extracted invoice data are excluded from service-worker caches.
 
-### v1.6.0: offline PWA
-Service worker support with app-shell and local-asset caching, OCR models cached only after use, an update prompt, and a Playwright offline test. Invoice PDFs and extracted invoice data must never be cached. The GitHub Pages base path remains `/DocuExtract/`.
+## Next
 
 ## Later ideas
 

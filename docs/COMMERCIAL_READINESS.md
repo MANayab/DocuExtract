@@ -8,6 +8,24 @@
 
 This document separates evidence from incomplete work. It is not a commercial launch approval.
 
+## Baseline gap table
+
+| Requirement | Current evidence | Gap | Severity | Planned fix |
+|---|---|---|---|---|
+| Version and release provenance | Main is v1.6.0; `v1.6.0` tag/release exist; PR #19 synchronized source metadata. | No source tag rewrite is permitted; verify new commits independently of the historical tag. | Non-blocking | Keep this baseline branch based on current main; do not move tags. |
+| Offline shell and PDF resources | v1.6.0 service worker and prior 12-test Playwright suite. | Old hard-coded worker build ID, PDF.js standard fonts not in manifest, and OCR runtime not prepared before invoice processing. | Blocking | Generate a content-derived worker ID; precache hashed chunks, standard fonts, OCR worker/core and manifest. |
+| Offline extraction and exports | Prior tests verified offline reload and extraction reached review. | Prior E2E did not parse downloaded XLSX, both CSV variants and JSON while offline. | Blocking | Add artifact-level offline E2E assertions and inspect report artifacts. |
+| Service-worker updates | User-controlled waiting worker and no automatic page reload. | No controlled two-build acceptance, deferral, failed-install recovery or multiple-tab lifecycle proof. | Blocking | Add a two-build update test harness; preserve old hashed caches during active-tab transitions. |
+| OCR offline preparation | Per-language OCR caches existed after a successful model request. | The user had to process OCR online first; OCR manifest/runtime also needed to be present offline. | Blocking | Precache OCR runtime/manifest and download only the user-selected language model. |
+| Privacy persistence | Browser-only pipeline; prior test checked selected cache keys and storage keys. | No body-level inspection of cached responses, storage values, URLs and request bodies across correction/template/export/reload. | Blocking | Add synthetic-marker storage/network tests and manual verification. |
+| Seller profiles | Consent-gated local save/import/export exists. | Import bypassed consent; tax ID was stored; parser did not consume field/table rules while UI suggested a template was applied. | Blocking | Gate all writes on consent, exclude identifiers, describe name matching honestly; implement parser rules separately. |
+| Extraction quality | Eight synthetic invoices and a passing release gate. | Synthetic fixtures do not represent real supplier diversity; currency fallback and unscored HSN/SAC remain limitations. | Blocking for accuracy claims | Keep thresholds; add representative fixtures and human QA before accuracy claims. |
+| Export correctness | Benchmark verifies 32 format checks and formula sanitization. | Comprehensive Unicode, CSV quoting/newline, empty/large dataset and unsafe hyperlink coverage remains incomplete. | Blocking | Add parsed artifact regression tests for all supported formats. |
+| Dependency security | Audit report exists and workflow passed. | Report contains 2 critical, 2 high and 10 moderate findings; no clean audit. | Blocking | Fresh audit, reviewed upgrades, and explicit maintainer risk acceptance for any unresolved critical/high issue. |
+| Accessibility/support | Basic semantic controls and automated browser tests. | Keyboard, screen-reader, real device and assistive-technology QA incomplete. | Blocking for broad support claims | Run targeted manual QA and record exact browser/device matrix. |
+| Documentation/public metadata | README, privacy, security, terms, roadmap, OCR and llms.txt exist. | Several statements overstated memory erasure, cache cleanup and seller-template behavior; third-party version list was stale. | Non-blocking after this PR | Synchronize docs and verify public SEO/structured data from generated build. |
+| Deployment controls | Pages deploy workflow runs on pushes to main. | Main branch API reports `protected: false`; deploy workflow omits full PR gates. | Blocking control risk | Maintainer decision on branch protection/required checks; do not change repository settings here. |
+
 ## Implemented capabilities
 
 - Browser-local PDF text extraction, batch processing, multi-invoice splitting and editable review.

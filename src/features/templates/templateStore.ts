@@ -20,6 +20,11 @@ export class TemplateStore {
       this.templates = parseTemplateImport(raw);
     } catch {
       this.templates = [];
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // Storage may be unavailable in private browsing or restricted contexts.
+      }
     }
     return this.templates;
   }

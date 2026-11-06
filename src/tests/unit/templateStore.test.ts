@@ -5,7 +5,7 @@ import { TemplateStore } from '../../features/templates/templateStore';
 const input = {
   schemaVersion: 1 as const,
   name: 'Acme rules',
-  seller: { gstin: '29ABCDE1234F2Z5' },
+  seller: { nameKey: 'Acme Traders' },
   fieldMappings: [{ field: 'invoiceNumber' as const, labelAnchor: 'Invoice No' }],
   tableColumns: [{ column: 'description' as const, headerAnchor: 'Description' }],
 };

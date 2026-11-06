@@ -9,7 +9,7 @@ const packageVersion = JSON.parse(
   readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
 ).version as string;
 
-/** True when scripts/prepare-ocr-assets.mjs bundled the Tesseract files (it runs before every build). */
+/** True when scripts/prepare-ocr-assets.mjs bundled Tesseract files before this build. */
 const ocrBundled = existsSync(resolve(process.cwd(), 'public/ocr/manifest.json'));
 
 /**
@@ -61,8 +61,13 @@ const pwaPrecache = (): Plugin => {
             .update(readFileSync(resolve(process.cwd(), 'public', asset)))
             .digest('hex'),
         );
+      const fingerprintInput = [
+        precacheAssets.join('\\n'),
+        publicAssetHashes.join('\\n'),
+        workerTemplate,
+      ].join('\\n');
       const fingerprint = createHash('sha256')
-        .update(`${precacheAssets.join('\\n')}\\n${publicAssetHashes.join('\\n')}\\n${workerTemplate}`)
+        .update(fingerprintInput)
         .digest('hex')
         .slice(0, 10);
       buildId = `${packageVersion}-${fingerprint}`;

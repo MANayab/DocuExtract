@@ -9,8 +9,7 @@ const pdf = async (name: string) => ({
   name,
   mimeType: 'application/pdf',
   buffer: Buffer.from(await generateFixture('basic')),
-  },
-);
+});
 
 async function waitForWorker(page: Page) {
   await page.goto('/');
@@ -195,10 +194,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
 
 test(
   'prepares a selected OCR language without processing an invoice and reports uncached offline models',
-  async ({
-  page,
-  context,
-}) => {
+  async ({ page, context }) => {
   await waitForWorker(page);
   await page.selectOption('#ocr-language', 'deu');
   await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({

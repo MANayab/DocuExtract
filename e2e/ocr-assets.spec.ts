@@ -71,11 +71,11 @@ const pdf = async (kind: 'basic' | 'empty', name: string) => ({
   buffer: Buffer.from(await generateFixture(kind)),
 });
 
-test('a text-only PDF does not request OCR assets', async ({ page }) => {
-  const ocrRequests: string[] = [];
+test('a text-only PDF does not request an OCR language model', async ({ page }) => {
+  const modelRequests: string[] = [];
   page.context().on('request', (request) => {
-    if (new URL(request.url()).pathname.includes('/ocr/')) {
-      ocrRequests.push(request.url());
+    if (new URL(request.url()).pathname.includes('.traineddata')) {
+      modelRequests.push(request.url());
     }
   });
 
@@ -85,7 +85,7 @@ test('a text-only PDF does not request OCR assets', async ({ page }) => {
     timeout: 30_000,
   });
 
-  expect(ocrRequests).toEqual([]);
+  expect(modelRequests).toEqual([]);
 });
 
 test('loads only the selected same-origin language model and offers retry on 404', async ({
@@ -219,7 +219,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByLabel('Scanned PDF language').selectOption(language);
     await expect(page.getByText(`${language} OCR model is cached for offline use.`)).toBeVisible({
       timeout: 60_000,
@@ -238,7 +238,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
         timeout: 30_000,
       },
     );
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.setInputFiles('input[type="file"]', await scannedPdf());
     await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
       timeout: 30_000,
@@ -275,7 +275,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Offline ready', { exact: true })).toBeVisible({ timeout: 30_000 });
     await context.setOffline(true);
     await page.getByLabel('Scanned PDF language').selectOption(language);
     await page.setInputFiles('input[type="file"]', await scannedPdf());

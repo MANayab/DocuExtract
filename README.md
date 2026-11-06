@@ -386,8 +386,6 @@ Released through v1.6.0:
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
-
 ## Tech stack
 
 | Layer                           | Tools                                                                          |

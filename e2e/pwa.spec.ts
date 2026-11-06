@@ -233,6 +233,8 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
   expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);
   expect(storage.databases.filter(Boolean)).toEqual([]);
+  const appOrigin = new URL(page.url()).origin;
+  expect(observedRequests.every((request) => new URL(request.url).origin === appOrigin)).toBe(true);
   const persisted = JSON.stringify(storage);
   for (const marker of syntheticMarkers) {
     expect(persisted).not.toContain(marker);

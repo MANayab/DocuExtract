@@ -56,14 +56,18 @@ test('reloads offline and performs extraction without caching invoice data', asy
       version: manifest.version,
       buildId: manifest.buildId,
       assets: manifest.assets,
+      ocrRuntime: manifest.assets.filter((asset) => asset.startsWith('ocr/')),
       fonts: manifest.assets.filter((asset) => asset.startsWith('standard_fonts/')),
       missing,
       cached: [...cachedUrls],
     };
   });
   expect(precache.version).toBe('1.6.0');
-  expect(precache.buildId).toMatch(/^1\\.6\\.0-[a-f0-9]{10}$/);
+  expect(precache.buildId).toMatch(/^1\.6\.0-[a-f0-9]{10}$/);
   expect(precache.fonts).toHaveLength(14);
+  expect(precache.ocrRuntime).toContain('ocr/manifest.json');
+  expect(precache.ocrRuntime).toContain('ocr/worker.min.js');
+  expect(precache.ocrRuntime.some((asset) => asset.startsWith('ocr/core/'))).toBe(true);
   await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
   const extractorAsset = precache.assets.find((asset) => /pdfTextExtractor-.*\.js$/.test(asset));
   expect(extractorAsset).toBeDefined();

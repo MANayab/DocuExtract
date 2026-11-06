@@ -235,7 +235,9 @@ export function App() {
                         .catch((error: unknown) =>
                           setNotices((current) => [
                             ...current.filter((message) => message !== pending),
-                            error instanceof Error ? error.message : `${next} OCR model could not be cached.`,
+                            error instanceof Error
+                              ? error.message
+                              : `${next} OCR model could not be cached.`,
                           ]),
                         );
                     }}

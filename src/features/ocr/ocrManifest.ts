@@ -44,3 +44,29 @@ export function getOcrManifest(): Promise<OcrManifest | null> {
     return manifest;
   });
 }
+
+
+/**
+ * Prepares a user-selected language for offline OCR without requiring an
+ * invoice to be processed first. The service worker stores the model in that
+ * language's dedicated cache; this function confirms the cache entry exists.
+ */
+export async function prepareOcrLanguage(language: string): Promise<void> {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    throw new Error('Wait until the application reports Offline ready, then select the OCR language again.');
+  }
+
+  const manifest = await getOcrManifest();
+  if (!manifest || !manifest.languages.includes(language)) {
+    throw new Error(`The ${language} OCR model is not bundled in this build.`);
+  }
+
+  const modelUrl = `${ocrAssetBase()}/lang/${language}.traineddata${manifest.gzip ? '.gz' : ''}`;
+  const response = await fetch(modelUrl, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`The ${language} OCR model could not be downloaded.`);
+
+  const cached = await caches.match(modelUrl);
+  if (!cached) {
+    throw new Error(`The ${language} model was downloaded but could not be confirmed in offline storage. Retry while online.`);
+  }
+}

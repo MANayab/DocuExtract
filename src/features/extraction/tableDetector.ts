@@ -254,10 +254,9 @@ function parseLoosely(line: string, locale: LocaleCode, headerRoles: Role[] | nu
 }
 
 const HEADER_ROLE = new RegExp(
-  String.raw\`\b(?:quantity|qty|unit\s+price|rate|price|taxable\s+value|taxable|discount|rabatt|(?:cgst|sgst|igst|gst|tax|steuer|mwst|umsatzsteuer)\s*(?:amount|amt|rate|%)?|line\s+total|amount|total|menge|beschreibung|einzelpreis|preis|betrag)\b|(?:विवरण|मात्रा|दर|राशि|कर)\`,
+  '\\b(?:quantity|qty|unit\\s+price|rate|price|taxable\\s+value|taxable|discount|rabatt|(?:cgst|sgst|igst|gst|tax|steuer|mwst|umsatzsteuer)\\s*(?:amount|amt|rate|%)?|line\\s+total|amount|total|menge|beschreibung|einzelpreis|preis|betrag)\\b|(?:विवरण|मात्रा|दर|राशि|कर)',
   'gi',
 );
-
 function rolesFromHeader(line: string): Role[] {
   const columns = line.match(HEADER_ROLE) ?? [];
   return columns.map((column) => roleOf(column));

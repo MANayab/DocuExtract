@@ -33,7 +33,7 @@ const safeSellerNameKey = z
   .min(1)
   .max(160)
   .refine(
-    (value) => !/[<>\\d@₹$€£]/u.test(value) && !value.includes('\\0'),
+    (value) => !/[<>\d@₹$€£]/u.test(value) && !value.includes('\0'),
     'Use a seller name, not a tax ID, invoice value, contact detail or amount.',
   );
 

@@ -160,6 +160,8 @@ test('seller profile consent, save, export, import, reload and delete do not per
 
   expect(storage.cacheMarkerMatches).toEqual([]);
   expect(storage.databases.filter(Boolean)).toEqual([]);
+  const appOrigin = new URL(page.url()).origin;
+  expect(observedRequests.every((request) => new URL(request.url).origin === appOrigin)).toBe(true);
   const persisted = JSON.stringify(storage);
   for (const marker of privacyMarkers) {
     expect(persisted).not.toContain(marker);

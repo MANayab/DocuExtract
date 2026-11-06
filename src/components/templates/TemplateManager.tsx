@@ -12,7 +12,6 @@ type Props = {
 export function TemplateManager({ onTemplatesChange }: Props) {
   const [templates, setTemplates] = useState<VendorTemplate[]>(() => store.load());
   const [name, setName] = useState('');
-  const [gstin, setGstin] = useState('');
   const [nameKey, setNameKey] = useState('');
   const [consent, setConsent] = useState(false);
   const [notice, setNotice] = useState('');
@@ -28,20 +27,19 @@ export function TemplateManager({ onTemplatesChange }: Props) {
         {
           schemaVersion: 1,
           name,
-          seller: { gstin: gstin || undefined, nameKey: nameKey || undefined },
+          seller: { nameKey },
           fieldMappings: [],
           tableColumns: [],
         },
         consent,
       );
       setName('');
-      setGstin('');
       setNameKey('');
       setConsent(false);
-      setNotice('Seller template saved in this browser.');
+      setNotice('Seller matching profile saved in this browser.');
       refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Template could not be saved.');
+      setNotice(error instanceof Error ? error.message : 'Seller profile could not be saved.');
     }
   };
 
@@ -61,36 +59,30 @@ export function TemplateManager({ onTemplatesChange }: Props) {
       const imported = store.import(await file.text(), consent);
       setConsent(false);
       refresh();
-      setNotice(`${imported} seller template${imported === 1 ? '' : 's'} imported.`);
+      setNotice(`${imported} seller profile${imported === 1 ? '' : 's'} imported.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Template import failed.');
+      setNotice(error instanceof Error ? error.message : 'Seller profile import failed.');
     }
   };
 
   return (
     <section className="dx-template-panel" aria-labelledby="seller-templates-title">
       <div className="dx-locale-panel__group">
-        <h2 id="seller-templates-title">Seller templates</h2>
+        <h2 id="seller-templates-title">Seller matching profiles</h2>
         <p className="dx-locale-panel__hint">
-          Templates store matching and reading rules only in this browser. They do not store invoice
-          amounts or invoice text. Review remains the final authority.
+          Profiles store a seller name matching key in this browser after explicit consent. They do
+          not store seller tax IDs or invoice values. Custom field and table reading rules are not
+          connected to the extraction parser yet; review every extracted field.
         </p>
         <div className="dx-template-grid">
           <label>
-            Template name
+            Profile name
             <input value={name} onChange={(event) => setName(event.target.value)} maxLength={160} />
           </label>
           <label>
-            Seller GSTIN (optional)
+            Seller name key
             <input
-              value={gstin}
-              onChange={(event) => setGstin(event.target.value)}
-              maxLength={160}
-            />
-          </label>
-          <label>
-            Seller name key (optional)
-            <input
+              required
               value={nameKey}
               onChange={(event) => setNameKey(event.target.value)}
               maxLength={160}
@@ -103,11 +95,11 @@ export function TemplateManager({ onTemplatesChange }: Props) {
             checked={consent}
             onChange={(event) => setConsent(event.target.checked)}
           />
-          I explicitly agree to save or import these seller reading rules in this browser.
+          I explicitly agree to save or import these seller matching profiles in this browser.
         </label>
         <div className="dx-template-actions">
-          <button type="button" onClick={create}>
-            Save template
+          <button type="button" onClick={create} disabled={!consent}>
+            Save profile
           </button>
           <button type="button" onClick={exportTemplates} disabled={!templates.length}>
             Export
@@ -129,7 +121,7 @@ export function TemplateManager({ onTemplatesChange }: Props) {
             {templates.map((template) => (
               <li key={template.id}>
                 <strong>{template.name}</strong>
-                <span>{template.seller.gstin ? ' GSTIN match' : ' Seller-name match'}</span>
+                <span> Seller-name match only</span>
                 <button type="button" onClick={() => remove(template.id)}>
                   Delete
                 </button>

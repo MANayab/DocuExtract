@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { saveAs } from 'file-saver';
 import { TemplateStore } from '../../features/templates/templateStore';
 import type { VendorTemplate } from '../../features/templates/templateSchema';
 
@@ -51,20 +52,16 @@ export function TemplateManager({ onTemplatesChange }: Props) {
 
   const exportTemplates = () => {
     const blob = new Blob([store.export()], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'docuextract-seller-templates.json';
-    anchor.click();
-    URL.revokeObjectURL(url);
+    saveAs(blob, 'docuextract-seller-templates.json');
   };
 
   const importTemplates = async (file?: File) => {
     if (!file) return;
     try {
-      store.import(await file.text());
+      const imported = store.import(await file.text(), consent);
+      setConsent(false);
       refresh();
-      setNotice('Seller templates imported.');
+      setNotice(`${imported} seller template${imported === 1 ? '' : 's'} imported.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Template import failed.');
     }
@@ -106,7 +103,7 @@ export function TemplateManager({ onTemplatesChange }: Props) {
             checked={consent}
             onChange={(event) => setConsent(event.target.checked)}
           />
-          I explicitly agree to save these reading rules in this browser.
+          I explicitly agree to save or import these seller reading rules in this browser.
         </label>
         <div className="dx-template-actions">
           <button type="button" onClick={create}>
@@ -115,7 +112,7 @@ export function TemplateManager({ onTemplatesChange }: Props) {
           <button type="button" onClick={exportTemplates} disabled={!templates.length}>
             Export
           </button>
-          <button type="button" onClick={() => fileRef.current?.click()}>
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={!consent}>
             Import
           </button>
           <input

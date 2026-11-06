@@ -25,7 +25,9 @@ describe('TemplateStore', () => {
     const exported = first.export();
 
     const second = new TemplateStore();
-    expect(second.import(exported)).toBe(1);
+    expect(() => second.import(exported, false)).toThrow('Explicit consent');
+    expect(second.list()).toHaveLength(0);
+    expect(second.import(exported, true)).toBe(1);
     expect(second.list()).toHaveLength(1);
   });
 });

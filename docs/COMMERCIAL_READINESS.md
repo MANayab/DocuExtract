@@ -96,7 +96,7 @@ The tests are automated regression evidence, not proof of complete memory erasur
 
 ## Dependency security findings
 
-The fresh non-mutating lockfile audit for PR #20 is [run #42293999766](https://github.com/MANayab/DocuExtract/actions/runs/42293999766) (head `09aa7aea7eb035395da330d0a491db160fc842fb`; package-lock has not changed since). It reports **14 findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded by generating a report; the underlying `npm audit` exit code was 1.
+The fresh non-mutating lockfile audit for PR #20 is [run #42305472916](https://github.com/MANayab/DocuExtract/actions/runs/42305472916) (head `7e127d5ad4df0df4c59fb35075770e2918f19df6`; package-lock has not changed since). It reports **14 findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded by generating a report; the underlying `npm audit` exit code was 1.
 
 Critical/high packages are `tinypool@1.1.1` (transitive through `vitest@2.1.9`), `vitest@2.1.9` (direct development dependency), `vite@5.4.21` (direct development dependency) and `zod@3.23.8` (direct runtime dependency). The audit lists major-only candidates `vitest@4.1.12`, `vite@8.3.6` and `zod@4.6.7`. Zod is used for local seller-profile import with a 256 KB size cap and bounded schema arrays, but local file input remains a reachable path. Vite/Vitest/Tinypool are build/test tools and are not shipped as application code; they remain developer/CI toolchain risks.
 

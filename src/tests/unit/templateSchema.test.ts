@@ -24,5 +24,7 @@ describe('seller template schema', () => {
     expect(parseTemplateImport(json)).toHaveLength(1);
     expect(() => parseTemplateImport(json.replace('Invoice No', '<script>'))).toThrow();
     expect(() => parseTemplateImport(json.replace('Invoice No', 'INV-123'))).toThrow();
+    expect(() => parseTemplateImport(json.replace('Acme Traders', '29ABCDE1234F2Z5'))).toThrow();
+    expect(() => parseTemplateImport(json.replace('nameKey', 'gstin'))).toThrow();
   });
 });

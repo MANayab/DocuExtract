@@ -51,13 +51,85 @@ self.addEventListener('install', (event) => {
   );
 });
 
+async function cleanupInactiveCaches() {
+  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const activeBuildIds = new Set([BUILD_ID]);
+  let allClientsReported = true;
+
+  await Promise.all(
+    windows.map(
+      (client) =>
+        new Promise((resolve) => {
+          const channel = new MessageChannel();
+          let settled = false;
+          const timeout = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            allClientsReported = false;
+            channel.port1.close();
+            resolve();
+          }, 1_500);
+
+          channel.port1.onmessage = (message) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            const clientBuildId = message.data?.buildId;
+            if (typeof clientBuildId === 'string' && clientBuildId) {
+              activeBuildIds.add(clientBuildId);
+            } else {
+              allClientsReported = false;
+            }
+            channel.port1.close();
+            resolve();
+          };
+
+          try {
+            client.postMessage({ type: 'DOCUEXTRACT_REPORT_BUILD_ID' }, [channel.port2]);
+          } catch {
+            clearTimeout(timeout);
+            settled = true;
+            allClientsReported = false;
+            channel.port1.close();
+            resolve();
+          }
+        }),
+    ),
+  );
+
+  // An old or suspended tab that cannot identify its build may still need its
+  // hashed chunks. Keep all caches until every live tab has replied.
+  if (!allClientsReported) return;
+
+  const cacheNames = await caches.keys();
+  for (const name of cacheNames) {
+    if (name.startsWith('docuextract-') && name.endsWith('-shell')) {
+      const buildId = name.slice('docuextract-'.length, -'-shell'.length);
+      if (!activeBuildIds.has(buildId)) await caches.delete(name);
+      continue;
+    }
+
+    const ocrCache = name.match(/^docuextract-(.+)-ocr-(eng|deu|hin)$/);
+    if (!ocrCache || activeBuildIds.has(ocrCache[1])) continue;
+
+    // Preserve selected language models while moving them into the current
+    // versioned cache, then remove the inactive version's duplicate.
+    const target = await caches.open(OCR_PREFIX + ocrCache[2]);
+    const previous = await caches.open(name);
+    for (const request of await previous.keys()) {
+      if (await target.match(request)) continue;
+      const response = await previous.match(request);
+      if (response?.ok) await target.put(request, response.clone());
+    }
+    await caches.delete(name);
+  }
+}
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      // Keep previous versioned caches. A tab that was already running the old
-      // application may still request its hashed lazy chunks after an update.
-      // The fetch handler searches all shell caches for immutable hashed assets.
       await self.clients.claim();
+      await cleanupInactiveCaches();
     })(),
   );
 });
@@ -69,6 +141,10 @@ self.addEventListener('message', (event) => {
   }
   if (event.data?.type === 'DOCUEXTRACT_GET_BUILD_ID') {
     event.ports[0]?.postMessage({ buildId: BUILD_ID });
+    return;
+  }
+  if (event.data?.type === 'DOCUEXTRACT_CLEANUP_CACHES') {
+    event.waitUntil(cleanupInactiveCaches());
   }
 });
 

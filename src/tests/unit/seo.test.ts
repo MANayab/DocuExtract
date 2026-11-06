@@ -102,6 +102,6 @@ describe('claims match what the build contains', () => {
 
     expect(llms).toContain(SITE.url);
     expect(llms).toContain(SITE.repo);
-    expect(llms).toMatch(/never uploaded/i);
+    expect(llms).toMatch(/not uploaded by application code/i);
   });
 });

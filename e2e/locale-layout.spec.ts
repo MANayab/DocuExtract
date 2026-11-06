@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('locale panel geometry and keyboard work at common widths', async ({ page }) => {
   for (const width of [320, 375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('/');
+    await page.goto('./');
 
     const panel = page.locator('.dx-locale-panel');
     const dropzone = page.locator('.dx-drop__zone');
@@ -34,7 +34,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
   }
 
   await page.setViewportSize({ width: 375, height: 900 });
-  await page.goto('/');
+  await page.goto('./');
 
   const localeSelect = page.getByLabel('Invoice locale');
   const ocrSelect = page.getByLabel('Scanned PDF language');

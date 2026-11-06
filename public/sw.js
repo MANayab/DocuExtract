@@ -1,32 +1,48 @@
 /* DocuExtract offline worker. Never cache invoice or template data. */
-const BUILD_ID = '1.5.1';
+const BUILD_ID = '__DOCUEXTRACT_BUILD_ID__';
 const SHELL = 'docuextract-' + BUILD_ID + '-shell';
 const OCR_PREFIX = 'docuextract-' + BUILD_ID + '-ocr-';
 const BASE = '/DocuExtract/';
-const SHELL_URLS = [BASE, BASE + 'index.html', BASE + 'manifest.webmanifest'];
+const SHELL_URLS = [
+  BASE,
+  BASE + 'index.html',
+  BASE + 'manifest.webmanifest',
+  BASE + 'precache-manifest.json',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL);
-      const manifestResponse = await fetch(BASE + 'precache-manifest.json', {
-        cache: 'no-store',
-      });
-      if (!manifestResponse.ok) {
-        throw new Error('The offline asset manifest could not be downloaded.');
+      try {
+        const manifestResponse = await fetch(BASE + 'precache-manifest.json', {
+          cache: 'no-store',
+        });
+        if (!manifestResponse.ok) {
+          throw new Error('The offline asset manifest could not be downloaded.');
+        }
+        const manifest = await manifestResponse.json();
+        if (manifest.buildId !== BUILD_ID || !Array.isArray(manifest.assets)) {
+          throw new Error('The offline asset manifest does not match this service-worker build.');
+        }
+
+        const allowedAssets = manifest.assets.filter(
+          (asset) =>
+            typeof asset === 'string' &&
+            !asset.includes('..') &&
+            (asset.startsWith('assets/') || asset.startsWith('standard_fonts/')),
+        );
+        if (allowedAssets.length !== manifest.assets.length || allowedAssets.length === 0) {
+          throw new Error('The offline asset manifest contains invalid or missing assets.');
+        }
+
+        await cache.addAll([...SHELL_URLS, ...allowedAssets.map((asset) => BASE + asset)]);
+      } catch (error) {
+        // A failed/quota-limited install must not leave a partial cache that
+        // could be mistaken for an offline-ready application.
+        await caches.delete(SHELL);
+        throw error;
       }
-      const manifest = await manifestResponse.json();
-      const hashedAssets = Array.isArray(manifest.assets)
-        ? manifest.assets
-            .filter(
-              (asset) =>
-                typeof asset === 'string' &&
-                asset.startsWith('assets/') &&
-                /-[A-Za-z0-9_-]{8,}\./.test(asset),
-            )
-            .map((asset) => BASE + asset)
-        : [];
-      await cache.addAll([...SHELL_URLS, ...hashedAssets]);
     })(),
   );
 });
@@ -34,15 +50,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const names = await caches.keys();
-      await Promise.all(
-        names
-          .filter(
-            (name) =>
-              name.startsWith('docuextract-') && name !== SHELL && !name.startsWith(OCR_PREFIX),
-          )
-          .map((name) => caches.delete(name)),
-      );
+      // Keep previous versioned caches. A tab that was already running the old
+      // application may still request its hashed lazy chunks after an update.
+      // The fetch handler searches all shell caches for immutable hashed assets.
       await self.clients.claim();
     })(),
   );
@@ -57,11 +67,11 @@ function isSameOriginAsset(url) {
 }
 
 function isSensitive(url) {
-  return /\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
+  return /\\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
 }
 
 function ocrLanguage(url) {
-  const match = url.pathname.match(/\/ocr\/lang\/(eng|deu|hin)\.traineddata(?:\.gz)?$/);
+  const match = url.pathname.match(/\\/ocr\\/lang\\/(eng|deu|hin)\\.traineddata(?:\\.gz)?$/);
   return match ? match[1] : null;
 }
 
@@ -88,11 +98,14 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(OCR_PREFIX + language);
-        const cached = await cache.match(request);
-        if (cached) return cached;
+        // Reuse a previously downloaded model across app versions. The OCR
+        // payload is immutable for a pinned language-data package.
+        const cached = await caches.match(request);
+        if (cached) {
+          await cache.put(request, cached.clone());
+          return cached;
+        }
 
-        // A known offline browser state is definitive enough to avoid asking the
-        // network stack for a model that this installation has never cached.
         if (navigator.onLine === false) return offlineOcrResponse(language);
 
         try {
@@ -110,7 +123,8 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).catch(async () => {
-        return (await caches.match(BASE + 'index.html')) || (await caches.match(BASE));
+        const shell = await caches.open(SHELL);
+        return (await shell.match(BASE + 'index.html')) || (await shell.match(BASE));
       }),
     );
     return;
@@ -118,9 +132,9 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.open(SHELL).then(async (cache) => {
-      // Ignore Vary and query differences for immutable, content-hashed build
-      // assets so module-loader requests resolve to the precached response.
-      const cached = await cache.match(request, {
+      // Search old shell caches too: an already-open old tab can still request
+      // its content-hashed chunks after a new worker has taken control.
+      const cached = await caches.match(request, {
         ignoreSearch: true,
         ignoreVary: true,
       });
@@ -128,7 +142,10 @@ self.addEventListener('fetch', (event) => {
 
       try {
         const response = await fetch(request);
-        if (response.ok && /\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest)$/i.test(url.pathname)) {
+        if (
+          response.ok &&
+          /\\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest|pfb|ttf)$/i.test(url.pathname)
+        ) {
           await cache.put(request, response.clone());
         }
         return response;

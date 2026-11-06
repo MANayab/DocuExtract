@@ -8,16 +8,20 @@
 
 This document separates evidence from incomplete work. It is not a commercial launch approval.
 
+## Historical release metadata
+
+The immutable `v1.6.0` tag points to the PR #18 merge commit `1f1ec88dc997519e67b71784166c487f784859c1`. At that tag, `package.json`, the lockfile root and the README version badge still identify `1.5.1`, while the changelog places v1.6.0 under Unreleased. PR #19 synchronized the current `main` metadata to `1.6.0`; the historical tag was not rewritten and must not be moved. The published release is [v1.6.0](https://github.com/MANayab/DocuExtract/releases/tag/v1.6.0).
+
 ## Baseline gap table
 
 | Requirement | Current evidence | Gap | Severity | Planned fix |
 |---|---|---|---|---|
 | Version and release provenance | Main is v1.6.0; `v1.6.0` tag/release exist; PR #19 synchronized source metadata. | No source tag rewrite is permitted; verify new commits independently of the historical tag. | Non-blocking | Keep this baseline branch based on current main; do not move tags. |
-| Offline shell and PDF resources | v1.6.0 service worker and prior 12-test Playwright suite. | Old hard-coded worker build ID, PDF.js standard fonts not in manifest, and OCR runtime not prepared before invoice processing. | Blocking | Generate a content-derived worker ID; precache hashed chunks, standard fonts, OCR worker/core and manifest. |
-| Offline extraction and exports | Prior tests verified offline reload and extraction reached review. | Prior E2E did not parse downloaded XLSX, both CSV variants and JSON while offline. | Blocking | Add artifact-level offline E2E assertions and inspect report artifacts. |
-| Service-worker updates | User-controlled waiting worker and no automatic page reload. | No controlled two-build acceptance, deferral, failed-install recovery or multiple-tab lifecycle proof. | Blocking | Add a two-build update test harness; preserve old hashed caches during active-tab transitions. |
-| OCR offline preparation | Per-language OCR caches existed after a successful model request. | The user had to process OCR online first; OCR manifest/runtime also needed to be present offline. | Blocking | Precache OCR runtime/manifest and download only the user-selected language model. |
-| Privacy persistence | Browser-only pipeline; prior test checked selected cache keys and storage keys. | No body-level inspection of cached responses, storage values, URLs and request bodies across correction/template/export/reload. | Blocking | Add synthetic-marker storage/network tests and manual verification. |
+| Offline shell and PDF resources | PR #20 now derives the worker ID from package version, hashed assets and worker source; it precaches fonts/OCR runtime and checks every required shell entry. | Exact-head CI and browser evidence is still pending; browser eviction while offline cannot be recovered until connectivity returns. | Blocking until verified | Run full PWA suite and inspect cache-integrity/recovery results. |
+| Offline extraction and exports | PR #20 extends offline E2E to first extraction without prior online extraction and parses XLSX plus invoice CSV, line-items CSV and JSON downloads. | New exact-head tests have not yet passed; actual downloaded artifacts still need CI evidence. | Blocking until verified | Run the offline browser suite and inspect artifact contents. |
+| Service-worker updates | PR #20 adds old/new/failed/retry production builds, active-tab build-ID reporting, safe inactive-cache cleanup, deferral and acceptance tests. | New lifecycle and cleanup tests are not yet green; suspended/legacy clients intentionally defer cleanup. | Blocking until verified | Run full update/recovery E2E and inspect old-tab lazy-asset behavior. |
+| OCR offline preparation | PR #20 changes the availability probe to same-origin GET and adds real scanned-PDF online/offline/retry tests for eng/deu/hin model selections. | Recognition and parser field assertions are pending browser execution; the available scanned fixture is English-only, so native German/Hindi accuracy is not certified. | Blocking until verified | Inspect OCR diagnostics and add representative native-language scans before accuracy claims. |
+| Privacy persistence | PR #20 adds synthetic-marker checks across binary/text cache bodies, storage, URLs and requests after correction/export/reload, plus seller-profile consent/save/import/delete/reload coverage. | Unit tests cover profile update; there is no user-facing edit control. Automated evidence and broader manual review are pending. | Blocking until verified | Run exact-head tests and review their diagnostics. |
 | Seller profiles | Consent-gated local save/import/export exists. | Import bypassed consent; tax ID was stored; parser did not consume field/table rules while UI suggested a template was applied. | Blocking | Gate all writes on consent, exclude identifiers, describe name matching honestly; implement parser rules separately. |
 | Extraction quality | Eight synthetic invoices and a passing release gate. | Synthetic fixtures do not represent real supplier diversity; currency fallback and unscored HSN/SAC remain limitations. | Blocking for accuracy claims | Keep thresholds; add representative fixtures and human QA before accuracy claims. |
 | Export correctness | Benchmark verifies 32 format checks and formula sanitization. | Comprehensive Unicode, CSV quoting/newline, empty/large dataset and unsafe hyperlink coverage remains incomplete. | Blocking | Add parsed artifact regression tests for all supported formats. |
@@ -56,29 +60,29 @@ Recorded results:
 
 The benchmark uses repository-owned synthetic PDFs. These percentages are not real-world accuracy claims and do not establish performance on representative supplier invoices.
 
-## PWA verification boundary
+## PWA and OCR verification boundary
 
-The prior v1.6.0 Playwright suite had 12 passing tests, but it did not prove every required commercial/offline workflow. In particular, a complete two-build service-worker lifecycle test for update acceptance, deferral, failed update recovery and multiple active tabs was not present. Parsed contents of offline XLSX, both CSV formats and JSON downloads were not all asserted in a single offline end-to-end workflow.
+The audited main baseline had 12 passing Chromium Playwright tests, but it did not prove the full offline/export/update lifecycle. PR #20 now adds:
 
-The current pre-commercial branch adds:
-- A build-derived service-worker ID tied to package version, hashed build asset names and service-worker source.
-- Build-derived precaching of PDF.js standard fonts as well as hashed application chunks.
-- A cache-verified Offline ready status.
-- User-selected OCR language pre-download, so OCR can be prepared without first processing an invoice online.
-- Old versioned shell caches retained during updates; cached hashed chunks are searched across shell caches to avoid breaking already-open tabs.
-- Regression assertions for the generated build ID and 14 precached standard fonts.
+- Build-derived service-worker IDs and a matching build ID embedded in generated `index.html`.
+- Precache coverage for hashed application chunks, PDF.js standard fonts, OCR worker/core and the manifest.
+- An Offline ready state that verifies each required shell URL and manifest asset; when entries are missing it stops reporting ready and attempts recovery when connectivity returns.
+- Active-tab build-ID handshakes. Old shell caches remain while a live tab reports that it still needs that build; if any client does not respond, cleanup is deferred. Once all tabs report, inactive shell caches are removed and OCR models are migrated to the current versioned cache.
+- Offline extraction and parsed export checks for XLSX, invoice-summary CSV, line-items CSV and JSON.
+- A four-build update harness covering deferral, acceptance, an old tab requesting a lazy chunk, a failed install preserving the active version, a valid retry and cleanup after the old tab closes.
+- Real image-only scan acceptance tests that assert invoice number, seller, subtotal, tax, total and line-item descriptions for each selected OCR model, plus cached offline reload and uncached offline retry.
 
-These changes still require the branch's CI and browser execution evidence. They do not yet constitute full two-build update lifecycle verification or quota-failure browser verification.
+These additions are implementation and test coverage, not passed evidence until the exact current PR head has green CI and the artifacts have been inspected. The only current scanned invoice fixture is English. Selecting German or Hindi against that English fixture tests model loading/recognition behavior and those numeric invoice anchors; it does not certify native-language invoice accuracy. Separate representative German and Hindi image-only fixtures remain required. Browser quota failure and eviction of every required asset while offline cannot be made recoverable until the browser is online again.
 
 ## Privacy and data boundaries
 
-- Invoice PDFs and invoice records are held in application memory for processing and review; the application has no backend or analytics endpoint.
-- Cache Storage is intended for app-shell assets, PDF.js standard fonts and OCR model payloads only.
-- Seller matching profiles are persisted only after explicit consent. The current schema excludes seller tax IDs, numeric identifiers, contact details and amounts from seller matching keys and text anchors. Invalid/legacy profiles that fail the schema are removed on load.
-- Profile imports now require explicit consent, like profile saves.
-- Custom field/table reading rules are not applied by the parser. The UI describes profiles as seller matching only.
+- Invoice PDFs, raw OCR text, extracted fields, corrections and exports are held in application memory; the application has no backend, analytics or telemetry endpoint.
+- Cache Storage is limited to same-origin app-shell assets, PDF.js fonts and selected OCR model payloads.
+- Seller matching profiles persist only after explicit consent. The schema excludes seller tax IDs, numeric identifiers, contact details and amounts from seller matching keys and text anchors. The parser still matches by seller name only; custom field/table rules are not applied.
+- Browser E2E coverage now inspects synthetic invoice markers in Cache Storage response bodies including binary responses, localStorage, sessionStorage, IndexedDB database presence, URLs and captured request URLs/bodies after upload, extraction, corrections, all four invoice exports and reload.
+- Separate browser coverage exercises seller-profile consent, save, export, import, delete and reload. Store-level unit tests cover consent-gated update and delete; the UI currently has no profile edit control.
 
-Comprehensive automated inspection of Cache Storage response bodies, localStorage, sessionStorage, IndexedDB, request bodies, URL/query parameters and browser memory after every workflow remains incomplete. The existing test suite is not proof of complete memory erasure.
+The tests are automated regression evidence, not proof of complete memory erasure or every possible browser state. Real browser/device, keyboard and screen-reader review remains outstanding.
 
 ## Extraction and export limitations
 
@@ -92,9 +96,11 @@ Comprehensive automated inspection of Cache Storage response bodies, localStorag
 
 ## Dependency security findings
 
-The latest captured non-mutating audit report is from [run #42271943998](https://github.com/MANayab/DocuExtract/actions/runs/42271943998), against PR #19 head `86343074c22785196fb9856d53baaf9f607c32c7`. It reported **14 findings: 2 critical, 2 high and 10 moderate**. This audit is not a clean security result.
+The fresh non-mutating lockfile audit for PR #20 is [run #42293999766](https://github.com/MANayab/DocuExtract/actions/runs/42293999766) (head `09aa7aea7eb035395da330d0a491db160fc842fb`; package-lock has not changed since). It reports **14 findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded by generating a report; the underlying `npm audit` exit code was 1.
 
-The critical/high items include the Vitest/Tinypool test toolchain and Vite/Zod dependencies. Detailed advisory paths and the earlier reachability analysis are recorded in [issue #14](https://github.com/MANayab/DocuExtract/issues/14). A fresh audit on the current main dependency tree and a tested major-version migration plan remain outstanding. No residual critical/high risk has been accepted by the maintainer.
+Critical/high packages are `tinypool@1.1.1` (transitive through `vitest@2.1.9`), `vitest@2.1.9` (direct development dependency), `vite@5.4.21` (direct development dependency) and `zod@3.23.8` (direct runtime dependency). The audit lists major-only candidates `vitest@4.1.12`, `vite@8.3.6` and `zod@4.6.7`. Zod is used for local seller-profile import with a 256 KB size cap and bounded schema arrays, but local file input remains a reachable path. Vite/Vitest/Tinypool are build/test tools and are not shipped as application code; they remain developer/CI toolchain risks.
+
+The 10 moderate findings include `@typescript-eslint/*`, `@vitest/mocker`, `esbuild`, `minimatch`, `typescript-eslint` and `vite-node`. The complete advisory identifiers, affected ranges, dependency paths and reachability notes are recorded in [SECURITY.md](../SECURITY.md) and the audit artifact. Major upgrades have not been forced and no residual risk has been accepted. A focused dependent security PR with compatibility tests is required for major migrations; unresolved critical/high risk requires the maintainer's explicit decision.
 
 ## Deployment and repository controls
 
@@ -116,10 +122,10 @@ The critical/high items include the Vitest/Tinypool test toolchain and Vite/Zod 
 
 ## Commercial blockers
 
-- [ ] Fresh dependency audit and reviewed remediation of critical/high findings, or explicit maintainer risk acceptance.
-- [ ] Full offline extraction and parsed XLSX/CSV/JSON export E2E evidence.
-- [ ] Two-build update acceptance/deferral/failure-recovery and multi-tab safety tests.
-- [ ] Full storage/network privacy tests using distinctive synthetic markers.
+- [ ] Remediate the current 2 critical and 2 high dependency findings through a focused major-upgrade PR, or obtain an explicit maintainer risk decision; no acceptance has been made.
+- [ ] Green exact-head offline extraction and parsed XLSX/CSV/JSON export E2E evidence.
+- [ ] Green exact-head update acceptance/deferral/failure-recovery, old-tab lazy-asset and cache-cleanup tests.
+- [ ] Green exact-head storage/network privacy tests using distinctive synthetic markers.
 - [ ] Decide whether to implement actual seller-specific field/table reading rules or keep profiles as matching-only and remove unimplemented rule claims from the commercial scope.
 - [ ] Broader representative fixture coverage and manual QA.
 - [ ] Maintainer decision on branch protection and required checks.

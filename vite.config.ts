@@ -93,10 +93,7 @@ const pwaPrecache = (): Plugin => {
       if (!indexHtml.includes('__DOCUEXTRACT_BUILD_ID__')) {
         throw new Error('The built index.html is missing the generated build ID placeholder.');
       }
-      writeFileSync(
-        indexHtmlPath,
-        indexHtml.replace('__DOCUEXTRACT_BUILD_ID__', buildId),
-      );
+      writeFileSync(indexHtmlPath, indexHtml.replace('__DOCUEXTRACT_BUILD_ID__', buildId));
     },
   };
 };

@@ -137,10 +137,15 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(async () => {
+      (async () => {
+        // Serve the index belonging to this active worker. A newer deployment
+        // must not mix its HTML with an older worker while an update is waiting
+        // or has failed to install.
         const shell = await caches.open(SHELL);
-        return (await shell.match(BASE + 'index.html')) || (await shell.match(BASE));
-      }),
+        const cachedIndex = (await shell.match(BASE + 'index.html')) || (await shell.match(BASE));
+        if (cachedIndex) return cachedIndex;
+        return fetch(request);
+      })(),
     );
     return;
   }

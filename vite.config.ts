@@ -100,7 +100,10 @@ const seo = (): Plugin => ({
 export default defineConfig({
   base: '/DocuExtract/',
   plugins: [react(), seo(), pwaPrecache()],
-  define: { __OCR_BUNDLED__: JSON.stringify(ocrBundled) },
+  define: {
+    __OCR_BUNDLED__: JSON.stringify(ocrBundled),
+    __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify(process.env.DOCUEXTRACT_BUILD_LABEL ?? 'release'),
+  },
   build: {
     target: 'es2022',
     sourcemap: false,

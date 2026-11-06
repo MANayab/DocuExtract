@@ -52,6 +52,14 @@ async function activeBuildId(page: Page): Promise<string> {
   );
 }
 
+async function pageBuildId(page: Page): Promise<string> {
+  const buildId = await page
+    .locator('meta[name="docuextract-build-id"]')
+    .getAttribute('content');
+  if (!buildId) throw new Error('The app page did not expose its build ID.');
+  return buildId;
+}
+
 async function switchBuild(build: 'new' | 'failed' | 'retry') {
   const response = await fetch(`http://127.0.0.1:4173/__pwa_test__/switch/${build}`, {
     method: 'POST',
@@ -64,12 +72,12 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   context,
 }) => {
   await waitForController(page);
-  await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
   const oldBuildId = await activeBuildId(page);
+  expect(await pageBuildId(page)).toBe(oldBuildId);
 
   const secondTab = await context.newPage();
   await waitForController(secondTab);
-  await expect(secondTab.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
+  expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await secondTab.setInputFiles('input[type="file"]', await pdf('multi-tab-offline.pdf'));
   await expect(secondTab.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
@@ -121,8 +129,8 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(newBuildId).not.toBe(oldBuildId);
 
   await page.reload();
-  await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'new');
-  await expect(secondTab.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
+  expect(await pageBuildId(page)).toBe(newBuildId);
+  expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
   // ExcelJS is a lazy chunk. The old page asks for its old hashed URL after
@@ -167,7 +175,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(cacheNames).not.toContain(`docuextract-${failedManifest.buildId}-shell`);
 
   await page.reload();
-  await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'new');
+  expect(await pageBuildId(page)).toBe(newBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
@@ -204,9 +212,9 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(retryBuildId).not.toBe(newBuildId);
 
   await page.reload();
-  await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'retry');
+  expect(await pageBuildId(page)).toBe(retryBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
-  await expect(secondTab.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
+  expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
   const shellCachesBeforeCleanup = await page.evaluate(() =>

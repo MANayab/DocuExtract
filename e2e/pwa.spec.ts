@@ -40,8 +40,10 @@ test('reloads offline and performs extraction without caching invoice data', asy
   await waitForWorker(page);
   const precache = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/precache-manifest.json');
-    const manifest = (await response.json()) as { assets: string[] };
-    const shellName = (await caches.keys()).find((name) => name.endsWith('-shell'));
+    const manifest = (await response.json()) as { version: string; buildId: string; assets: string[] };
+    const shellName = (await caches.keys()).find(
+      (name) => name === 'docuextract-' + manifest.buildId + '-shell',
+    );
     if (!shellName) {
       throw new Error('The application shell cache is missing.');
     }
@@ -50,8 +52,19 @@ test('reloads offline and performs extraction without caching invoice data', asy
     const missing = manifest.assets
       .map((asset) => new URL('/DocuExtract/' + asset, window.location.origin).href)
       .filter((url) => !cachedUrls.has(url));
-    return { assets: manifest.assets, missing, cached: [...cachedUrls] };
+    return {
+      version: manifest.version,
+      buildId: manifest.buildId,
+      assets: manifest.assets,
+      fonts: manifest.assets.filter((asset) => asset.startsWith('standard_fonts/')),
+      missing,
+      cached: [...cachedUrls],
+    };
   });
+  expect(precache.version).toBe('1.6.0');
+  expect(precache.buildId).toMatch(/^1\\.6\\.0-[a-f0-9]{10}$/);
+  expect(precache.fonts).toHaveLength(14);
+  await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
   const extractorAsset = precache.assets.find((asset) => /pdfTextExtractor-.*\.js$/.test(asset));
   expect(extractorAsset).toBeDefined();
   expect(precache.missing).toEqual([]);

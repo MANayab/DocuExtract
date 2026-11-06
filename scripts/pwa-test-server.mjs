@@ -46,7 +46,10 @@ const server = http.createServer((request, response) => {
   const relative = decodeURIComponent(url.pathname.slice(base.length) || 'index.html');
   const buildRoot = path.resolve(builds, activeBuild);
   const filePath = path.resolve(buildRoot, relative);
-  if (!filePath.startsWith(buildRoot + path.sep) && filePath !== path.join(buildRoot, 'index.html')) {
+  if (
+    !filePath.startsWith(buildRoot + path.sep) &&
+    filePath !== path.join(buildRoot, 'index.html')
+  ) {
     response.writeHead(403).end('Forbidden');
     return;
   }
@@ -77,5 +80,7 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(4173, '127.0.0.1', () => {
-  console.log('[pwa-test] Serving controlled old/new/failed builds at http://127.0.0.1:4173/DocuExtract/');
+  console.log(
+    '[pwa-test] Serving controlled old/new/failed builds at http://127.0.0.1:4173/DocuExtract/',
+  );
 });

@@ -357,16 +357,14 @@ describe('invoice parser', () => {
       'Invoice No: C-3\nGrand Total: 30.00',
     ];
     const spans: TextSpan[] = pageTexts.flatMap((t, p) =>
-      t
-        .split('\n')
-        .map((line, k) => ({
-          text: line,
-          x: 50,
-          y: 700 - k * 18,
-          width: line.length * 5,
-          height: 10,
-          page: p + 1,
-        })),
+      t.split('\n').map((line, k) => ({
+        text: line,
+        x: 50,
+        y: 700 - k * 18,
+        width: line.length * 5,
+        height: 10,
+        page: p + 1,
+      })),
     );
 
     const segments = splitInvoices({

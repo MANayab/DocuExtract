@@ -71,9 +71,9 @@ const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
 /** Amount (as raw text) following a label; skips matches that are not numbers. */
 function labelledAmounts(text: string, labels: string[]): string[] {
   const prefix =
-    '(?:' +
+    '(?<![A-Za-z0-9])(?:' +
     alternation(labels) +
-    ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*' +
+    ')(?![A-Za-z0-9])(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*' +
     CURRENCY_TOKEN +
     '?[ \\t]*';
   const r = new RegExp(prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)', 'gi');

@@ -1,9 +1,14 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function openApp(page: Page) {
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1, name: 'PDF Invoice to Excel' })).toBeVisible();
+}
 
 test('locale panel geometry and keyboard work at common widths', async ({ page }) => {
   for (const width of [320, 375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto('./');
+    await openApp(page);
 
     const panel = page.locator('.dx-locale-panel');
     const dropzone = page.locator('.dx-drop__zone');
@@ -34,7 +39,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
   }
 
   await page.setViewportSize({ width: 375, height: 900 });
-  await page.goto('./');
+  await openApp(page);
 
   const localeSelect = page.getByLabel('Invoice locale');
   const ocrSelect = page.getByLabel('Scanned PDF language');

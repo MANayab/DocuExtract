@@ -10,7 +10,16 @@ const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d(?:[\\d., ]*\\d)?
 // separate quantity, rate and amount columns. Punctuation grouping (1,000 / 1.000)
 // remains part of one numeric token and is normalized by normalizeNumber.
 const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d(?:[\d.,]*\d)?\)?/g;
-const NOISE =const NOISE = /^page\s+\d+/i;
+function isHeader(line: string): boolean {
+  const value = line.toLowerCase();
+  const hasDescription = /description|item|particulars|product|beschreibung|artikel|bezeichnung/.test(value) || value.includes('विवरण');
+  const hasQuantity = /qty|quantity|menge/.test(value) || value.includes('मात्रा');
+  const hasAmount = /price|rate|amount|total|betrag|preis|einzelpreis/.test(value) || value.includes('राशि') || value.includes('दर');
+  return hasDescription && hasQuantity && hasAmount;
+}
+const STOP =
+  /^(subtotal|sub total|total|grand total|tax|cgst|sgst|igst|discount|shipping|amount due|zwischensumme|gesamtbetrag|steuer|mwst|umsatzsteuer|rabatt|versand|उप-योग|कुल राशि|कुल|कर|छूट)/i;
+const NOISE = /^page\s+\d+/i;
 
 type Role =
   | 'serial'
@@ -232,9 +241,8 @@ function parseLoosely(line: string, locale: LocaleCode, headerRoles: Role[] | nu
   };
 }
 
-function rolesFromHeader(line: string): Role[] {function rolesFromHeader(line: string): Role[] {
-  const columns = line.match(HEADER_ROLE) ?? [];
-  return columns.map((column) => roleOf(column));
+function rolesFromHeader(line: string): Role[] {
+  return splitHeaderCells(cellsOf(line)).map(roleOf);
 }
 
 const field = (value: number, confidence: number) => ({

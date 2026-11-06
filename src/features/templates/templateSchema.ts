@@ -13,16 +13,6 @@ const safeText = z
     'Template text cannot contain markup or control characters.',
   );
 
-const optionalSafeText = z
-  .string()
-  .trim()
-  .max(160)
-  .refine(
-    (value) => !/[<>]/.test(value) && !value.includes('\0'),
-    'Template text cannot contain markup or control characters.',
-  )
-  .optional();
-
 export const templateFieldKeySchema = z.enum([
   'invoiceNumber',
   'invoiceDate',

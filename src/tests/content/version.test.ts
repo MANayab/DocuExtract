@@ -19,6 +19,6 @@ describe('release version consistency', () => {
     const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8');
     const changelog = readFileSync(resolve(process.cwd(), 'CHANGELOG.md'), 'utf8');
     expect(readme).toContain('version-' + packageJson.version + '-C8431F');
-    expect(changelog).toContain('## [' + packageJson.version + '] — 2026-11-03');
+    expect(changelog).toContain('## [' + packageJson.version + '] — 2026-11-05');
   });
 });

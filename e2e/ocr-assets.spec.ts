@@ -56,7 +56,7 @@ test('loads only the selected same-origin language model and offers retry on 404
     .route('**/ocr/lang/hin.traineddata*', (route) =>
       route.fulfill({ status: 404, body: 'model missing' }),
     );
-  await page.goto('/');
+  await openApp(page);
   await page.getByLabel('Scanned PDF language').selectOption('hin');
   await page.setInputFiles('input[type="file"]', await pdf('empty', 'missing-model.pdf'));
 
@@ -85,6 +85,8 @@ const scannedAnchors = async (page: Page) => {
   await expect(page.getByLabel('Subtotal')).toHaveValue('21200');
   await expect(page.getByLabel('Tax total')).toHaveValue('1060');
   await expect(page.getByLabel('Grand total')).toHaveValue('22260');
+  await expect(page.getByLabel('Description 1')).toHaveValue('Rice 25kg bag');
+  await expect(page.getByLabel('Description 2')).toHaveValue('Sugar 50kg bag');
 };
 
 for (const language of ['eng', 'deu', 'hin'] as const) {

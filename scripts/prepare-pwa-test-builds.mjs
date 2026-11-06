@@ -11,7 +11,7 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 fs.rmSync(builds, { recursive: true, force: true });
 fs.mkdirSync(builds, { recursive: true });
 
-for (const label of ['old', 'new', 'failed']) {
+for (const label of ['old', 'new', 'failed', 'retry']) {
   const env = { ...process.env, DOCUEXTRACT_BUILD_LABEL: label };
   execFileSync(npm, ['run', 'build'], { cwd: root, env, stdio: 'inherit' });
   fs.cpSync(dist, path.join(builds, label), { recursive: true });

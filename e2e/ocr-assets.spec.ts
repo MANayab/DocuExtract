@@ -73,6 +73,80 @@ test('loads only the selected same-origin language model and offers retry on 404
   expect(ocrAssetOrigins.every((origin) => origin === new URL(page.url()).origin)).toBe(true);
 });
 
+const assertNoInvoiceMarkersPersisted = async (
+  page: Page,
+  observedRequests: { url: string; body: string | null }[],
+) => {
+  const markers = [
+    'scanned-invoice.pdf',
+    'GT-2026-0457',
+    'Greenfield Traders',
+    'Sunrise Retail',
+    'Rice 25kg bag',
+    'Sugar 50kg bag',
+    '21,200.00',
+    '1,060.00',
+    '22,260.00',
+  ];
+  const persisted = await page.evaluate(async (invoiceMarkers) => {
+    const cacheNames = await caches.keys();
+    const cacheMatches: { cache: string; url: string; marker: string }[] = [];
+    const containsBytes = (source: Uint8Array, target: Uint8Array) => {
+      for (let start = 0; start <= source.length - target.length; start++) {
+        let match = true;
+        for (let index = 0; index < target.length; index++) {
+          if (source[start + index] !== target[index]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) return true;
+      }
+      return false;
+    };
+
+    for (const name of cacheNames) {
+      const cache = await caches.open(name);
+      for (const request of await cache.keys()) {
+        const response = await cache.match(request);
+        if (!response) continue;
+        const body = new Uint8Array(await response.arrayBuffer());
+        for (const marker of invoiceMarkers) {
+          const ascii = new TextEncoder().encode(marker);
+          const utf16 = new Uint8Array(marker.length * 2);
+          for (let index = 0; index < marker.length; index++) {
+            utf16[index * 2] = marker.charCodeAt(index);
+          }
+          if (containsBytes(body, ascii) || containsBytes(body, utf16)) {
+            cacheMatches.push({ cache: name, url: request.url, marker });
+          }
+        }
+      }
+    }
+
+    return {
+      cacheMatches,
+      local: Object.values(localStorage),
+      session: Object.values(sessionStorage),
+      databases:
+        typeof indexedDB.databases === 'function'
+          ? (await indexedDB.databases()).map((database) => database.name)
+          : [],
+      urls: [
+        window.location.href,
+        ...performance.getEntriesByType('resource').map((entry) => entry.name),
+      ],
+    };
+  }, markers);
+
+  expect(persisted.cacheMatches).toEqual([]);
+  expect(persisted.databases.filter(Boolean)).toEqual([]);
+  for (const marker of markers) {
+    expect(JSON.stringify(persisted)).not.toContain(marker);
+    expect(JSON.stringify(observedRequests)).not.toContain(marker);
+  }
+};
+
 const scannedAnchors = async (page: Page) => {
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
@@ -92,6 +166,10 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     async ({ page, context }) => {
       const consoleErrors: string[] = [];
       const failedRequests: string[] = [];
+      const observedRequests: { url: string; body: string | null }[] = [];
+      page.on('request', (request) => {
+        observedRequests.push({ url: request.url(), body: request.postData() });
+      });
       const ocrRequests: { origin: string; path: string }[] = [];
       const ocrResponses: { status: number; path: string }[] = [];
       page.on('console', (message) => {
@@ -140,6 +218,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       });
       await page.getByRole('button', { name: 'Run OCR' }).click();
       await scannedAnchors(page);
+      await assertNoInvoiceMarkersPersisted(page, observedRequests);
 
       const origin = new URL(page.url()).origin;
       expect(ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
@@ -162,6 +241,10 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     async ({ page, context }) => {
       const consoleErrors: string[] = [];
       const failedRequests: string[] = [];
+      const observedRequests: { url: string; body: string | null }[] = [];
+      page.on('request', (request) => {
+        observedRequests.push({ url: request.url(), body: request.postData() });
+      });
       const ocrResponses: { status: number; path: string }[] = [];
       page.on('console', (message) => {
         if (message.type() === 'error') consoleErrors.push(message.text());
@@ -193,6 +276,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       await context.setOffline(false);
       await page.getByRole('button', { name: 'Retry OCR' }).click();
       await scannedAnchors(page);
+      await assertNoInvoiceMarkersPersisted(page, observedRequests);
 
       expect(ocrResponses.some((response) => response.status === 503)).toBe(true);
       await test.info().attach(`ocr-${language}-retry-diagnostics.json`, {

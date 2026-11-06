@@ -7,8 +7,7 @@ const pdf = async (name: string) => ({
   name,
   mimeType: 'application/pdf',
   buffer: Buffer.from(await generateFixture('basic')),
-  },
-);
+});
 
 async function waitForController(page: Page) {
   await page.goto('/');
@@ -56,10 +55,7 @@ async function switchBuild(build: 'new' | 'failed') {
 
 test(
   'defers and accepts a real two-build update, preserves an old tab, and recovers from a failed install',
-  async ({
-  page,
-  context,
-}) => {
+  async ({ page, context }) => {
   await waitForController(page);
   await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
   const oldBuildId = await activeBuildId(page);
@@ -167,4 +163,5 @@ test(
   await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'new');
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
-});
+  },
+);

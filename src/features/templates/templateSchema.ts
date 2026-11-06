@@ -47,9 +47,19 @@ const safeAnchor = z
     'Use a non-sensitive text label, not an invoice value, identifier or amount.',
   );
 
+const safeSellerNameKey = z
+  .string()
+  .trim()
+  .min(1)
+  .max(160)
+  .refine(
+    (value) => !/[<>\\d@₹$€£]/u.test(value) && !value.includes('\\0'),
+    'Use a seller name, not a tax ID, invoice value, contact detail or amount.',
+  );
+
 export const sellerMatcherSchema = z
   .object({
-    nameKey: optionalSafeText,
+    nameKey: safeSellerNameKey.optional(),
   })
   .refine((value) => Boolean(value.nameKey), {
     message: 'Provide a seller name key.',

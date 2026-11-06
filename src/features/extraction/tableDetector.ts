@@ -10,11 +10,7 @@ const NUMERIC_CELL = new RegExp(`^-?\\(?\\s*${CURRENCY}?\\s*\\d(?:[\\d., ]*\\d)?
 // separate quantity, rate and amount columns. Punctuation grouping (1,000 / 1.000)
 // remains part of one numeric token and is normalized by normalizeNumber.
 const NUMBER_TOKEN = /-?\(?[₹$€£]?\s*\d(?:[\d.,]*\d)?\)?/g;
-const HEADER =
-  /(?:description|item|particulars|product).*(?:qty|quantity).*(?:price|rate|amount)|item.*qty/i;
-const STOP =
-  /^(subtotal|sub total|total|grand total|tax|cgst|sgst|igst|discount|shipping|amount due)/i;
-const NOISE = /^page\s+\d+/i;
+const NOISE =const NOISE = /^page\s+\d+/i;
 
 type Role =
   | 'serial'
@@ -34,18 +30,18 @@ export function roleOf(header: string): Role {
 
   if (/^(?:sr\.?|s\.?\s*no\.?|sl\.?(?:\s*no\.?)?|#|no\.?)$/.test(h)) return 'serial';
   if (/qty|quantity|\bnos\b/.test(h)) return 'qty';
-  if (/disc/.test(h)) return 'discount';
-  if (/taxable/.test(h)) return 'taxable';
+  if (/disc|rabatt/.test(h) || h.includes('छूट')) return 'discount';
+  if (/taxable|steuerpflichtig/.test(h) || h.includes('कर योग्य')) return 'taxable';
 
-  if (/tax|gst|cgst|sgst|igst|vat/.test(h)) {
+  if (/tax|gst|cgst|sgst|igst|vat|steuer|mwst|umsatzsteuer/.test(h) || h.includes('कर')) {
     return /%|rate|percent/.test(h) ? 'taxRate' : 'taxAmount';
   }
 
   if (/%/.test(h)) return 'taxRate';
-  if (/amount|total|value|amt/.test(h)) return 'amount';
-  if (/rate|price|mrp/.test(h)) return 'rate';
+  if (/amount|total|value|amt|betrag|summe/.test(h) || h.includes('राशि') || h.includes('कुल')) return 'amount';
+  if (/rate|price|mrp|preis|einzelpreis/.test(h) || h.includes('दर')) return 'rate';
   if (/hsn|sac|code|uom|\bunit\b/.test(h)) return 'other';
-  if (/description|item|particulars|product|name|details/.test(h)) return 'text';
+  if (/description|item|particulars|product|name|details|beschreibung|artikel|bezeichnung/.test(h) || h.includes('विवरण') || h.includes('वस्तु')) return 'text';
 
   return 'other';
 }
@@ -236,25 +232,7 @@ function parseLoosely(line: string, locale: LocaleCode, headerRoles: Role[] | nu
   };
 }
 
-const HEADER_ROLE = new RegExp(
-  String.raw`\b(?:${[
-    'quantity',
-    'qty',
-    String.raw`unit\s+price`,
-    'rate',
-    'price',
-    String.raw`taxable\s+value`,
-    'taxable',
-    'discount',
-    String.raw`(?:cgst|sgst|igst|gst|tax)\s*(?:amount|amt|rate|%)?`,
-    String.raw`line\s+total`,
-    'amount',
-    'total',
-  ].join('|')})\b`,
-  'gi',
-);
-
-function rolesFromHeader(line: string): Role[] {
+function rolesFromHeader(line: string): Role[] {function rolesFromHeader(line: string): Role[] {
   const columns = line.match(HEADER_ROLE) ?? [];
   return columns.map((column) => roleOf(column));
 }
@@ -275,7 +253,7 @@ export function detectLineItems(
     .map((x) => x.trim())
     .filter(Boolean);
 
-  const headerIndex = lines.findIndex((x) => HEADER.test(x));
+  const headerIndex = lines.findIndex((x) => isHeader(x));
   const headerCells = headerIndex >= 0 ? splitHeaderCells(cellsOf(lines[headerIndex])) : [];
   const roles =
     headerCells.length >= 3
@@ -301,7 +279,7 @@ export function detectLineItems(
     if (!row) {
       // Some invoices wrap the item description onto one or more lines above
       // the numeric cells. Carry only non-summary text forward to the next row.
-      if (!HEADER.test(line) && !/^(?:continued invoice|page\s+\d+)/i.test(line)) {
+      if (!isHeader(line) && !/^(?:continued invoice|page\s+\d+)/i.test(line)) {
         pendingDescription = [pendingDescription, line].filter(Boolean).join(' ');
       }
       continue;

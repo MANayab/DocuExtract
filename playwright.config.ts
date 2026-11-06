@@ -6,9 +6,9 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: { baseURL: 'http://127.0.0.1:4173/DocuExtract/', trace: 'on-first-retry' },
   webServer: {
-    command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
+    command: 'node scripts/prepare-pwa-test-builds.mjs && node scripts/pwa-test-server.mjs',
     url: 'http://127.0.0.1:4173/DocuExtract/',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 180_000,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

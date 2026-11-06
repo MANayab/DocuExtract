@@ -68,7 +68,9 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 | **Safe spreadsheets**              | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly.                                                                                                  |
 | **No invoice persistence**         | Invoice files and records stay in memory while the batch is active and are not persisted to URLs, browser storage or offline caches. Seller-name matching profiles use `localStorage` only after explicit consent. |
 | **SEO and AI-ready**               | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md).                                                                                                         |
-| **Offline app support**            | The app shell, hashed chunks, PDF.js standard fonts and OCR runtime are cached locally. Select an OCR language online to cache its model before processing offline.                                      |\n| **Seller matching profiles**       | Optional seller-name matching profiles can be saved or imported locally after explicit consent. They do not currently change extraction rules.                                                      |\n| **Tested**                         | Unit, integration and end-to-end tests; type checking and linting in CI.                                                                                                                            |
+| **Offline app support**            | The app shell, hashed chunks, PDF.js standard fonts and OCR runtime are cached locally. Select an OCR language online to cache its model before processing offline.                                      |
+| **Seller matching profiles**       | Optional seller-name matching profiles can be saved or imported locally after explicit consent. They do not currently change extraction rules.                                                      |
+| **Tested**                         | Unit, integration and end-to-end tests; type checking and linting in CI.                                                                                                                            |
 
 ## Locale-aware parsing
 
@@ -365,7 +367,8 @@ Files are processed locally by this application and are not uploaded by applicat
 | ------------------- | ---------------------------------------------------------------------------- |
 | Network             | No upload of invoice data. No analytics or telemetry.                        |
 | Storage             | Invoice data is not persisted to URLs, `localStorage`, `sessionStorage` or IndexedDB. Consent-based seller-name profiles use `localStorage`. |
-| Cache Storage       | Application assets, PDF.js fonts and selected OCR models only; invoice data is excluded. Older shell caches may remain for active tabs. |\n| Memory              | Source PDFs and extracted records remain in memory while the batch is active; removing records releases app references, not a guarantee of forensic erasure. |
+| Cache Storage       | Application assets, PDF.js fonts and selected OCR models only; invoice data is excluded. Older shell caches may remain for active tabs. |
+| Memory              | Source PDFs and extracted records remain in memory while the batch is active; removing records releases app references, not a guarantee of forensic erasure. |
 | Spreadsheet exports | Cells that could trigger formulas are sanitized (CSV and formula injection). |
 | Rendering           | React rendering does not use `dangerouslySetInnerHTML`.                      |
 

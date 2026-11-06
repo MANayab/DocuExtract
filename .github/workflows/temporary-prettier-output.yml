@@ -1,0 +1,47 @@
+name: Temporary pinned Prettier output
+on:
+  push:
+    branches:
+      - precommercial/v1.6.0-baseline
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: precommercial/v1.6.0-baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Format changed implementation and acceptance files
+        run: >-
+          npx prettier --write
+          index.html
+          public/sw.js
+          vite.config.ts
+          src/features/pwa/register.ts
+          src/tests/unit/templateStore.test.ts
+          scripts/prepare-pwa-test-builds.mjs
+          scripts/pwa-test-server.mjs
+          e2e/pwa-update.spec.ts
+          e2e/pwa.spec.ts
+          e2e/privacy.spec.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinned-prettier-pwa-privacy-files
+          path: |
+            index.html
+            public/sw.js
+            vite.config.ts
+            src/features/pwa/register.ts
+            src/tests/unit/templateStore.test.ts
+            scripts/prepare-pwa-test-builds.mjs
+            scripts/pwa-test-server.mjs
+            e2e/pwa-update.spec.ts
+            e2e/pwa.spec.ts
+            e2e/privacy.spec.ts
+          retention-days: 1

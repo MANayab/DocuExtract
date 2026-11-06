@@ -4,7 +4,7 @@ import type { Invoice } from '../../types/invoice';
 import { DEFAULT_OCR_LANGUAGE } from '../ocr/ocrLanguages';
 import { validatePdfFile } from '../../utils/fileValidation';
 import { DEFAULT_LOCALE, type LocaleCode } from '../../config/locales';
-import { anchorsMatch, matchVendorTemplate } from '../templates/templateMatcher';
+import { matchVendorTemplate } from '../templates/templateMatcher';
 import type { VendorTemplate } from '../templates/templateSchema';
 
 export interface AddResult {
@@ -283,10 +283,7 @@ export class BatchStore {
       const total = result.invoices.length;
       const ready: BatchRecord[] = result.invoices.map((invoice, k) => {
         const template = matchVendorTemplate(invoice, this.templates);
-        const templateApplied =
-          template && anchorsMatch(invoice, template)
-            ? { id: template.id, name: template.name }
-            : undefined;
+        const templateApplied = template ? { id: template.id, name: template.name } : undefined;
         return {
           id: total > 1 ? `${record.id}#${k + 1}` : record.id,
           fileName: record.fileName,

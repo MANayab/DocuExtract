@@ -52,7 +52,9 @@ export class TemplateStore {
     input: Omit<VendorTemplate, 'id' | 'createdAt' | 'updatedAt'>,
     consent: boolean,
   ) {
-    if (!consent) throw new Error('Explicit consent is required before updating a seller template.');
+    if (!consent) {
+      throw new Error('Explicit consent is required before updating a seller template.');
+    }
     const previous = this.templates.find((template) => template.id === id);
     if (!previous) throw new Error('Seller template was not found.');
     const updated = vendorTemplateSchema.parse({
@@ -71,7 +73,9 @@ export class TemplateStore {
   }
 
   import(text: string, consent: boolean) {
-    if (!consent) throw new Error('Explicit consent is required before importing seller templates.');
+    if (!consent) {
+      throw new Error('Explicit consent is required before importing seller templates.');
+    }
     const imported = parseTemplateImport(text);
     const known = new Set(this.templates.map((template) => template.id));
     const additions = imported.filter((template) => !known.has(template.id));

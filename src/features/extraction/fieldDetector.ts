@@ -23,13 +23,13 @@ const firstColumn = (value: string) => value.split(/\s{2,}/)[0]?.trim() ?? '';
 
 /** Text value following a label on the same line. */
 function labelled(text: string, labels: string[]): string {
-  const r = new RegExp(\`(?:\${alternation(labels)})[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)\`, 'i');
+  const r = new RegExp('(?:' + alternation(labels) + ')[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)', 'i');
   return firstColumn(text.match(r)?.[1] ?? '');
 }
 
 /** Text that is itself a field label ("Invoice Date"), so it cannot be a value. */
 const LABEL_LIKE =
-  /^(?:invoice\\s*(?:no|number|date|#)|date\\b|due\\s*date|payment\\s*due|bill(?:ed)?\\s*to|ship(?:ped)?\\s*to|gstin|tax\\s*id|total\\b|sub\\s*total|grand\\s*total|amount\\b|qty\\b|quantity\\b|description\\b|item\\b|seller\\b|buyer\\b|customer\\b|vendor\\b|rechnungsnummer|rechnungsdatum|fälligkeitsdatum|zwischensumme|gesamtbetrag|steuer|beschreibung|menge|preis|betrag|verkäufer|lieferant|kunde|käufer|चालान|दिनांक|देय\\s*तिथि|उप-योग|कुल|कर|विवरण|मात्रा|दर|राशि|विक्रेता|खरीदार|ग्राहक)/i;
+  /^(?:invoice\s*(?:no|number|date|#)|date\b|due\s*date|payment\s*due|bill(?:ed)?\s*to|ship(?:ped)?\s*to|gstin|tax\s*id|total\b|sub\s*total|grand\s*total|amount\b|qty\b|quantity\b|description\b|item\b|seller\b|buyer\b|customer\b|vendor\b|rechnungsnummer|rechnungsdatum|fälligkeitsdatum|zwischensumme|gesamtbetrag|steuer|beschreibung|menge|preis|betrag|verkäufer|lieferant|kunde|käufer|चालान|दिनांक|देय\s*तिथि|उप-योग|कुल|कर|विवरण|मात्रा|दर|राशि|विक्रेता|खरीदार|ग्राहक)/i;
 
 const looksLikeLabel = (value: string) => LABEL_LIKE.test(value.trim());
 
@@ -70,9 +70,10 @@ const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
 
 /** Amount (as raw text) following a label; skips matches that are not numbers. */
 function labelledAmounts(text: string, labels: string[]): string[] {
+  const prefix =
+    '(?:' + alternation(labels) + ')(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*';
   const r = new RegExp(
-    \`(?:\${alternation(labels)})(?:[ \\t]*@?[ \\t]*\\\\(?\\\\d+(?:\\\\.\\\\d+)?[ \\t]*%\\\\)?)?[ \\t]*[:#;.-]?[ \\t]*\` +
-      \`(\\\\(?-?[\\\\d][\\\\d., ]*\\\\d\\\\)?)(?![A-Za-z\\\\d,]|\\\\s*%)\`,
+    prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)',
     'gi',
   );
   return [...text.matchAll(r)].map((m) => m[1]);

@@ -4,6 +4,12 @@ DocuExtract runs Tesseract locally in the browser for scanned or image-only page
 
 Mixed PDFs keep text-layer pages and send pages without extractable text through OCR. OCR-derived values are capped at 75% confidence and require review.
 
+## Offline preparation
+
+After the app reports **Offline ready**, selecting an OCR language while online downloads that language model into its separate versioned Cache Storage entry. This prepares OCR for offline use without requiring the user to process an invoice online first. A language model is not cached until the user selects or uses that language.
+
+If the model has not been cached and the device is offline, the app returns a clear recoverable message asking the user to connect and select the language once.
+
 ## Accuracy status
 
 English is included in the bundled OCR configuration. German and Hindi extraction accuracy is experimental. The current automated quality gate does not certify representative field-level accuracy for German or Hindi scans, and human QA on real multilingual scans is pending.

@@ -39,9 +39,30 @@ const pwaPrecache = (): Plugin => {
         throw new Error('public/sw.js is missing the generated build ID placeholder.');
       }
 
-      const precacheAssets = [...assets, ...standardFonts];
+      const ocrDirectory = resolve(process.cwd(), 'public/ocr');
+      const ocrRuntime = existsSync(ocrDirectory)
+        ? [
+            ...(existsSync(resolve(ocrDirectory, 'manifest.json')) ? ['ocr/manifest.json'] : []),
+            ...(existsSync(resolve(ocrDirectory, 'worker.min.js')) ? ['ocr/worker.min.js'] : []),
+            ...(existsSync(resolve(ocrDirectory, 'core'))
+              ? readdirSync(resolve(ocrDirectory, 'core'))
+                  .filter((fileName) => !fileName.startsWith('.'))
+                  .sort()
+                  .map((fileName) => `ocr/core/${fileName}`)
+              : []),
+          ]
+        : [];
+
+      const precacheAssets = [...assets, ...standardFonts, ...ocrRuntime];
+      const publicAssetHashes = precacheAssets
+        .filter((asset) => !asset.startsWith('assets/'))
+        .map((asset) =>
+          createHash('sha256')
+            .update(readFileSync(resolve(process.cwd(), 'public', asset)))
+            .digest('hex'),
+        );
       const fingerprint = createHash('sha256')
-        .update(`${precacheAssets.join('\\n')}\\n${workerTemplate}`)
+        .update(`${precacheAssets.join('\\n')}\\n${publicAssetHashes.join('\\n')}\\n${workerTemplate}`)
         .digest('hex')
         .slice(0, 10);
       buildId = `${packageVersion}-${fingerprint}`;

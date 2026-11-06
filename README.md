@@ -399,7 +399,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
 | OCR (optional, bundled locally) | tesseract.js 5.1 + tesseract.js-core                                           |
 | Validation                      | Zod 3.23                                                                       |
 | Export                          | ExcelJS 4.4, file-saver 2.0                                                    |
-| Quality                         | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.48               |
+| Quality                         | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.64.1               |
 | Hosting                         | GitHub Pages via GitHub Actions                                                |
 
 ## Contributing

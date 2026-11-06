@@ -20,7 +20,9 @@ Exporting a profile creates a user-requested local download. Importing or saving
 
 ## Offline PWA storage
 
-The service worker caches same-origin application assets required for offline startup, including content-hashed application chunks and PDF.js standard fonts. OCR models are cached separately by language after the user selects or uses that language while online. Older versioned application caches are retained across updates so already-open tabs can continue loading their old hashed chunks; this may use additional browser storage until the user clears site data.
+The service worker caches same-origin application assets required for offline startup, including content-hashed application chunks and PDF.js standard fonts. OCR models are cached separately by language after the user selects or uses that language while online. The Offline ready state verifies the required shell URLs and every asset listed in the build manifest; if entries are missing while online, the app attempts to restore them. If the browser evicts required assets while offline, the app cannot guarantee reload or processing until connectivity returns.
+
+Versioned shell caches are retained while an open tab reports that it is still running that build. The worker asks active tabs for their embedded build IDs before cleanup; if any tab is suspended, legacy or does not respond, cleanup is deferred rather than risking a broken old tab. Once all active tabs report, inactive shell caches are deleted and selected OCR model entries are moved into the current versioned cache before old OCR caches are removed.
 
 Service-worker caching must exclude invoice PDFs, extracted invoice data, corrections, review state, generated exports and seller profile data. The worker only handles same-origin GET requests under `/DocuExtract/`; sensitive document/export paths are excluded from caching. Cache Storage is for application assets and OCR model data, not invoice data.
 
@@ -30,6 +32,8 @@ OCR page images are rendered and processed locally. The Tesseract worker, WebAss
 
 ## Verification limits
 
-Automated tests cover selected offline cache and storage behaviors, but they do not yet inspect every Cache Storage response body, every request body, every storage surface after every user workflow, or all browser memory references. Comprehensive privacy verification after upload, extraction, correction, template use, export and reload remains a release blocker. Object URL and document-resource cleanup are covered only by targeted code paths/tests, not a proof of complete memory erasure.
+Automated browser tests use synthetic invoice markers to inspect all Cache Storage response bodies (including binary responses), localStorage, sessionStorage, IndexedDB database presence, resource URLs and captured request URLs/bodies after upload, extraction, corrections, XLSX, invoice-summary CSV, line-items CSV, JSON export and reload. Separate browser coverage exercises consent-gated seller-profile save, export, import, delete and reload; unit tests cover consent-gated profile update and deletion. The seller-profile UI currently has no edit control, so update behavior is verified at the store layer rather than through a user-facing edit workflow.
+
+These tests provide bounded regression evidence, not proof of complete memory erasure or every possible browser state. Object URL and document-resource cleanup are covered only by targeted code paths/tests.
 
 The static site is served by GitHub Pages. This document describes the application code and cannot guarantee the behavior of the user's browser, extensions, hosting logs, or future dependency changes.

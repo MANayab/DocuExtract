@@ -71,6 +71,14 @@ export function PwaStatus({
     );
   }
 
+  if (state === 'deferred') {
+    return (
+      <aside className="dx-pwa" role="status" aria-live="polite">
+        {message || 'Update deferred. Your current tab will not reload automatically.'}
+      </aside>
+    );
+  }
+
   if (state === 'activating') {
     return (
       <aside className="dx-pwa" role="status">

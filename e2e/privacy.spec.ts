@@ -33,9 +33,7 @@ test('seller profile consent, save, export, import, reload and delete do not per
   });
 
   await page.goto('./');
-  await expect(
-    page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Seller matching profiles' })).toBeVisible();
 
   const consent = page.getByLabel(
@@ -73,7 +71,9 @@ test('seller profile consent, save, export, import, reload and delete do not per
     buffer: Buffer.from(JSON.stringify(importedProfile)),
   });
   await expect(page.getByText('1 seller profile imported.')).toBeVisible();
-  await expect(page.locator('.dx-template-list li').filter({ hasText: 'Imported profile' })).toBeVisible();
+  await expect(
+    page.locator('.dx-template-list li').filter({ hasText: 'Imported profile' }),
+  ).toBeVisible();
 
   const afterImport = await page.evaluate((key) => localStorage.getItem(key), storageKey);
   expect(afterImport).toContain('Imported Traders');
@@ -81,11 +81,13 @@ test('seller profile consent, save, export, import, reload and delete do not per
   for (const marker of privacyMarkers) expect(afterImport).not.toContain(marker);
 
   await page.reload();
+  await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 }),
+    page.locator('.dx-template-list li').filter({ hasText: 'Greenfield profile' }),
   ).toBeVisible();
-  await expect(page.locator('.dx-template-list li').filter({ hasText: 'Greenfield profile' })).toBeVisible();
-  await expect(page.locator('.dx-template-list li').filter({ hasText: 'Imported profile' })).toBeVisible();
+  await expect(
+    page.locator('.dx-template-list li').filter({ hasText: 'Imported profile' }),
+  ).toBeVisible();
 
   await page
     .locator('.dx-template-list li')
@@ -100,9 +102,7 @@ test('seller profile consent, save, export, import, reload and delete do not per
   await expect(page.locator('.dx-template-list li')).toHaveCount(0);
 
   await page.reload();
-  await expect(
-    page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
   const remaining = await page.evaluate((key) => localStorage.getItem(key), storageKey);
   expect(remaining).toContain('"templates": []');
   for (const marker of privacyMarkers) expect(remaining).not.toContain(marker);
@@ -151,7 +151,10 @@ test('seller profile consent, save, export, import, reload and delete do not per
         typeof indexedDB.databases === 'function'
           ? (await indexedDB.databases()).map((database) => database.name)
           : [],
-      urls: [window.location.href, ...performance.getEntriesByType('resource').map((entry) => entry.name)],
+      urls: [
+        window.location.href,
+        ...performance.getEntriesByType('resource').map((entry) => entry.name),
+      ],
     };
   }, privacyMarkers);
 

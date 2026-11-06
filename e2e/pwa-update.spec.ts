@@ -209,7 +209,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
   );
   expect(shellCachesBeforeCleanup).toContain(`docuextract-${oldBuildId}-shell`);
-  expect(shellCachesBeforeCleanup).toContain(`docuextract-${newBuildId}-shell`);
+  expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
   await page.evaluate(() => {

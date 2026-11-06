@@ -26,6 +26,8 @@ async function waitForController(page: Page) {
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible({
     timeout: 30_000,
   });
+  const pageBuildId = await page.locator('meta[name="docuextract-build-id"]').getAttribute('content');
+  expect(pageBuildId).toBe(await activeBuildId(page));
 }
 
 async function activeBuildId(page: Page): Promise<string> {

@@ -283,4 +283,67 @@ describe('invoice parser', () => {
     expect(i.invoiceNumber.confidence).toBeLessThanOrEqual(OCR_CONFIDENCE_CAP);
     expect(i.extraction.warnings.join(' ')).toMatch(/OCR/);
   });
+  it('parses German invoice labels and line-item columns', () => {
+    const i = parseInvoice(
+      pdfFrom([
+        [['Rechnungsnummer: 2026-0457', 50]],
+        [['Rechnungsdatum: 09.10.2026', 50]],
+        [['Verkäufer: Grünfeld Handel GmbH', 50]],
+        [['Kunde: Sonnenaufgang Einzelhandel', 50]],
+        [['Beschreibung', 50], ['Menge', 300], ['Preis', 380], ['Betrag', 460]],
+        [['Reis Sack', 50], ['2', 300], ['10.000,00', 380], ['20.000,00', 460]],
+        [['Zucker Sack', 50], ['1', 300], ['1.200,00', 380], ['1.200,00', 460]],
+        [['Zwischensumme: 21.200,00', 50]],
+        [['Steuer: 1.060,00', 50]],
+        [['Gesamtbetrag: EUR 22.260,00', 50]],
+      ]),
+      'de-DE',
+    );
+
+    expect(i.invoiceNumber.value).toBe('2026-0457');
+    expect(i.invoiceDate.value).toBe('2026-10-09');
+    expect(i.seller.name.value).toBe('Grünfeld Handel GmbH');
+    expect(i.buyer.name.value).toBe('Sonnenaufgang Einzelhandel');
+    expect(i.subtotal.value).toBe(21200);
+    expect(i.taxTotal.value).toBe(1060);
+    expect(i.grandTotal.value).toBe(22260);
+    expect(i.currency.value).toBe('EUR');
+    expect(i.items).toHaveLength(2);
+    expect(i.items[0].description.value).toBe('Reis Sack');
+    expect(i.items[0].quantity.value).toBe(2);
+    expect(i.items[0].unitPrice.value).toBe(10000);
+    expect(i.items[0].lineTotal.value).toBe(20000);
+  });
+
+  it('normalizes Devanagari digits and parses Hindi invoice labels and columns', () => {
+    const i = parseInvoice(
+      pdfFrom([
+        [['चालान संख्या: २०२६०४५७', 50]],
+        [['चालान दिनांक: ०९-१०-२०२६', 50]],
+        [['विक्रेता: हरित क्षेत्र व्यापारी', 50]],
+        [['खरीदार: सूर्योदय खुदरा', 50]],
+        [['विवरण', 50], ['मात्रा', 300], ['दर', 380], ['राशि', 460]],
+        [['चावल का बैग', 50], ['२', 300], ['१०,०००', 380], ['२०,०००', 460]],
+        [['चीनी का बैग', 50], ['१', 300], ['१,२००', 380], ['१,२००', 460]],
+        [['उप-योग: २१,२००', 50]],
+        [['कर: १,०६०', 50]],
+        [['कुल राशि: २२,२६०', 50]],
+      ]),
+      'en-IN',
+    );
+
+    expect(i.invoiceNumber.value).toBe('20260457');
+    expect(i.invoiceDate.value).toBe('2026-10-09');
+    expect(i.seller.name.value).toBe('हरित क्षेत्र व्यापारी');
+    expect(i.buyer.name.value).toBe('सूर्योदय खुदरा');
+    expect(i.subtotal.value).toBe(21200);
+    expect(i.taxTotal.value).toBe(1060);
+    expect(i.grandTotal.value).toBe(22260);
+    expect(i.items).toHaveLength(2);
+    expect(i.items[0].description.value).toBe('चावल का बैग');
+    expect(i.items[0].quantity.value).toBe(2);
+    expect(i.items[0].unitPrice.value).toBe(10000);
+    expect(i.items[0].lineTotal.value).toBe(20000);
+  });
+
 });

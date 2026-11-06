@@ -26,7 +26,9 @@ async function waitForController(page: Page) {
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible({
     timeout: 30_000,
   });
-  const pageBuildId = await page.locator('meta[name="docuextract-build-id"]').getAttribute('content');
+  const pageBuildId = await page
+    .locator('meta[name="docuextract-build-id"]')
+    .getAttribute('content');
   expect(pageBuildId).toBe(await activeBuildId(page));
 }
 
@@ -208,7 +210,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
   const shellCachesBeforeCleanup = await page.evaluate(() =>
-    caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
+    caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
   );
   expect(shellCachesBeforeCleanup).toContain(`docuextract-${oldBuildId}-shell`);
   expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
@@ -220,7 +222,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect
     .poll(() =>
       page.evaluate(() =>
-        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
+        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
       ),
     )
     .toEqual([`docuextract-${retryBuildId}-shell`]);

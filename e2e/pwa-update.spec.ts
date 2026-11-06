@@ -228,7 +228,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect
     .poll(() =>
       page.evaluate(() =>
-        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
+        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
       ),
     )
     .toEqual([`docuextract-${retryBuildId}-shell`]);

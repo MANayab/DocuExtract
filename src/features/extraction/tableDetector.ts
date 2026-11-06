@@ -38,7 +38,7 @@ export function roleOf(header: string): Role {
   const h = header.toLowerCase().trim();
 
   if (/^(?:sr\.?|s\.?\s*no\.?|sl\.?(?:\s*no\.?)?|#|no\.?)$/.test(h)) return 'serial';
-  if (/qty|quantity|\bnos\b/.test(h)) return 'qty';
+  if (/qty|quantity|\bnos\b|menge/.test(h) || h.includes('मात्रा')) return 'qty';
   if (/disc|rabatt/.test(h) || h.includes('छूट')) return 'discount';
   if (/taxable|steuerpflichtig/.test(h) || h.includes('कर योग्य')) return 'taxable';
 
@@ -59,7 +59,7 @@ export function roleOf(header: string): Role {
  * Header cells can merge when columns sit close together ("SGST %  SGST Amt"
  * printed with a small gap). Tax headers are split back into one cell each.
  */
-const TAX_HEADER = /\b(?:cgst|sgst|igst|gst|vat|tax(?!able))\s*(?:%|rate|amt|amount|value)?/gi;
+const TAX_HEADER = /\b(?:cgst|sgst|igst|gst|vat|tax(?!able)|steuer|mwst|umsatzsteuer)\s*(?:%|rate|amt|amount|value)?|कर/gi;
 
 export function splitHeaderCells(cells: string[]): string[] {
   return cells.flatMap((cell) => {

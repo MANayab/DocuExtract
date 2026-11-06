@@ -53,7 +53,9 @@ export function getOcrManifest(): Promise<OcrManifest | null> {
  */
 export async function prepareOcrLanguage(language: string): Promise<void> {
   if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
-    throw new Error('Wait until the application reports Offline ready, then select the OCR language again.');
+    throw new Error(
+      'Wait until the application reports Offline ready, then select the OCR language again.',
+    );
   }
 
   const manifest = await getOcrManifest();
@@ -67,6 +69,8 @@ export async function prepareOcrLanguage(language: string): Promise<void> {
 
   const cached = await caches.match(modelUrl);
   if (!cached) {
-    throw new Error(`The ${language} model was downloaded but could not be confirmed in offline storage. Retry while online.`);
+    throw new Error(
+      `The ${language} model was downloaded but could not be confirmed in offline storage. Retry while online.`,
+    );
   }
 }

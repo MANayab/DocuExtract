@@ -17,37 +17,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Format implementation and browser acceptance tests
-        run: >-
-          npx prettier --write
-          index.html
-          public/sw.js
-          vite.config.ts
-          src/features/pwa/register.ts
-          src/features/ocr/ocrEngine.ts
-          src/features/templates/templateMatcher.ts
-          src/tests/unit/seo.test.ts
-          src/tests/unit/templateStore.test.ts
-          scripts/prepare-pwa-test-builds.mjs
-          scripts/pwa-test-server.mjs
-          e2e/pwa-update.spec.ts
-          e2e/pwa.spec.ts
-          e2e/ocr-assets.spec.ts
-          e2e/privacy.spec.ts
+      - run: npx prettier --write e2e/pwa-update.spec.ts e2e/pwa.spec.ts e2e/ocr-assets.spec.ts e2e/privacy.spec.ts
       - uses: actions/upload-artifact@v4
         with:
-          name: pinned-prettier-final-code
+          name: final-prettier-e2e
           path: |
-            index.html
-            public/sw.js
-            vite.config.ts
-            src/features/pwa/register.ts
-            src/features/ocr/ocrEngine.ts
-            src/features/templates/templateMatcher.ts
-            src/tests/unit/seo.test.ts
-            src/tests/unit/templateStore.test.ts
-            scripts/prepare-pwa-test-builds.mjs
-            scripts/pwa-test-server.mjs
             e2e/pwa-update.spec.ts
             e2e/pwa.spec.ts
             e2e/ocr-assets.spec.ts

@@ -23,12 +23,12 @@ const pwaPrecache = (): Plugin => {
     apply: 'build',
     generateBundle(_options, bundle) {
       const assets = Object.keys(bundle).filter(
-        (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\\./.test(fileName),
+        (fileName) => fileName.startsWith('assets/') && /-[A-Za-z0-9_-]{8,}\./.test(fileName),
       );
       const fontDirectory = resolve(process.cwd(), 'public/standard_fonts');
       const standardFonts = existsSync(fontDirectory)
         ? readdirSync(fontDirectory)
-            .filter((fileName) => /\\.(pfb|ttf)$/i.test(fileName))
+            .filter((fileName) => /\.(pfb|ttf)$/i.test(fileName))
             .sort()
             .map((fileName) => `standard_fonts/${fileName}`)
         : [];

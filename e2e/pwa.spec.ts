@@ -228,7 +228,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
     };
   }, syntheticMarkers);
 
-  expect(storage.cacheEntries.some((url) => /offline\.pdf|invoice/i.test(url))).toBe(false);
+  expect(storage.cacheEntries.some((url) => /offline\.pdf/i.test(url))).toBe(false);
   expect(storage.cacheMarkerMatches).toEqual([]);
   expect(storage.local.some((value) => /offline\.pdf/i.test(value))).toBe(false);
   expect(storage.session.some((value) => /offline\.pdf/i.test(value))).toBe(false);

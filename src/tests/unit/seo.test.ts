@@ -9,7 +9,7 @@ import { SITE, faqItems, features } from '../../content/site';
 const publicFile = (name: string) => readFileSync(resolve(process.cwd(), 'public', name), 'utf8');
 
 const embeddedJson = (head: string) => {
-  const match = head.match(/<script type="application\/ld\\+json">(.*)<\/script>/s);
+  const match = head.match(/<script type="application\/ld\+json">(.*)<\/script>/s);
   return JSON.parse(match ? match[1] : 'null');
 };
 

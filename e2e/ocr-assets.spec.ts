@@ -69,7 +69,7 @@ const scannedPdf = async (language: 'eng' | 'deu' | 'hin', page: Page) => {
   const png = await page.evaluate((selectedLanguage) => {
     const canvas = document.createElement('canvas');
     canvas.width = 2200;
-    canvas.height = 2600;
+    canvas.height = 3110;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Canvas is unavailable for scanned fixture generation.');
     context.fillStyle = '#fff';

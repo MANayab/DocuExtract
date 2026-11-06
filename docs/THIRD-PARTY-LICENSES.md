@@ -17,7 +17,9 @@ Direct and development dependencies pinned by `package.json` at v1.6.0 (selected
 | zod | 3.23.8 | MIT |
 | typescript | 5.6.3 | Apache-2.0 |
 | vite | 5.4.21 | MIT |
-| @vitejs/plugin-react | 4.7.0 | MIT |\n| @playwright/test | 1.64.1 | Apache-2.0 |\n| @types/node | 20.17.6 | MIT |
+| @vitejs/plugin-react | 4.7.0 | MIT |
+| @playwright/test | 1.64.1 | Apache-2.0 |
+| @types/node | 20.17.6 | MIT |
 | tailwindcss | 3.4.14 | MIT |
 | postcss | 8.5.32 | MIT |
 | autoprefixer | 10.4.20 | MIT |

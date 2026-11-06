@@ -11,9 +11,7 @@ const scannedPdf = async () => ({
 
 async function openApp(page: Page) {
   await page.goto('./');
-  await expect(
-    page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
 }
 
 const pdf = async (kind: 'basic' | 'empty', name: string) => ({
@@ -75,7 +73,6 @@ test('loads only the selected same-origin language model and offers retry on 404
   expect(ocrAssetOrigins.every((origin) => origin === new URL(page.url()).origin)).toBe(true);
 });
 
-
 const scannedAnchors = async (page: Page) => {
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
@@ -90,116 +87,118 @@ const scannedAnchors = async (page: Page) => {
 };
 
 for (const language of ['eng', 'deu', 'hin'] as const) {
-  test(`${language} OCR recognizes the real scanned invoice online and after an offline reload`, async ({
-    page,
-    context,
-  }) => {
-    const consoleErrors: string[] = [];
-    const failedRequests: string[] = [];
-    const ocrRequests: { origin: string; path: string }[] = [];
-    const ocrResponses: { status: number; path: string }[] = [];
-    page.on('console', (message) => {
-      if (message.type() === 'error') consoleErrors.push(message.text());
-    });
-    page.on('requestfailed', (request) => {
-      failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
-    });
-    page.on('request', (request) => {
-      const url = new URL(request.url());
-      if (url.pathname.includes('/ocr/')) {
-        ocrRequests.push({ origin: url.origin, path: url.pathname });
-      }
-    });
-    page.on('response', (response) => {
-      const url = new URL(response.url());
-      if (url.pathname.includes('/ocr/')) {
-        ocrResponses.push({ status: response.status(), path: url.pathname });
-      }
-    });
+  test(
+    `${language} OCR recognizes the real scanned invoice online and after an offline reload`,
+    async ({ page, context }) => {
+      const consoleErrors: string[] = [];
+      const failedRequests: string[] = [];
+      const ocrRequests: { origin: string; path: string }[] = [];
+      const ocrResponses: { status: number; path: string }[] = [];
+      page.on('console', (message) => {
+        if (message.type() === 'error') consoleErrors.push(message.text());
+      });
+      page.on('requestfailed', (request) => {
+        failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
+      });
+      page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname.includes('/ocr/')) {
+          ocrRequests.push({ origin: url.origin, path: url.pathname });
+        }
+      });
+      page.on('response', (response) => {
+        const url = new URL(response.url());
+        if (url.pathname.includes('/ocr/')) {
+          ocrResponses.push({ status: response.status(), path: url.pathname });
+        }
+      });
 
-    await openApp(page);
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
-    await page.getByLabel('Scanned PDF language').selectOption(language);
-    await expect(
-      page.getByText(`${language} OCR model is cached for offline use.`),
-    ).toBeVisible({ timeout: 60_000 });
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
-    await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
-      timeout: 30_000,
-    });
-    await page.getByRole('button', { name: 'Run OCR' }).click();
-    await scannedAnchors(page);
+      await openApp(page);
+      await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+      await page.getByLabel('Scanned PDF language').selectOption(language);
+      await expect(page.getByText(`${language} OCR model is cached for offline use.`)).toBeVisible({
+        timeout: 60_000,
+      });
+      await page.setInputFiles('input[type="file"]', await scannedPdf());
+      await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
+        timeout: 30_000,
+      });
+      await page.getByRole('button', { name: 'Run OCR' }).click();
+      await scannedAnchors(page);
 
-    await context.setOffline(true);
-    await page.reload();
-    await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
-    await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
-      timeout: 30_000,
-    });
-    await page.getByRole('button', { name: 'Run OCR' }).click();
-    await scannedAnchors(page);
+      await context.setOffline(true);
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible(
+        {
+          timeout: 30_000,
+        },
+      );
+      await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+      await page.setInputFiles('input[type="file"]', await scannedPdf());
+      await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
+        timeout: 30_000,
+      });
+      await page.getByRole('button', { name: 'Run OCR' }).click();
+      await scannedAnchors(page);
 
-    const origin = new URL(page.url()).origin;
-    expect(ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
-    expect(ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(true);
-    expect(ocrRequests.some((request) => request.path.includes(`/ocr/lang/${language}.traineddata`))).toBe(
-      true,
-    );
-    expect(ocrRequests.every((request) => request.origin === origin)).toBe(true);
-    expect(ocrResponses.filter((response) => response.status >= 400)).toEqual([]);
-    expect(failedRequests.filter((request) => request.includes('/ocr/'))).toEqual([]);
-    await test.info().attach(`ocr-${language}-browser-diagnostics.json`, {
-      body: JSON.stringify({ consoleErrors, failedRequests, ocrRequests, ocrResponses }, null, 2),
-      contentType: 'application/json',
-    });
-  });
+      const origin = new URL(page.url()).origin;
+      expect(ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);
+      expect(ocrRequests.some((request) => request.path.includes('/ocr/core/'))).toBe(true);
+      expect(
+        ocrRequests.some((request) => request.path.includes(`/ocr/lang/${language}.traineddata`)),
+      ).toBe(true);
+      expect(ocrRequests.every((request) => request.origin === origin)).toBe(true);
+      expect(ocrResponses.filter((response) => response.status >= 400)).toEqual([]);
+      expect(failedRequests.filter((request) => request.includes('/ocr/'))).toEqual([]);
+      await test.info().attach(`ocr-${language}-browser-diagnostics.json`, {
+        body: JSON.stringify({ consoleErrors, failedRequests, ocrRequests, ocrResponses }, null, 2),
+        contentType: 'application/json',
+      });
+    },
+  );
 
-  test(`${language} OCR reports an uncached offline model and succeeds on retry`, async ({
-    page,
-    context,
-  }) => {
-    const consoleErrors: string[] = [];
-    const failedRequests: string[] = [];
-    const ocrResponses: { status: number; path: string }[] = [];
-    page.on('console', (message) => {
-      if (message.type() === 'error') consoleErrors.push(message.text());
-    });
-    page.on('requestfailed', (request) => {
-      failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
-    });
-    page.on('response', (response) => {
-      const url = new URL(response.url());
-      if (url.pathname.includes('/ocr/')) {
-        ocrResponses.push({ status: response.status(), path: url.pathname });
-      }
-    });
+  test(
+    `${language} OCR reports an uncached offline model and succeeds on retry`,
+    async ({ page, context }) => {
+      const consoleErrors: string[] = [];
+      const failedRequests: string[] = [];
+      const ocrResponses: { status: number; path: string }[] = [];
+      page.on('console', (message) => {
+        if (message.type() === 'error') consoleErrors.push(message.text());
+      });
+      page.on('requestfailed', (request) => {
+        failedRequests.push(`${request.url()}: ${request.failure()?.errorText ?? 'failed'}`);
+      });
+      page.on('response', (response) => {
+        const url = new URL(response.url());
+        if (url.pathname.includes('/ocr/')) {
+          ocrResponses.push({ status: response.status(), path: url.pathname });
+        }
+      });
 
-    await openApp(page);
-    await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
-    await context.setOffline(true);
-    await page.getByLabel('Scanned PDF language').selectOption(language);
-    await page.setInputFiles('input[type="file"]', await scannedPdf());
-    await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
-      timeout: 30_000,
-    });
-    await page.getByRole('button', { name: 'Run OCR' }).click();
-    await expect(page.getByText(/not cached for offline use/i)).toBeVisible({
-      timeout: 30_000,
-    });
-    await expect(page.getByRole('button', { name: 'Retry OCR' })).toBeVisible();
+      await openApp(page);
+      await expect(page.getByText('Offline ready')).toBeVisible({ timeout: 30_000 });
+      await context.setOffline(true);
+      await page.getByLabel('Scanned PDF language').selectOption(language);
+      await page.setInputFiles('input[type="file"]', await scannedPdf());
+      await expect(page.getByText('Scanned PDF', { exact: true })).toBeVisible({
+        timeout: 30_000,
+      });
+      await page.getByRole('button', { name: 'Run OCR' }).click();
+      await expect(page.getByText(/not cached for offline use/i)).toBeVisible({
+        timeout: 30_000,
+      });
+      await expect(page.getByRole('button', { name: 'Retry OCR' })).toBeVisible();
 
-    await context.setOffline(false);
-    await page.getByRole('button', { name: 'Retry OCR' }).click();
-    await scannedAnchors(page);
+      await context.setOffline(false);
+      await page.getByRole('button', { name: 'Retry OCR' }).click();
+      await scannedAnchors(page);
 
-    expect(ocrResponses.some((response) => response.status === 503)).toBe(true);
-    await test.info().attach(`ocr-${language}-retry-diagnostics.json`, {
-      body: JSON.stringify({ consoleErrors, failedRequests, ocrResponses }, null, 2),
-      contentType: 'application/json',
-    });
-  });
+      expect(ocrResponses.some((response) => response.status === 503)).toBe(true);
+      await test.info().attach(`ocr-${language}-retry-diagnostics.json`, {
+        body: JSON.stringify({ consoleErrors, failedRequests, ocrResponses }, null, 2),
+        contentType: 'application/json',
+      });
+    },
+  );
 }

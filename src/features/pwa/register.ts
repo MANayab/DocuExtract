@@ -128,9 +128,25 @@ function createPwaController(): PwaController {
     return controller;
   }
 
+  const appBuildId = () =>
+    document.querySelector<HTMLMetaElement>('meta[name="docuextract-build-id"]')?.content ?? null;
+  const requestCacheCleanup = () => {
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'DOCUEXTRACT_CLEANUP_CACHES' });
+    }
+  };
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'DOCUEXTRACT_REPORT_BUILD_ID') {
+      event.ports[0]?.postMessage({ buildId: appBuildId() });
+    }
+  });
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     void refreshOfflineReadiness();
+    requestCacheCleanup();
   });
+  window.addEventListener('focus', requestCacheCleanup);
+  window.addEventListener('pageshow', requestCacheCleanup);
   window.addEventListener('online', () => {
     void refreshOfflineReadiness();
   });
@@ -160,7 +176,10 @@ function createPwaController(): PwaController {
       });
 
       void navigator.serviceWorker.ready
-        .then(() => refreshOfflineReadiness())
+        .then(() => {
+          void refreshOfflineReadiness();
+          requestCacheCleanup();
+        })
         .catch(() => setState('error'));
     })
     .catch(() => setState('error'));

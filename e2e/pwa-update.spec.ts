@@ -48,7 +48,7 @@ async function activeBuildId(page: Page): Promise<string> {
   );
 }
 
-async function switchBuild(build: 'new' | 'failed') {
+async function switchBuild(build: 'new' | 'failed' | 'retry') {
   const response = await fetch(`http://127.0.0.1:4173/__pwa_test__/switch/${build}`, {
     method: 'POST',
   });
@@ -166,4 +166,60 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'new');
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
+
+  await switchBuild('retry');
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    await registration.update();
+  });
+  await page.waitForFunction(
+    async () => Boolean((await navigator.serviceWorker.ready).waiting),
+    undefined,
+    { timeout: 60_000 },
+  );
+  await expect(page.getByText('Update available')).toBeVisible();
+  await page.getByRole('button', { name: 'Update now' }).click();
+  await page.waitForFunction(
+    async (previousBuildId) => {
+      const controller = navigator.serviceWorker.controller;
+      if (!controller) return false;
+      return new Promise<boolean>((resolve) => {
+        const channel = new MessageChannel();
+        const timeout = window.setTimeout(() => resolve(false), 2_000);
+        channel.port1.onmessage = (event: MessageEvent<{ buildId: string }>) => {
+          window.clearTimeout(timeout);
+          resolve(event.data.buildId !== previousBuildId);
+        };
+        controller.postMessage({ type: 'DOCUEXTRACT_GET_BUILD_ID' }, [channel.port2]);
+      });
+    },
+    newBuildId,
+    { timeout: 60_000 },
+  );
+  const retryBuildId = await activeBuildId(page);
+  expect(retryBuildId).not.toBe(newBuildId);
+
+  await page.reload();
+  await expect(page.locator('.dx-app')).toHaveAttribute('data-build-label', 'retry');
+  await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
+  await expect(secondTab.locator('.dx-app')).toHaveAttribute('data-build-label', 'old');
+  await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
+
+  const shellCachesBeforeCleanup = await page.evaluate(() =>
+    caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
+  );
+  expect(shellCachesBeforeCleanup).toContain(`docuextract-${oldBuildId}-shell`);
+  expect(shellCachesBeforeCleanup).toContain(`docuextract-${newBuildId}-shell`);
+
+  await secondTab.close();
+  await page.evaluate(() => {
+    navigator.serviceWorker.controller?.postMessage({ type: 'DOCUEXTRACT_CLEANUP_CACHES' });
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell')),
+      ),
+    )
+    .toEqual([`docuextract-${retryBuildId}-shell`]);
 });

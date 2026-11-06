@@ -54,11 +54,93 @@ test.afterEach(async ({ page }, testInfo) => {
   });
 });
 
-const scannedPdf = async () => ({
-  name: 'scanned-invoice.pdf',
-  mimeType: 'application/pdf',
-  buffer: await readFile(resolve(process.cwd(), 'samples/scanned-invoice.pdf')),
-});
+const scannedPdf = async (language: 'eng' | 'deu' | 'hin', page: Page) => {
+  if (language === 'eng') {
+    return {
+      name: 'scanned-invoice.pdf',
+      mimeType: 'application/pdf',
+      buffer: await readFile(resolve(process.cwd(), 'samples/scanned-invoice.pdf')),
+    };
+  }
+
+  const png = await page.evaluate((selectedLanguage) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2200;
+    canvas.height = 2600;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas is unavailable for scanned fixture generation.');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#111';
+    context.font =
+      selectedLanguage === 'hin'
+        ? '70px "Noto Sans Devanagari", sans-serif'
+        : '65px Arial, sans-serif';
+    context.textBaseline = 'top';
+
+    const header =
+      selectedLanguage === 'hin'
+        ? [
+            'कर चालान',
+            'चालान संख्या: २०२६०४५७',
+            'चालान दिनांक: ०९-१०-२०२६',
+            'विक्रेता: हरित क्षेत्र व्यापारी',
+            'खरीदार: सूर्योदय खुदरा',
+          ]
+        : [
+            'RECHNUNG',
+            'Rechnungsnummer: 2026-0457',
+            'Rechnungsdatum: 09.10.2026',
+            'Verkäufer: Grünfeld Handel GmbH',
+            'Kunde: Sonnenaufgang Einzelhandel',
+          ];
+    let y = 100;
+    for (const line of header) {
+      context.fillText(line, 100, y);
+      y += 185;
+    }
+
+    const rows =
+      selectedLanguage === 'hin'
+        ? [
+            ['विवरण', 'मात्रा', 'दर', 'राशि'],
+            ['चावल २५ किलो बैग', '२', '१०,०००', '२०,०००'],
+            ['चीनी ५० किलो बैग', '१', '१,२००', '१,२००'],
+          ]
+        : [
+            ['Beschreibung', 'Menge', 'Preis', 'Betrag'],
+            ['Reis 25 kg Sack', '2', '10.000,00', '20.000,00'],
+            ['Zucker 50 kg Sack', '1', '1.200,00', '1.200,00'],
+          ];
+    const x = [100, 1150, 1450, 1800];
+    for (const row of rows) {
+      row.forEach((cell, index) => context.fillText(cell, x[index], y));
+      y += 185;
+    }
+
+    const summary =
+      selectedLanguage === 'hin'
+        ? ['उप-योग: २१,२००', 'कर: १,०६०', 'कुल राशि: २२,२६०']
+        : ['Zwischensumme: 21.200,00', 'Steuer: 1.060,00', 'Gesamtbetrag: 22.260,00'];
+    y += 30;
+    for (const line of summary) {
+      context.fillText(line, 100, y);
+      y += 185;
+    }
+
+    return canvas.toDataURL('image/png').split(',')[1];
+  }, language);
+
+  const pdfDocument = await PDFDocument.create();
+  const image = await pdfDocument.embedPng(Buffer.from(png, 'base64'));
+  const pdfPage = pdfDocument.addPage([595, 842]);
+  pdfPage.drawImage(image, { x: 0, y: 0, width: 595, height: 842 });
+  return {
+    name: `scanned-invoice-${language}.pdf`,
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(await pdfDocument.save()),
+  };
+};
 
 async function openApp(page: Page) {
   await page.goto('./');

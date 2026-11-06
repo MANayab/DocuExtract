@@ -251,8 +251,9 @@ export function App() {
                 </div>
                 <p id="ocr-language-hint" className="dx-locale-panel__hint">
                   Applies only to scanned or image-only pages. Selecting a language downloads its
-                  local model for offline use; choose it while online. OCR results are lower-confidence
-                  and must be reviewed. Supported languages: English, German and Hindi.
+                  local model for offline use; choose it while online. OCR results are
+                  lower-confidence and must be reviewed. Supported languages: English, German and
+                  Hindi.
                 </p>
               </div>
             )}

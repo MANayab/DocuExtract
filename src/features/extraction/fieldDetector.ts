@@ -23,7 +23,7 @@ const firstColumn = (value: string) => value.split(/\s{2,}/)[0]?.trim() ?? '';
 
 /** Text value following a label on the same line. */
 function labelled(text: string, labels: string[]): string {
-  const r = new RegExp('(?:' + alternation(labels) + ')[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)', 'i');
+  const r = new RegExp('(?<![A-Za-z0-9])(?:' + alternation(labels) + ')(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)', 'i');
   return firstColumn(text.match(r)?.[1] ?? '');
 }
 
@@ -339,7 +339,7 @@ export function detectParty(text: string, kind: 'seller' | 'buyer'): Party {
 
   // "from" is too common a word; only trust it when followed by a colon.
   const labelRegex = new RegExp(
-    `(?:${alternation(plain)})[ \\t]*[:#;.-]?[ \\t]*\\n?[ \\t]*([^\\n]+)` +
+    `(?<![A-Za-z0-9])(?:${alternation(plain)})(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*\\n?[ \\t]*([^\\n]+)` +
       (kind === 'seller' ? `|\\bfrom[ \\t]*:[ \\t]*([^\\n]+)` : ''),
     'i',
   );

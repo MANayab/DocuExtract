@@ -67,11 +67,11 @@ function isSameOriginAsset(url) {
 }
 
 function isSensitive(url) {
-  return /\\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
+  return /\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
 }
 
 function ocrLanguage(url) {
-  const match = url.pathname.match(/\\/ocr\\/lang\\/(eng|deu|hin)\\.traineddata(?:\\.gz)?$/);
+  const match = url.pathname.match(/\/ocr\/lang\/(eng|deu|hin)\.traineddata(?:\.gz)?$/);
   return match ? match[1] : null;
 }
 
@@ -144,7 +144,7 @@ self.addEventListener('fetch', (event) => {
         const response = await fetch(request);
         if (
           response.ok &&
-          /\\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest|pfb|ttf)$/i.test(url.pathname)
+          /\.(?:js|css|mjs|wasm|png|svg|ico|webmanifest|pfb|ttf)$/i.test(url.pathname)
         ) {
           await cache.put(request, response.clone());
         }

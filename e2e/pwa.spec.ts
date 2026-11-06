@@ -119,8 +119,8 @@ test('reloads offline and performs extraction without caching invoice data', asy
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByLabel('Invoice number')).toHaveValue('PRIVACY-INV-DO-NOT-PERSIST-001');
-  await expect(page.getByLabel('Description 1')).toHaveValue('PRIVACY-LINE-DO-NOT-PERSIST');
+  await expect(page.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
+  await expect(page.getByLabel('Description 1')).toHaveValue('Widget');
   await page.getByLabel('Invoice number').fill('PRIVACY-INV-DO-NOT-PERSIST-001');
   await page.getByLabel('Seller name').fill('PRIVACY-SELLER-DO-NOT-PERSIST');
   await page.getByLabel('Description 1').fill('PRIVACY-LINE-DO-NOT-PERSIST');

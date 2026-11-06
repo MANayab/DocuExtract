@@ -37,13 +37,22 @@ export const templateFieldKeySchema = z.enum([
   'grandTotal',
 ]);
 
+const safeAnchor = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine(
+    (value) => !/[<>\\d@₹$€£]/u.test(value) && !value.includes('\\0'),
+    'Use a non-sensitive text label, not an invoice value, identifier or amount.',
+  );
+
 export const sellerMatcherSchema = z
   .object({
-    gstin: optionalSafeText,
     nameKey: optionalSafeText,
   })
-  .refine((value) => Boolean(value.gstin || value.nameKey), {
-    message: 'Provide a seller GSTIN or seller name key.',
+  .refine((value) => Boolean(value.nameKey), {
+    message: 'Provide a seller name key.',
   });
 
 export const vendorTemplateSchema = z.object({
@@ -55,7 +64,7 @@ export const vendorTemplateSchema = z.object({
     .array(
       z.object({
         field: templateFieldKeySchema,
-        labelAnchor: safeText,
+        labelAnchor: safeAnchor,
       }),
     )
     .max(20),
@@ -63,7 +72,7 @@ export const vendorTemplateSchema = z.object({
     .array(
       z.object({
         column: z.enum(['description', 'quantity', 'unitPrice', 'taxAmount', 'lineTotal']),
-        headerAnchor: safeText,
+        headerAnchor: safeAnchor,
       }),
     )
     .max(8),

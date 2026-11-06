@@ -9,7 +9,7 @@ import { SITE, faqItems, features } from '../../content/site';
 const publicFile = (name: string) => readFileSync(resolve(process.cwd(), 'public', name), 'utf8');
 
 const embeddedJson = (head: string) => {
-  const match = head.match(/<script type="application\\/ld\\+json">(.*)<\\/script>/s);
+  const match = head.match(/<script type="application\/ld\\+json">(.*)<\/script>/s);
   return JSON.parse(match ? match[1] : 'null');
 };
 
@@ -71,7 +71,7 @@ describe('structured data', () => {
     const head = seoHead(false);
     const body = head.slice(head.indexOf('application/ld+json'));
 
-    expect(body.match(/<\\/script>/g)).toHaveLength(1);
+    expect(body.match(/<\/script>/g)).toHaveLength(1);
   });
 });
 
@@ -97,7 +97,7 @@ describe('claims match what the build contains', () => {
 
   it('does not promise OCR when the build has no OCR files', () => {
     expect(scanned(false)).toMatch(/not in this build/i);
-    expect(features(false).some((f) => /\\(OCR\\)/.test(f.title))).toBe(false);
+    expect(features(false).some((f) => /\(OCR\)/.test(f.title))).toBe(false);
   });
 
   it('promises OCR only when it is bundled, and calls it lower accuracy', () => {

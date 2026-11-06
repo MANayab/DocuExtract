@@ -9,7 +9,8 @@ const pdf = async (name: string) => ({
   name,
   mimeType: 'application/pdf',
   buffer: Buffer.from(await generateFixture('basic')),
-});
+  },
+);
 
 async function waitForWorker(page: Page) {
   await page.goto('/');
@@ -46,7 +47,11 @@ test('reloads offline and performs extraction without caching invoice data', asy
   await waitForWorker(page);
   const precache = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/precache-manifest.json');
-    const manifest = (await response.json()) as { version: string; buildId: string; assets: string[] };
+    const manifest = (await response.json()) as {
+      version: string;
+      buildId: string;
+      assets: string[];
+    };
     const shellName = (await caches.keys()).find(
       (name) => name === 'docuextract-' + manifest.buildId + '-shell',
     );
@@ -111,7 +116,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
   if (!xlsxPath) throw new Error('Playwright did not expose the downloaded XLSX file.');
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await readFile(xlsxPath));
-  expect(JSON.stringify(workbook.getWorksheet('Invoices')?.getSheetValues())).toContain('INV-BASIC-001');
+  expect(JSON.stringify(workbook.getWorksheet('Invoices')?.getSheetValues())).toContain(
+    'INV-BASIC-001',
+  );
 
   const invoiceCsvEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV · invoices' }).click();
@@ -186,7 +193,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
   expect(JSON.stringify(observedRequests)).not.toContain('Widget');
 });
 
-test('prepares a selected OCR language without processing an invoice and reports uncached offline models', async ({
+test(
+  'prepares a selected OCR language without processing an invoice and reports uncached offline models',
+  async ({
   page,
   context,
 }) => {

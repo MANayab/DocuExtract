@@ -67,7 +67,11 @@ function isSameOriginAsset(url) {
 }
 
 function isSensitive(url) {
-  return /\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/');
+  const appManifest = url.pathname === BASE + 'precache-manifest.json';
+  return (
+    !appManifest &&
+    (/\.(pdf|xlsx|csv|json)$/i.test(url.pathname) || url.pathname.includes('/templates/'))
+  );
 }
 
 function ocrLanguage(url) {

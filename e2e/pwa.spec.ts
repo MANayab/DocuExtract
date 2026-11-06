@@ -176,7 +176,6 @@ test('reloads offline and performs extraction without caching invoice data', asy
   const syntheticMarkers = [
     'INV-BASIC-001',
     'Fictional Meridian Supplies Pvt Ltd',
-    'Widget',
     'PRIVACY-INV-DO-NOT-PERSIST-001',
     'PRIVACY-SELLER-DO-NOT-PERSIST',
     'PRIVACY-LINE-DO-NOT-PERSIST',

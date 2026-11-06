@@ -13,10 +13,10 @@ export class TemplateStore {
   private templates: VendorTemplate[] = [];
 
   load(): VendorTemplate[] {
-    if (typeof localStorage === 'undefined') return this.templates;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return this.templates;
     try {
+      if (typeof localStorage === 'undefined') return this.templates;
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return this.templates;
       this.templates = parseTemplateImport(raw);
     } catch {
       this.templates = [];
@@ -38,12 +38,16 @@ export class TemplateStore {
       createdAt: now,
       updatedAt: now,
     });
-    this.templates = [...this.templates, template];
-    this.persist();
+    this.persist([...this.templates, template]);
     return template;
   }
 
-  update(id: string, input: Omit<VendorTemplate, 'id' | 'createdAt' | 'updatedAt'>) {
+  update(
+    id: string,
+    input: Omit<VendorTemplate, 'id' | 'createdAt' | 'updatedAt'>,
+    consent: boolean,
+  ) {
+    if (!consent) throw new Error('Explicit consent is required before updating a seller template.');
     const previous = this.templates.find((template) => template.id === id);
     if (!previous) throw new Error('Seller template was not found.');
     const updated = vendorTemplateSchema.parse({
@@ -53,22 +57,21 @@ export class TemplateStore {
       createdAt: previous.createdAt,
       updatedAt: new Date().toISOString(),
     });
-    this.templates = this.templates.map((template) => (template.id === id ? updated : template));
-    this.persist();
+    this.persist(this.templates.map((template) => (template.id === id ? updated : template)));
     return updated;
   }
 
   remove(id: string) {
-    this.templates = this.templates.filter((template) => template.id !== id);
-    this.persist();
+    this.persist(this.templates.filter((template) => template.id !== id));
   }
 
-  import(text: string) {
+  import(text: string, consent: boolean) {
+    if (!consent) throw new Error('Explicit consent is required before importing seller templates.');
     const imported = parseTemplateImport(text);
     const known = new Set(this.templates.map((template) => template.id));
-    this.templates = [...this.templates, ...imported.filter((template) => !known.has(template.id))];
-    this.persist();
-    return imported.length;
+    const additions = imported.filter((template) => !known.has(template.id));
+    this.persist([...this.templates, ...additions]);
+    return additions.length;
   }
 
   export() {
@@ -79,12 +82,16 @@ export class TemplateStore {
     );
   }
 
-  private persist() {
-    if (typeof localStorage === 'undefined') return;
-    const text = this.export();
+  private persist(nextTemplates: VendorTemplate[]) {
+    const text = JSON.stringify(
+      { schemaVersion: TEMPLATE_SCHEMA_VERSION, templates: nextTemplates },
+      null,
+      2,
+    );
     if (new TextEncoder().encode(text).byteLength > TEMPLATE_EXPORT_MAX_BYTES) {
       throw new Error('Seller templates exceed the 256 KB storage limit.');
     }
-    localStorage.setItem(STORAGE_KEY, text);
+    if (typeof localStorage !== 'undefined') localStorage.setItem(STORAGE_KEY, text);
+    this.templates = nextTemplates;
   }
 }

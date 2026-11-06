@@ -247,9 +247,9 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     await scannedAnchors(page);
     await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
     const appOrigin = new URL(page.url()).origin;
-    expect(
-      diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin),
-    ).toBe(true);
+    expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
+      true,
+    );
 
     const origin = new URL(page.url()).origin;
     expect(
@@ -293,9 +293,9 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     await scannedAnchors(page);
     await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
     const appOrigin = new URL(page.url()).origin;
-    expect(
-      diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin),
-    ).toBe(true);
+    expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
+      true,
+    );
 
     expect(diagnostics.ocrResponses.some((response) => response.status === 503)).toBe(true);
     expect(

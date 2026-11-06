@@ -245,6 +245,10 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
       await page.getByRole('button', { name: 'Run OCR' }).click();
       await scannedAnchors(page);
       await assertNoInvoiceMarkersPersisted(page, diagnostics.requests);
+      const appOrigin = new URL(page.url()).origin;
+      expect(diagnostics.requests.every((request) => new URL(request.url).origin === appOrigin)).toBe(
+        true,
+      );
 
       const origin = new URL(page.url()).origin;
       expect(diagnostics.ocrRequests.some((request) => request.path.includes('/ocr/worker.min.js'))).toBe(true);

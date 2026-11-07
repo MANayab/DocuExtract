@@ -19,9 +19,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.16.0
           cache: npm
-      - name: Install locked dependencies
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+      - name: Generate candidate lockfile with npm
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install generated lockfile cleanly
         run: npm ci
       - name: Generate complete dependency audit report
         shell: bash
@@ -118,18 +124,21 @@ jobs:
             '- PostCSS 8.4.47 → 8.5.32; postcss-selector-parser 6.1.4 → 6.1.5; source-map-js 1.2.1 → 1.2.2.\n' +
             '- Scoped ExcelJS uuid override 8.3.2 → 11.1.1; XLSX export/build/test verification passed.\n' +
             '\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
-            '\n\n## Remediation note\n\nSafe same-major or patched transitive updates are applied in the lockfile where compatible. Major upgrades are not forced. Remaining findings with major-only remediation are documented as such and require separate compatibility work.\n';
+            '\n\n## Remediation note\n\nThis report is generated from the npm-created candidate lockfile using Node 22.16.0. No integrity hashes are hand-edited, no advisories are suppressed, and no residual risk is accepted. Any remaining finding blocks remediation completion and must be tracked with its exact advisory and dependency path.\n';
           fs.writeFileSync('dependency-audit-report.md', summary);
           console.log(summary);
           console.log('npm audit exit code:', process.env.AUDIT_EXIT_CODE);
           NODE
           echo "npm audit completed with exit code ${audit_status}; report retained for review."
+      - name: Enforce clean audit
+        run: npm audit --audit-level=low
       - name: Upload full audit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-security-audit
           path: |
+            package-lock.json
             npm-audit.json
             dependency-audit-report.md
           if-no-files-found: error

@@ -126,7 +126,7 @@ The 10 moderate findings include `@typescript-eslint/*`, `@vitest/mocker`, `esbu
 - [ ] Green exact-head offline extraction and parsed XLSX/CSV/JSON export E2E evidence.
 - [ ] Green exact-head update acceptance/deferral/failure-recovery, old-tab lazy-asset and cache-cleanup tests.
 - [ ] Green exact-head storage/network privacy tests using distinctive synthetic markers.
-- [ ] Decide whether to implement actual seller-specific field/table reading rules or keep profiles as matching-only and remove unimplemented rule claims from the commercial scope.
+- [x] Keep seller profiles matching-only for v1.6.1; actual seller-specific field/table reading rules are deferred to [issue #25](https://github.com/MANayab/DocuExtract/issues/25).
 - [ ] Broader representative fixture coverage and manual QA.
 - [ ] Maintainer decision on branch protection and required checks.
 - [ ] Dependency and third-party license inventory re-verification before commercial distribution.

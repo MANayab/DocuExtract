@@ -190,6 +190,9 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const cacheNames = await page.evaluate(() => caches.keys());
   expect(cacheNames).not.toContain(`docuextract-${failedManifest.buildId}-shell`);
 
+  // Keep the test origin on the known-good build before reloading. The failed
+  // candidate has no completed shell cache and must not replace the active page.
+  await switchBuild('new');
   await reloadIntoBuild(page, newBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');

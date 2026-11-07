@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   audit:
-    name: Non-mutating npm audit
+    name: Generate and audit candidate lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,22 +109,22 @@ jobs:
             tinypool: 'Critical. Development/test-only worker pool. Worker options originate from repository-owned Vitest configuration and test code; no invoice/user input reaches this API. Not shipped in the production bundle.',
             vitest: 'Critical. Development/test-only runner. Project scripts use `vitest run`; the vulnerable API/UI server is not started. Not shipped in the production bundle. Keep test-runner upgrades on the security roadmap.',
             vite: 'High. Development/build tooling. The deployed GitHub Pages site is static and does not run the Vite dev server. Local developers may still expose a dev-server attack surface while running it; do not bind it publicly.',
-            zod: 'High. Runtime dependency used for explicit local seller-template imports. The importer enforces a 256 KB input cap before JSON.parse; every array schema has an explicit maximum (100 templates, 20 field mappings, 8 table columns). No network endpoint accepts these payloads. The reported unbounded-array remote exhaustion path is not reachable; a malicious local file can still cause bounded validation work. Track Zod v4 migration separately.',
+            zod: 'High. Direct runtime dependency used for local seller-profile imports. The importer has a 256 KB input cap and bounded schema arrays, and no network endpoint accepts these payloads; these controls are reachability mitigations only and do not accept the advisory. Zod 4 migration is required.',
           };
           const criticalHigh = [...new Set(rows.filter(r => r.severity === 'critical' || r.severity === 'high').map(r => r.name))];
           const reachabilityTable = ['| Package | Production reachability / exposure assessment |','|---|---|',
             ...criticalHigh.map(name => '| '+name+' | '+(reachability[name] ?? 'Review the raw advisory and dependency path; no production exploit path has been established.')+' |')].join('\n');
-          const summary = '# Dependency security audit\n\nThis non-mutating audit describes the dependency tree committed on this branch. The audit job itself does not modify package files. The attached `npm-audit.json` is the complete raw npm report.\n\n' +
-            '## Severity totals\n\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\n') + '\n\n' +
-            '## Vulnerability details\n\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
-            '\n\n## Safe upgrades applied in this PR\n\n' +
-            '- ESLint 9.14.0 → 9.39.5; TypeScript-ESLint 8.13.0 → 8.72.1.\n' +
-            '- Vite 5.4.10 → 5.4.21; Vitest and vite-node 2.1.5 → 2.1.9; @vitejs/plugin-react 4.3.3 → 4.7.0.\n' +
-            '- Playwright and @playwright/test 1.48.2 → 1.64.1.\n' +
-            '- PostCSS 8.4.47 → 8.5.32; postcss-selector-parser 6.1.4 → 6.1.5; source-map-js 1.2.1 → 1.2.2.\n' +
-            '- Scoped ExcelJS uuid override 8.3.2 → 11.1.1; XLSX export/build/test verification passed.\n' +
-            '\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
-            '\n\n## Remediation note\n\nThis report is generated from the npm-created candidate lockfile using Node 22.23.4. No integrity hashes are hand-edited, no advisories are suppressed, and no residual risk is accepted. Any remaining finding blocks remediation completion and must be tracked with its exact advisory and dependency path.\n';
+          const summary = '# Dependency security audit\\n\\nThis report is generated from the npm-created candidate lockfile using Node 22.23.4. The complete raw npm report is attached as npm-audit.json.\\n\\n' +
+            '## Toolchain\\n\\n- Node: '+process.version+'\\n- npm: '+process.env.npm_config_user_agent+'\\n- npm audit exit code: '+process.env.AUDIT_EXIT_CODE+'\\n\\n' +
+            '## Severity totals\\n\\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\\n') + '\\n\\n' +
+            '## Vulnerability details\\n\\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
+            '\\n\\n## Candidate package changes\\n\\n' +
+            '- Vitest 2.1.9 → 5.1.0; Vite 5.4.21 → 8.3.6; @vitejs/plugin-react 4.7.0 → 6.2.1.\\n' +
+            '- Zod 3.23.8 → 4.6.7.\\n' +
+            '- Scoped @typescript-eslint/typescript-estree minimatch override → 11.0.5; retain only if compatibility tests pass.\\n' +
+            '- CI Node runtime → 22.23.4 with npm version recorded above.\\n\\n' +
+            '## Critical/high reachability review\\n\\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
+            '\\n\\n## Remediation decision\\n\\nNo advisories are suppressed and no residual risk is accepted. Any finding remaining in this generated lockfile blocks remediation completion and requires advisory-level review and a documented fix or blocker.\\n';
           fs.writeFileSync('dependency-audit-report.md', summary);
           console.log(summary);
           console.log('npm audit exit code:', process.env.AUDIT_EXIT_CODE);

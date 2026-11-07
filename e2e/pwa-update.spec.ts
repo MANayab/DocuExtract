@@ -256,6 +256,24 @@ test('a quota-exceeded update preserves the last working shell and active worker
       origin,
       quotaSize: usage,
     });
+
+    const quotaProbeError = await page.evaluate(async () => {
+      const cacheName = 'docuextract-quota-probe';
+      try {
+        const cache = await caches.open(cacheName);
+        await cache.put(
+          new Request(`${location.origin}/__quota_probe__`),
+          new Response(new Uint8Array(1024 * 1024)),
+        );
+        return null;
+      } catch (error) {
+        return error instanceof DOMException ? error.name : String(error);
+      } finally {
+        await caches.delete(cacheName);
+      }
+    });
+    expect(quotaProbeError).toBe('QuotaExceededError');
+
     await switchBuild('quota');
 
     const failedInstall = await page.evaluate(async () => {

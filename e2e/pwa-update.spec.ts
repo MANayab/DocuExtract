@@ -225,9 +225,10 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
-  // The foreground tab requests cleanup on focus; do not manually invoke the
-  // worker message, so this verifies the application's normal retry trigger.
-  await page.bringToFront();
+  // Reloading fires the app's normal pageshow cleanup trigger; no manual
+  // service-worker cleanup message is sent by the test.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -247,7 +248,6 @@ test('a quota-exceeded update preserves the last working shell and active worker
   const session = await context.newCDPSession(page);
 
   try {
-    await session.send('Storage.enable');
     const { usage } = await session.send('Storage.getUsageAndQuota', { origin });
     expect(usage).toBeGreaterThan(0);
     // Constrain real Chromium storage to its current usage. Installing a second

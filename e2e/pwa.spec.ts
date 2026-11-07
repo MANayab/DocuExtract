@@ -96,7 +96,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
     await cache.delete(new URL('/DocuExtract/' + asset, window.location.origin).href);
     window.dispatchEvent(new Event('pageshow'));
   }, integrityAsset);
-  await expect(page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true })).toBeVisible({
+  await expect(
+    page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true }),
+  ).toBeVisible({
     timeout: 30_000,
   });
   await context.setOffline(false);

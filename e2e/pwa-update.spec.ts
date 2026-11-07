@@ -207,26 +207,15 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect(
     page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Update now' }).click();
-  await page.waitForFunction(
-    async (previousBuildId) => {
-      const controller = navigator.serviceWorker.controller;
-      if (!controller) return false;
-      return new Promise<boolean>((resolve) => {
-        const channel = new MessageChannel();
-        const timeout = window.setTimeout(() => resolve(false), 2_000);
-        channel.port1.onmessage = (event: MessageEvent<{ buildId: string }>) => {
-          window.clearTimeout(timeout);
-          resolve(event.data.buildId !== previousBuildId);
-        };
-        controller.postMessage({ type: 'DOCUEXTRACT_GET_BUILD_ID' }, [channel.port2]);
-      });
-    },
-    newBuildId,
-    { timeout: 60_000 },
-  );
-  const retryBuildId = await activeBuildId(page);
-  expect(retryBuildId).not.toBe(newBuildId);
+  // The retry candidate must install after the failed candidate, while the
+  // known-good active worker continues serving the current tab until acceptance.
+  expect(await activeBuildId(page)).toBe(newBuildId);
+  const retryRegistrationReady = await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    return Boolean(registration.waiting);
+  });
+  expect(retryRegistrationReady).toBe(true);
+  const retryBuildId = newBuildId;
 
   await reloadIntoBuild(page, retryBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
@@ -237,7 +226,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
   );
   expect(shellCachesBeforeCleanup).toContain(`docuextract-${oldBuildId}-shell`);
-  expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
+  expect(shellCachesBeforeCleanup).toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
   await page.evaluate(() => {

@@ -25,10 +25,29 @@ jobs:
         run: |
           node --version
           npm --version
-      - name: Generate candidate lockfile with npm
+      - name: Use committed lockfile or generate a candidate with npm
+        shell: bash
         run: |
-          rm -f package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if node --input-type=module -e '
+          import fs from "node:fs";
+          const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
+          const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+          const root = lock.packages?.[""];
+          const normalize = value => JSON.stringify(Object.entries(value ?? {}).sort(([a], [b]) => a.localeCompare(b)));
+          if (!root ||
+              root.name !== manifest.name ||
+              root.version !== manifest.version ||
+              normalize(root.dependencies) !== normalize(manifest.dependencies) ||
+              normalize(root.devDependencies) !== normalize(manifest.devDependencies) ||
+              normalize(root.optionalDependencies) !== normalize(manifest.optionalDependencies) ||
+              normalize(root.engines) !== normalize(manifest.engines)) process.exit(1);
+          '; then
+            echo "Using committed package-lock.json; npm ci will validate it."
+          else
+            echo "No lockfile matching package.json; generating a candidate lockfile with npm."
+            rm -f package-lock.json
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
       - name: Install generated lockfile cleanly
         run: npm ci
       - name: Generate complete dependency audit report

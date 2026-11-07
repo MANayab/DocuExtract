@@ -49,6 +49,19 @@ All versions are exact pins, not ranges. npm must generate the package-lock.json
 
 The generated package-lock.json is not yet committed to this branch. The GitHub connector can download and inspect the artifact but cannot write those downloaded bytes back into a repository file. Apply the exact artifact lockfile to this branch before requesting review or merge.
 
+## Latest complete candidate verification (2026-11-07)
+
+Latest tested source head: 9920185b353afc284263c2cb675432b7afd99ebc.
+
+- [CI run #42385362760](https://github.com/MANayab/DocuExtract/actions/runs/42385362760): all jobs passed. Verify included clean npm ci from the generated lockfile, formatting, typecheck, lint, 27 test files / 138 tests, production build, offline extraction benchmark and npm audit.
+- Playwright: **20/20 passed** on the candidate toolchain. The real English, German and Hindi scanned-invoice OCR tests all passed online and after offline reload; same-origin PDF.js standard-font requests under /DocuExtract/ passed; PWA update/offline, privacy, locale geometry and smoke tests passed.
+- Benchmark report: 8/8 synthetic invoices zero-error (100%); critical text field, Indian GST, multi-invoice and regression thresholds all passed; export checks were 32/32 (XLSX 8/8, invoice CSV 8/8, line-items CSV 8/8, JSON 8/8).
+- [Dependency audit #42385362777](https://github.com/MANayab/DocuExtract/actions/runs/42385362777): npm audit exit code 0; 0 total vulnerabilities. This is the npm-generated candidate lockfile, not yet committed.
+- [OCR asset size audit #42385362780](https://github.com/MANayab/DocuExtract/actions/runs/42385362780): passed. Feature dist 17,984,634 bytes vs main 17,966,082 bytes (+18,552 bytes). English, German and Hindi traineddata, both WASM cores, worker and licence notices are present.
+- Generated lockfile SHA-256: ac0894c2b20565c9133de19e54b8f35316b8f77537009c6cac29ef4a10a81ff7 (269,600 bytes). The exact lockfile is available in the CI artifact [security-generated-lockfile](https://github.com/MANayab/DocuExtract/actions/runs/42385362760/artifacts/13579660641).
+
+The tests are green on the generated artifact, but package-lock.json remains unchanged in the PR branch. The final committed-head rerun is still required after the maintainer applies the exact artifact. The current PR27 suite does not include PR24's new quota-specific test or PR23's additional v1.6.1 tests; those must be run on a combined baseline after those PRs are rebased/merged in the maintainer's chosen order.
+
 ## Required verification before remediation can be approved
 
 1. Generate package-lock.json with npm 10.9.9 under Node 22.23.4; upload it and raw npm audit / npm ls reports for review.

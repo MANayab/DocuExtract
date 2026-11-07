@@ -25,6 +25,8 @@ jobs:
           npm --version
       - name: Generate candidate lockfile without installing packages or running scripts
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Validate generated lockfile with clean npm ci
+        run: npm ci
       - name: Capture dependency tree and audit
         shell: bash
         run: |

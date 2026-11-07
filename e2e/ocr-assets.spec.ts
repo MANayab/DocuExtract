@@ -445,6 +445,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
   }) => {
     const diagnostics = diagnosticsByPage.get(page)!;
 
+    await context.setOffline(false);
     await openApp(page);
     await selectLocaleForOcr(page, language);
     await expect(

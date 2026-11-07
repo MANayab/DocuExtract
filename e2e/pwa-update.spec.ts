@@ -60,9 +60,7 @@ async function pageBuildId(page: Page): Promise<string> {
 
 async function reloadIntoBuild(page: Page, buildId: string) {
   await page.reload();
-  await expect
-    .poll(() => pageBuildId(page), { timeout: 30_000 })
-    .toBe(buildId);
+  await expect.poll(() => pageBuildId(page), { timeout: 30_000 }).toBe(buildId);
 }
 
 async function switchBuild(build: 'old' | 'new' | 'failed' | 'retry') {

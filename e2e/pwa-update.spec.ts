@@ -237,10 +237,9 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     .toEqual([`docuextract-${retryBuildId}-shell`]);
 });
 
-test('a quota-exceeded update preserves the last working shell and active worker', async ({
-  page,
-  context,
-}) => {
+test(
+  'a quota-exceeded update preserves the last working shell and active worker',
+  async ({ page, context }) => {
   await waitForController(page);
   const workingBuildId = await activeBuildId(page);
   const origin = new URL(page.url()).origin;
@@ -252,7 +251,10 @@ test('a quota-exceeded update preserves the last working shell and active worker
     expect(usage).toBeGreaterThan(0);
     // Constrain real Chromium storage to its current usage. Installing a second
     // versioned shell must hit the browser's actual Cache Storage quota.
-    await session.send('Storage.overrideQuotaForOrigin', { origin, quotaSize: usage });
+    await session.send('Storage.overrideQuotaForOrigin', {
+      origin,
+      quotaSize: usage,
+    });
     await switchBuild('quota');
 
     const failedInstall = await page.evaluate(async () => {
@@ -298,10 +300,13 @@ test('a quota-exceeded update preserves the last working shell and active worker
     });
     await expect(page.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
   } finally {
-    await session.send('Storage.overrideQuotaForOrigin', {
-      origin,
-      quotaSize: 256 * 1024 * 1024,
-    }).catch(() => undefined);
+    await session
+      .send('Storage.overrideQuotaForOrigin', {
+        origin,
+        quotaSize: 256 * 1024 * 1024,
+      })
+      .catch(() => undefined);
     await session.detach();
   }
-});
+  },
+);

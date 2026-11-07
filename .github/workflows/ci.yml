@@ -10,7 +10,46 @@ permissions:
   contents: read
 
 jobs:
+  resolve-lockfile:
+    name: Resolve and audit candidate lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+      - name: Generate candidate lockfile without installing packages or running scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Capture dependency tree and audit
+        shell: bash
+        run: |
+          mkdir -p output
+          npm ls --all --json > output/npm-ls.json
+          set +e
+          npm audit --json > output/npm-audit.json
+          audit_status=$?
+          set -e
+          echo "$audit_status" > output/npm-audit.exit-code
+          echo "npm audit exit code: $audit_status"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: security-generated-lockfile
+          path: |
+            package-lock.json
+            output/npm-audit.json
+            output/npm-audit.exit-code
+            output/npm-ls.json
+          if-no-files-found: error
+          retention-days: 30
+
   verify:
+    name: Verify
+    needs: resolve-lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,9 +57,16 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.16.0
           cache: npm
-      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: security-generated-lockfile
+          path: .security-migration
+      - name: Install the inspected candidate lockfile
+        run: |
+          cp .security-migration/package-lock.json package-lock.json
+          npm ci
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck
@@ -29,29 +75,41 @@ jobs:
       - run: npm run build
       - name: Run offline extraction benchmark
         run: npm run benchmark
-      - name: Upload quality and test reports
+      - name: Enforce a clean dependency audit
+        run: npm audit --audit-level=low
+      - name: Upload quality, lockfile and audit reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: quality-and-test-reports
+          name: security-verification-reports
           path: |
+            package-lock.json
+            .security-migration/output/
             output/benchmark-report.json
             output/benchmark-report.md
             test-results/
             coverage/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 30
 
   playwright:
     name: Playwright E2E
+    needs: resolve-lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.16.0
           cache: npm
-      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: security-generated-lockfile
+          path: .security-migration
+      - name: Install the inspected candidate lockfile
+        run: |
+          cp .security-migration/package-lock.json package-lock.json
+          npm ci
       - run: npx playwright install --with-deps chromium
       - name: Install the Devanagari font used by the Hindi scan fixture
         run: |

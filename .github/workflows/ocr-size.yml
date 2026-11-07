@@ -30,6 +30,7 @@ jobs:
       - name: Build feature branch
         working-directory: feature
         run: |
+          rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci
           npm run build

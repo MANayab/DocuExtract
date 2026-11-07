@@ -1,6 +1,6 @@
 # Contributing
 
-1. Use Node 20.
+1. Use Node.js 22.12.x, 24.x, or 26.0.0 and newer, as declared in `package.json`. CI pins Node 22.23.4.
 2. Install with `npm ci`.
 3. Run `npm run typecheck && npm run lint && npm run test && npm run build` before submitting changes.
 4. Do not add network calls, telemetry, storage of invoice contents, or server-side processing.

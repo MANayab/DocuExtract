@@ -119,7 +119,6 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    minify: 'esbuild',
     // exceljs (~0.9 MB) and tesseract load on demand; the pdf.js worker is a separate asset.
     chunkSizeWarningLimit: 1000,
     rolldownOptions: {

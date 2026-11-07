@@ -50,9 +50,24 @@ describe('invoice parser', () => {
         [['Invoice Date: 17/09/2026', 50]],
         [['Due Date: 17/10/2026', 50]],
         [['Bill To: XYZ Ltd', 50]],
-        [['Description', 50], ['Quantity', 300], ['Rate', 380], ['Amount', 460]],
-        [['Widget A', 50], ['2', 300], ['500.00', 380], ['1,000.00', 460]],
-        [['Gadget B', 50], ['3', 300], ['1,000.00', 380], ['3,000.00', 460]],
+        [
+          ['Description', 50],
+          ['Quantity', 300],
+          ['Rate', 380],
+          ['Amount', 460],
+        ],
+        [
+          ['Widget A', 50],
+          ['2', 300],
+          ['500.00', 380],
+          ['1,000.00', 460],
+        ],
+        [
+          ['Gadget B', 50],
+          ['3', 300],
+          ['1,000.00', 380],
+          ['3,000.00', 460],
+        ],
         [['Subtotal: 4,000.00', 50]],
         [['Tax: 720.00', 50]],
         [['Grand Total: 4,720.00', 50]],
@@ -75,7 +90,10 @@ describe('invoice parser', () => {
   it('splits side-by-side header fields at column gaps', () => {
     const i = parseInvoice(
       pdfFrom([
-        [['Invoice No: INV-9', 50], ['Invoice Date: 05/09/2026', 350]],
+        [
+          ['Invoice No: INV-9', 50],
+          ['Invoice Date: 05/09/2026', 350],
+        ],
         [['Grand Total: 100.00', 50]],
       ]),
     );
@@ -89,9 +107,18 @@ describe('invoice parser', () => {
   it('reads label/value pairs laid out as separate table columns', () => {
     const i = parseInvoice(
       pdfFrom([
-        [['Invoice No', 50], ['INV-77', 200]],
-        [['Invoice Date', 50], ['17/09/2026', 200]],
-        [['Grand Total', 50], ['INR 2,500.00', 200]],
+        [
+          ['Invoice No', 50],
+          ['INV-77', 200],
+        ],
+        [
+          ['Invoice Date', 50],
+          ['17/09/2026', 200],
+        ],
+        [
+          ['Grand Total', 50],
+          ['INR 2,500.00', 200],
+        ],
       ]),
     );
 
@@ -136,9 +163,27 @@ describe('invoice parser', () => {
   it('keeps digits in item descriptions out of the quantity and price columns', () => {
     const i = parseInvoice(
       pdfFrom([
-        [['Item', 50], ['HSN', 200], ['Qty', 260], ['Rate', 320], ['Amount', 400]],
-        [['Cotton Fabric 40s', 50], ['5208', 200], ['10', 260], ['250.00', 320], ['2,500.00', 400]],
-        [['Item 2', 50], ['9988', 200], ['4', 260], ['125.00', 320], ['500.00', 400]],
+        [
+          ['Item', 50],
+          ['HSN', 200],
+          ['Qty', 260],
+          ['Rate', 320],
+          ['Amount', 400],
+        ],
+        [
+          ['Cotton Fabric 40s', 50],
+          ['5208', 200],
+          ['10', 260],
+          ['250.00', 320],
+          ['2,500.00', 400],
+        ],
+        [
+          ['Item 2', 50],
+          ['9988', 200],
+          ['4', 260],
+          ['125.00', 320],
+          ['500.00', 400],
+        ],
         [['Subtotal: 3,000.00', 50]],
       ]),
     );
@@ -155,8 +200,18 @@ describe('invoice parser', () => {
   it('reads "CGST @9%" style tax lines and ignores page footers inside the table', () => {
     const i = parseInvoice(
       pdfFrom([
-        [['Description', 50], ['Quantity', 260], ['Rate', 320], ['Amount', 400]],
-        [['Widget', 50], ['2', 260], ['50.00', 320], ['100.00', 400]],
+        [
+          ['Description', 50],
+          ['Quantity', 260],
+          ['Rate', 320],
+          ['Amount', 400],
+        ],
+        [
+          ['Widget', 50],
+          ['2', 260],
+          ['50.00', 320],
+          ['100.00', 400],
+        ],
         [['Page 1 of 2', 50]],
         [['Subtotal: 100.00', 50]],
         [['CGST @9%: 9.00', 50]],
@@ -181,8 +236,16 @@ describe('invoice parser', () => {
     const i = parseInvoice(
       pdfFrom([
         [['Northwind Stationers Pvt Ltd', 50]],
-        [['Invoice No.', 50], ['Invoice Date', 230], ['Due Date', 400]],
-        [['NW/2026/0815', 50], ['08/10/2026', 230], ['22/10/2026', 400]],
+        [
+          ['Invoice No.', 50],
+          ['Invoice Date', 230],
+          ['Due Date', 400],
+        ],
+        [
+          ['NW/2026/0815', 50],
+          ['08/10/2026', 230],
+          ['22/10/2026', 400],
+        ],
         [['Grand Total: 9,322.00', 50]],
       ]),
     );
@@ -196,7 +259,15 @@ describe('invoice parser', () => {
   });
 
   it('does not return another label as a value when a header row has no values', () => {
-    const i = parseInvoice(pdfFrom([[['Invoice No', 50], ['Invoice Date', 230]], [['Grand Total: 10.00', 50]]]));
+    const i = parseInvoice(
+      pdfFrom([
+        [
+          ['Invoice No', 50],
+          ['Invoice Date', 230],
+        ],
+        [['Grand Total: 10.00', 50]],
+      ]),
+    );
 
     expect(i.invoiceNumber.value).toBe('');
     expect(i.invoiceDate.value).toBe('');
@@ -207,9 +278,42 @@ describe('invoice parser', () => {
     const row = (cells: string[]): Array<[string, number]> => cells.map((c, n) => [c, cols[n]]);
     const i = parseInvoice(
       pdfFrom([
-        row(['Sr', 'Description', 'HSN', 'Qty', 'Rate', 'Taxable Value', 'CGST %', 'CGST Amt', 'SGST %', 'SGST Amt']),
-        row(['1', 'Cotton Fabric 40s', '5208', '100', '250.00', '25,000.00', '2.5', '625.00', '2.5', '625.00']),
-        row(['2', 'Stitching Service', '9988', '40', '125.00', '5,000.00', '2.5', '125.00', '2.5', '125.00']),
+        row([
+          'Sr',
+          'Description',
+          'HSN',
+          'Qty',
+          'Rate',
+          'Taxable Value',
+          'CGST %',
+          'CGST Amt',
+          'SGST %',
+          'SGST Amt',
+        ]),
+        row([
+          '1',
+          'Cotton Fabric 40s',
+          '5208',
+          '100',
+          '250.00',
+          '25,000.00',
+          '2.5',
+          '625.00',
+          '2.5',
+          '625.00',
+        ]),
+        row([
+          '2',
+          'Stitching Service',
+          '9988',
+          '40',
+          '125.00',
+          '5,000.00',
+          '2.5',
+          '125.00',
+          '2.5',
+          '125.00',
+        ]),
         [['Subtotal: 30,000.00', 50]],
         [['CGST: 750.00', 50]],
         [['SGST: 750.00', 50]],
@@ -253,34 +357,153 @@ describe('invoice parser', () => {
       'Invoice No: C-3\nGrand Total: 30.00',
     ];
     const spans: TextSpan[] = pageTexts.flatMap((t, p) =>
-      t.split('\n').map((line, k) => ({ text: line, x: 50, y: 700 - k * 18, width: line.length * 5, height: 10, page: p + 1 })),
+      t.split('\n').map((line, k) => ({
+        text: line,
+        x: 50,
+        y: 700 - k * 18,
+        width: line.length * 5,
+        height: 10,
+        page: p + 1,
+      })),
     );
 
     const segments = splitInvoices({
-      fileName: 'bundle.pdf', pageCount: 5, spans, text: pageTexts.join('\n'), pageTexts, kind: 'text-based',
+      fileName: 'bundle.pdf',
+      pageCount: 5,
+      spans,
+      text: pageTexts.join('\n'),
+      pageTexts,
+      kind: 'text-based',
     });
 
-    expect(segments.map((s) => [s.firstPage, s.lastPage])).toEqual([[1, 1], [2, 4], [5, 5]]);
+    expect(segments.map((s) => [s.firstPage, s.lastPage])).toEqual([
+      [1, 1],
+      [2, 4],
+      [5, 5],
+    ]);
     expect(segments[1].raw.pageCount).toBe(3);
     expect(segments[1].raw.spans.every((s) => s.page >= 2 && s.page <= 4)).toBe(true);
   });
 
   it('does not split a normal multi-page invoice whose pages repeat the same number', () => {
-    const pageTexts = ['Invoice No: X-9\nItem 1', 'Invoice No: X-9\nItem 2', 'Invoice No: x-9\nTotal'];
+    const pageTexts = [
+      'Invoice No: X-9\nItem 1',
+      'Invoice No: X-9\nItem 2',
+      'Invoice No: x-9\nTotal',
+    ];
     const spans: TextSpan[] = [];
     const segments = splitInvoices({
-      fileName: 'one.pdf', pageCount: 3, spans, text: pageTexts.join('\n'), pageTexts, kind: 'text-based',
+      fileName: 'one.pdf',
+      pageCount: 3,
+      spans,
+      text: pageTexts.join('\n'),
+      pageTexts,
+      kind: 'text-based',
     });
 
     expect(segments).toHaveLength(1);
   });
 
   it('marks OCR output as OCR and caps its confidence below the HIGH band', () => {
-    const i = markAsOcr(parseInvoice(pdfFrom([[['Invoice No: INV-1', 50]], [['Grand Total: 10.00', 50]]])));
+    const i = markAsOcr(
+      parseInvoice(pdfFrom([[['Invoice No: INV-1', 50]], [['Grand Total: 10.00', 50]]])),
+    );
 
     expect(i.extraction.sourceType).toBe('ocr');
     expect(i.invoiceNumber.source).toBe('ocr');
     expect(i.invoiceNumber.confidence).toBeLessThanOrEqual(OCR_CONFIDENCE_CAP);
     expect(i.extraction.warnings.join(' ')).toMatch(/OCR/);
+  });
+  it('parses German invoice labels and line-item columns', () => {
+    const i = parseInvoice(
+      pdfFrom([
+        [['Rechnungsnummer: 2026-0457', 50]],
+        [['Rechnungsdatum: 09.10.2026', 50]],
+        [['Verkäufer: Grünfeld Handel GmbH', 50]],
+        [['Kunde: Sonnenaufgang Einzelhandel', 50]],
+        [
+          ['Beschreibung', 50],
+          ['Menge', 300],
+          ['Preis', 380],
+          ['Betrag', 460],
+        ],
+        [
+          ['Reis Sack', 50],
+          ['2', 300],
+          ['10.000,00', 380],
+          ['20.000,00', 460],
+        ],
+        [
+          ['Zucker Sack', 50],
+          ['1', 300],
+          ['1.200,00', 380],
+          ['1.200,00', 460],
+        ],
+        [['Zwischensumme: 21.200,00', 50]],
+        [['Steuer: 1.060,00', 50]],
+        [['Gesamtbetrag: EUR 22.260,00', 50]],
+      ]),
+      'de-DE',
+    );
+
+    expect(i.invoiceNumber.value).toBe('2026-0457');
+    expect(i.invoiceDate.value).toBe('2026-10-09');
+    expect(i.seller.name.value).toBe('Grünfeld Handel GmbH');
+    expect(i.buyer.name.value).toBe('Sonnenaufgang Einzelhandel');
+    expect(i.subtotal.value).toBe(21200);
+    expect(i.taxTotal.value).toBe(1060);
+    expect(i.grandTotal.value).toBe(22260);
+    expect(i.currency.value).toBe('EUR');
+    expect(i.items).toHaveLength(2);
+    expect(i.items[0].description.value).toBe('Reis Sack');
+    expect(i.items[0].quantity.value).toBe(2);
+    expect(i.items[0].unitPrice.value).toBe(10000);
+    expect(i.items[0].lineTotal.value).toBe(20000);
+  });
+
+  it('normalizes Devanagari digits and parses Hindi invoice labels and columns', () => {
+    const i = parseInvoice(
+      pdfFrom([
+        [['चालान संख्या: २०२६०४५७', 50]],
+        [['चालान दिनांक: ०९-१०-२०२६', 50]],
+        [['विक्रेता: हरित क्षेत्र व्यापारी', 50]],
+        [['खरीदार: सूर्योदय खुदरा', 50]],
+        [
+          ['विवरण', 50],
+          ['मात्रा', 300],
+          ['दर', 380],
+          ['राशि', 460],
+        ],
+        [
+          ['चावल का बैग', 50],
+          ['२', 300],
+          ['१०,०००', 380],
+          ['२०,०००', 460],
+        ],
+        [
+          ['चीनी का बैग', 50],
+          ['१', 300],
+          ['१,२००', 380],
+          ['१,२००', 460],
+        ],
+        [['उप-योग: २१,२००', 50]],
+        [['कर: १,०६०', 50]],
+        [['कुल राशि: २२,२६०', 50]],
+      ]),
+      'en-IN',
+    );
+
+    expect(i.invoiceNumber.value).toBe('20260457');
+    expect(i.invoiceDate.value).toBe('2026-10-09');
+    expect(i.seller.name.value).toBe('हरित क्षेत्र व्यापारी');
+    expect(i.buyer.name.value).toBe('सूर्योदय खुदरा');
+    expect(i.subtotal.value).toBe(21200);
+    expect(i.taxTotal.value).toBe(1060);
+    expect(i.grandTotal.value).toBe(22260);
+    expect(i.items).toHaveLength(2);
+    expect(i.items[0].description.value).toBe('चावल का बैग');
+    expect(i.items[0].quantity.value).toBe(2);
+    expect(i.items[0].unitPrice.value).toBe(10000);
+    expect(i.items[0].lineTotal.value).toBe(20000);
   });
 });

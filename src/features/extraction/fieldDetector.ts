@@ -23,14 +23,16 @@ const firstColumn = (value: string) => value.split(/\s{2,}/)[0]?.trim() ?? '';
 
 /** Text value following a label on the same line. */
 function labelled(text: string, labels: string[]): string {
-  const r = new RegExp(`\\b(?:${alternation(labels)})\\b[ \\t]*[:#-]?[ \\t]*([^\\n]+)`, 'i');
-
+  const r = new RegExp(
+    '(?<![A-Za-z0-9])(?:' + alternation(labels) + ')(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*([^\\n]+)',
+    'i',
+  );
   return firstColumn(text.match(r)?.[1] ?? '');
 }
 
 /** Text that is itself a field label ("Invoice Date"), so it cannot be a value. */
 const LABEL_LIKE =
-  /^(?:invoice\s*(?:no|number|date|#)|date\b|due\s*date|payment\s*due|bill(?:ed)?\s*to|ship(?:ped)?\s*to|gstin|tax\s*id|total\b|sub\s*total|grand\s*total|amount\b|qty\b|quantity\b|description\b|item\b|seller\b|buyer\b|customer\b|vendor\b)/i;
+  /^(?:invoice\s*(?:no|number|date|#)|date\b|due\s*date|payment\s*due|bill(?:ed)?\s*to|ship(?:ped)?\s*to|gstin|tax\s*id|total\b|sub\s*total|grand\s*total|amount\b|qty\b|quantity\b|description\b|item\b|seller\b|buyer\b|customer\b|vendor\b|rechnungsnummer|rechnungsdatum|fälligkeitsdatum|zwischensumme|gesamtbetrag|steuer|beschreibung|menge|preis|betrag|verkäufer|lieferant|kunde|käufer|चालान|दिनांक|देय\s*तिथि|उप-योग|कुल|कर|विवरण|मात्रा|दर|राशि|विक्रेता|खरीदार|ग्राहक)/i;
 
 const looksLikeLabel = (value: string) => LABEL_LIKE.test(value.trim());
 
@@ -71,12 +73,13 @@ const CURRENCY_TOKEN = '(?:₹|\\$|€|£|INR|USD|EUR|GBP|Rs\\.?)';
 
 /** Amount (as raw text) following a label; skips matches that are not numbers. */
 function labelledAmounts(text: string, labels: string[]): string[] {
-  const r = new RegExp(
-    `\\b(?:${alternation(labels)})\\b(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#-]?[ \\t]*${CURRENCY_TOKEN}?[ \\t]*` +
-      `(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)`,
-    'gi',
-  );
-
+  const prefix =
+    '(?<![A-Za-z0-9])(?:' +
+    alternation(labels) +
+    ')(?![A-Za-z0-9])(?:[ \\t]*@?[ \\t]*\\(?\\d+(?:\\.\\d+)?[ \\t]*%\\)?)?[ \\t]*[:#;.-]?[ \\t]*' +
+    CURRENCY_TOKEN +
+    '?[ \\t]*';
+  const r = new RegExp(prefix + '(\\(?-?[\\d][\\d., ]*\\d\\)?)(?![A-Za-z\\d,]|\\s*%)', 'gi');
   return [...text.matchAll(r)].map((m) => m[1]);
 }
 
@@ -111,11 +114,18 @@ export function detectHeaderFields(
   rows?: LayoutRow[],
   locale: LocaleCode = DEFAULT_LOCALE,
 ) {
-  const sameLineNumber = firstColumn(
-    text.match(/\binvoice\s+(?:no(?:\.|\b)|number|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
-      text.match(/\binv(?:oice)?\s*(?:no\.?|#)\s*[:#-]?\s*([^\n]+)/i)?.[1] ??
-      '',
-  );
+  const sameLineNumber = labelled(text, [
+    'invoice no',
+    'invoice number',
+    'invoice #',
+    'inv no',
+    'bill no',
+    'bill number',
+    'rechnungsnummer',
+    'rechnung nr',
+    'rechnungsnr',
+    'चालान संख्या',
+  ]);
   const invoiceNumberSame = looksLikeLabel(sameLineNumber) ? '' : sameLineNumber;
   const invoiceNumberBelow = invoiceNumberSame
     ? ''
@@ -126,11 +136,23 @@ export function detectHeaderFields(
         'inv no',
         'bill no',
         'bill number',
+        'rechnungsnummer',
+        'rechnung nr',
+        'rechnungsnr',
+        'चालान संख्या',
       ]);
   const invoiceNumber = invoiceNumberSame || invoiceNumberBelow;
 
   const sameLineDate =
-    labelled(text, ['invoice date', 'date of issue', 'issue date']) ||
+    labelled(text, [
+      'invoice date',
+      'date of issue',
+      'issue date',
+      'rechnungsdatum',
+      'ausstellungsdatum',
+      'चालान दिनांक',
+      'दिनांक',
+    ]) ||
     firstColumn(
       text.match(/(?<!due |payment |ship |delivery )\bdate\b[ \t]*[:#-]?[ \t]*([^\n]+)/i)?.[1] ??
         '',
@@ -138,17 +160,48 @@ export function detectHeaderFields(
   const invoiceDateSame = looksLikeLabel(sameLineDate) ? '' : sameLineDate;
   const invoiceDateBelow = invoiceDateSame
     ? ''
-    : valueBelow(rows, ['invoice date', 'date', 'date of issue', 'issue date']);
+    : valueBelow(rows, [
+        'invoice date',
+        'date',
+        'date of issue',
+        'issue date',
+        'rechnungsdatum',
+        'ausstellungsdatum',
+        'चालान दिनांक',
+        'दिनांक',
+      ]);
   const invoiceDate = invoiceDateSame || invoiceDateBelow;
 
-  const sameLineDue = labelled(text, ['due date', 'payment due']);
+  const sameLineDue = labelled(text, [
+    'due date',
+    'payment due',
+    'fälligkeitsdatum',
+    'zahlungsziel',
+    'देय तिथि',
+  ]);
   const dueDateSame = looksLikeLabel(sameLineDue) ? '' : sameLineDue;
-  const dueDateBelow = dueDateSame ? '' : valueBelow(rows, ['due date', 'payment due', 'due on']);
+  const dueDateBelow = dueDateSame
+    ? ''
+    : valueBelow(rows, [
+        'due date',
+        'payment due',
+        'due on',
+        'fälligkeitsdatum',
+        'zahlungsziel',
+        'देय तिथि',
+      ]);
   const dueDate = dueDateSame || dueDateBelow;
 
   const currencyMatch = text.match(/₹|\$|€|£|\b(?:INR|USD|EUR|GBP)\b/i)?.[0];
 
-  const subtotal = firstAmount(text, ['subtotal', 'sub total', 'sub-total']);
+  const subtotal = firstAmount(text, [
+    'subtotal',
+    'sub total',
+    'sub-total',
+    'zwischensumme',
+    'nettosumme',
+    'उप-योग',
+  ]);
 
   const discountTotal = firstAmount(text, ['discount total', 'total discount', 'discount']);
 
@@ -158,6 +211,13 @@ export function detectHeaderFields(
     'tax amount',
     'total gst',
     'gst total',
+    'steuer',
+    'steuer',
+    'steuerbetrag',
+    'mehrwertsteuer',
+    'umsatzsteuer',
+    'mwst',
+    'कर',
   ]);
   let taxTotalValue: number | undefined;
 
@@ -189,6 +249,12 @@ export function detectHeaderFields(
       'total amount',
       'total payable',
       'invoice total',
+      'gesamtbetrag',
+      'rechnungsbetrag',
+      'endbetrag',
+      'bruttobetrag',
+      'कुल राशि',
+      'कुल',
     ]) || lastLineAmount(text, 'total');
 
   const taxTotal = amountField(taxTotalRaw, 90, 45, locale);
@@ -251,12 +317,32 @@ function firstHeadingLine(text: string): string {
 export function detectParty(text: string, kind: 'seller' | 'buyer'): Party {
   const plain =
     kind === 'seller'
-      ? ['seller', 'sold by', 'vendor', 'supplier']
-      : ['buyer', 'bill to', 'billed to', 'customer', 'client'];
+      ? [
+          'seller',
+          'sold by',
+          'vendor',
+          'supplier',
+          'verkäufer',
+          'lieferant',
+          'rechnungsaussteller',
+          'विक्रेता',
+        ]
+      : [
+          'buyer',
+          'bill to',
+          'billed to',
+          'customer',
+          'client',
+          'kunde',
+          'käufer',
+          'rechnungsempfänger',
+          'खरीदार',
+          'ग्राहक',
+        ];
 
   // "from" is too common a word; only trust it when followed by a colon.
   const labelRegex = new RegExp(
-    `\\b(?:${alternation(plain)})\\b[ \\t]*:?[ \\t]*\\n?[ \\t]*([^\\n]+)` +
+    `(?<![A-Za-z0-9])(?:${alternation(plain)})(?![A-Za-z0-9])[ \\t]*[:#;.-]?[ \\t]*\\n?[ \\t]*([^\\n]+)` +
       (kind === 'seller' ? `|\\bfrom[ \\t]*:[ \\t]*([^\\n]+)` : ''),
     'i',
   );

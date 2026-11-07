@@ -1,6 +1,6 @@
 # DocuExtract
 
-> DocuExtract is a free, open-source web app that converts PDF invoices to Excel (.xlsx), CSV and JSON in the user's browser. Invoice files are processed locally by the application and are never uploaded to an application backend.
+> DocuExtract is a free, open-source web app that converts PDF invoices to Excel (.xlsx), CSV and JSON in the user's browser. Invoice files are processed locally by the application and are not uploaded by application code.
 
 ## Public links
 - Live application: https://manayab.github.io/DocuExtract/
@@ -12,7 +12,8 @@
 - Can split multiple invoices in one PDF when invoice boundaries are detected.
 - Supports India, United States, United Kingdom and Germany locale parsing.
 - Local OCR languages: English, German and Hindi. German and Hindi extraction accuracy is experimental; OCR output requires review and confidence is capped at 75%.
-- Consent-based seller templates store matching and reading rules locally; they do not replace review.
-- Exports XLSX, invoice CSV, line-items CSV and JSON.
-- Extraction is heuristic. Review values before accounting or tax use.
+- Offline PWA app shell and PDF.js standard fonts are cached same-origin. A selected OCR language model is downloaded locally while online for later offline use.
+- Seller matching profiles require explicit consent and store a seller-name key only. They identify a seller but do not alter extraction; custom field/table reading rules are not implemented.
+- Exports XLSX, invoice-summary CSV, line-items CSV and JSON.
+- Extraction is heuristic. Review values before accounting, tax or payment use.
 - Privacy details: https://github.com/MANayab/DocuExtract/blob/main/PRIVACY.md

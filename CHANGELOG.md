@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Implemented; verification pending
+
+- Route Playwright application navigation through the GitHub Pages `/DocuExtract/` base path and assert the app loads before PWA checks.
+- Use a same-origin GET request for OCR model availability so the service worker can serve and cache the model; show a recoverable offline message for an uncached language.
+- Verify Offline ready against required cache entries and restore missing assets when connectivity returns.
+- Track the build IDs of active tabs before pruning old shell caches; defer cleanup when a live tab cannot report its build.
+- Add real scanned-PDF OCR, offline reload/retry, update recovery, parsed offline export and synthetic-marker privacy coverage.
+
+
 ## [1.6.0] — 2026-11-05
 
 ### Added

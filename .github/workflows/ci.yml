@@ -53,6 +53,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Install the Devanagari font used by the Hindi scan fixture
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-core
+          fc-match 'Noto Sans Devanagari' | grep -q 'Noto Sans Devanagari'
       - run: npm run build
       - run: npm run test:e2e
       - name: Upload Playwright report
@@ -63,5 +68,5 @@ jobs:
           path: |
             playwright-report/
             test-results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 14

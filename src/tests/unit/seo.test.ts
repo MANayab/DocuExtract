@@ -32,22 +32,31 @@ describe('search snippet basics', () => {
   });
 
   it('only injects a Search Console token when one is configured', () => {
-    expect(seoHead(false).includes('google-site-verification')).toBe(String(SITE.googleSiteVerification) !== '');
+    expect(seoHead(false).includes('google-site-verification')).toBe(
+      String(SITE.googleSiteVerification) !== '',
+    );
   });
 });
 
 describe('structured data', () => {
-  it.each([false, true])('is valid JSON and mirrors the visible FAQ exactly (ocr bundled: %s)', (ocr) => {
-    const graph = embeddedJson(seoHead(ocr))['@graph'];
-    const faq = graph.find((node: { '@type': string }) => node['@type'] === 'FAQPage');
+  it.each([false, true])(
+    'is valid JSON and mirrors the visible FAQ exactly (ocr bundled: %s)',
+    (ocr) => {
+      const graph = embeddedJson(seoHead(ocr))['@graph'];
+      const faq = graph.find((node: { '@type': string }) => node['@type'] === 'FAQPage');
 
-    expect(graph.map((node: { '@type': string }) => node['@type'])).toEqual(['WebSite', 'WebApplication', 'FAQPage']);
-    expect(faq.mainEntity).toHaveLength(faqItems(ocr).length);
-    faqItems(ocr).forEach((item, i) => {
-      expect(faq.mainEntity[i].name).toBe(item.q);
-      expect(faq.mainEntity[i].acceptedAnswer.text).toBe(item.a);
-    });
-  });
+      expect(graph.map((node: { '@type': string }) => node['@type'])).toEqual([
+        'WebSite',
+        'WebApplication',
+        'FAQPage',
+      ]);
+      expect(faq.mainEntity).toHaveLength(faqItems(ocr).length);
+      faqItems(ocr).forEach((item, i) => {
+        expect(faq.mainEntity[i].name).toBe(item.q);
+        expect(faq.mainEntity[i].acceptedAnswer.text).toBe(item.a);
+      });
+    },
+  );
 
   it('describes a free web application without invented ratings', () => {
     const app = jsonLd(false)['@graph'][1] as Record<string, unknown>;
@@ -102,6 +111,6 @@ describe('claims match what the build contains', () => {
 
     expect(llms).toContain(SITE.url);
     expect(llms).toContain(SITE.repo);
-    expect(llms).toMatch(/never uploaded/i);
+    expect(llms).toMatch(/not uploaded by application code/i);
   });
 });

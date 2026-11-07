@@ -21,15 +21,19 @@ Production version-source correction.
 Selectable local OCR for English, German and Hindi, separate OCR-language and invoice-locale controls, mixed text/scanned-page handling, cancellation, retry behavior and same-origin OCR asset auditing.
 
 ### v1.5.0
-Consent-based seller templates with local storage only after explicit consent and validated JSON import/export.
+Consent-based seller-name matching profiles with local storage and validated JSON import/export. Custom field/table reading rules are not connected to the parser.
 
 ### v1.5.1
 Improved difficult line-item and table extraction, added currency fallback and warnings, added multi-invoice regression coverage and offline extraction-quality gates, and synchronized the app version with package.json.
 
 ### v1.6.0
-Offline PWA support with a same-origin application shell at `/DocuExtract/`, on-demand OCR model caching for English, German and Hindi, and user-controlled update handling. Invoice PDFs and extracted invoice data are excluded from service-worker caches.
+Offline PWA support with a same-origin application shell at `/DocuExtract/`, versioned application/OCR caches, PDF.js standard-font caching and user-controlled update handling. OCR models are cached after a language is selected or used online. Invoice PDFs and extracted invoice data are excluded from service-worker caches.
 
 ## Next
+
+- Implement and verify seller-specific field/table reading rules, or explicitly keep seller profiles as matching-only.
+- Complete offline extraction/export and two-build service-worker update lifecycle verification.
+- Complete storage/network privacy verification and remediate or explicitly accept residual dependency risk.
 
 ## Later ideas
 
@@ -40,4 +44,4 @@ Offline PWA support with a same-origin application shell at `/DocuExtract/`, on-
 
 ## Known limitations
 
-German and Hindi OCR are experimental and are not certified by the current field-level quality gate. Extraction remains heuristic and requires review. Seller-template end-to-end human QA on real seller invoices is pending. Multi-invoice splitting depends on detectable invoice boundaries.
+German and Hindi OCR are experimental and are not certified by the current field-level quality gate. Extraction remains heuristic and requires review. Seller profiles currently match seller names only; custom field/table reading rules are not implemented. Seller-profile end-to-end human QA on real seller invoices is pending. Multi-invoice splitting depends on detectable invoice boundaries.

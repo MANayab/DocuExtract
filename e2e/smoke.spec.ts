@@ -1,5 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { generateFixture } from '../src/tests/fixtures/generateFixtures';
+
+async function openApp(page: Page) {
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1, name: 'PDF Invoice to Excel' })).toBeVisible();
+}
 
 const pdf = async (kind: 'basic' | 'gst', name: string) => ({
   name,
@@ -8,14 +13,14 @@ const pdf = async (kind: 'basic' | 'gst', name: string) => ({
 });
 
 test('upload screen loads with the dashboard shell', async ({ page }) => {
-  await page.goto('/');
+  await openApp(page);
   await expect(page.getByRole('heading', { level: 1, name: 'PDF Invoice to Excel' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Choose PDFs' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
 });
 
 test('a single PDF goes straight to the review screen with extracted fields', async ({ page }) => {
-  await page.goto('/');
+  await openApp(page);
   await page.setInputFiles('input[type="file"]', await pdf('basic', 'basic.pdf'));
 
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
@@ -26,7 +31,7 @@ test('a single PDF goes straight to the review screen with extracted fields', as
 });
 
 test('several PDFs build a batch dashboard with a combined export', async ({ page }) => {
-  await page.goto('/');
+  await openApp(page);
   await page.setInputFiles('input[type="file"]', [
     await pdf('basic', 'a.pdf'),
     await pdf('gst', 'b.pdf'),
@@ -46,7 +51,7 @@ test('several PDFs build a batch dashboard with a combined export', async ({ pag
 });
 
 test('a corrupt PDF fails on its own row and the page stays usable', async ({ page }) => {
-  await page.goto('/');
+  await openApp(page);
   await page.setInputFiles('input[type="file"]', {
     name: 'broken.pdf',
     mimeType: 'application/pdf',
@@ -58,7 +63,7 @@ test('a corrupt PDF fails on its own row and the page stays usable', async ({ pa
 });
 
 test('serves the SEO essentials', async ({ page, request }) => {
-  await page.goto('/');
+  await openApp(page);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     'href',
     'https://manayab.github.io/DocuExtract/',
@@ -86,7 +91,7 @@ test('PDF.js standard font requests stay same-origin under the GitHub Pages base
     if (url.pathname.includes('/standard_fonts/')) standardFontRequests.push(url.href);
   });
 
-  await page.goto('/');
+  await openApp(page);
   await page.setInputFiles('input[type="file"]', await pdf('basic', 'standard-fonts.pdf'));
   await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
     timeout: 30_000,

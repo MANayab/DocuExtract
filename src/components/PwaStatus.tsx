@@ -13,6 +13,34 @@ export function PwaStatus({
 
   useEffect(() => controller.subscribe(setState), [controller]);
 
+  if (state === 'offline-ready') {
+    return (
+      <aside className="dx-pwa" role="status" aria-live="polite">
+        <strong>Offline ready</strong>
+        <span>
+          Application files and PDF standard fonts are cached on this device. Invoice data is not
+          included.
+        </span>
+      </aside>
+    );
+  }
+
+  if (state === 'preparing' || state === 'checking') {
+    return (
+      <aside className="dx-pwa" role="status" aria-live="polite">
+        Preparing offline support. Keep this tab open while application files are cached.
+      </aside>
+    );
+  }
+
+  if (state === 'unsupported') {
+    return (
+      <aside className="dx-pwa dx-pwa--warn" role="status">
+        Offline support is unavailable in this browser. Online invoice processing remains available.
+      </aside>
+    );
+  }
+
   if (state === 'ready') {
     return (
       <aside className="dx-pwa" role="status" aria-live="polite">
@@ -39,6 +67,14 @@ export function PwaStatus({
           Later
         </button>
         {message && <span className="dx-small">{message}</span>}
+      </aside>
+    );
+  }
+
+  if (state === 'deferred') {
+    return (
+      <aside className="dx-pwa" role="status" aria-live="polite">
+        {message || 'Update deferred. Your current tab will not reload automatically.'}
       </aside>
     );
   }

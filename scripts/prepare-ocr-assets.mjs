@@ -71,7 +71,7 @@ for (const language of supportedLanguages) {
 
 if (new Set(bundled.map((item) => item.gzip)).size > 1) {
   disable('Bundled language models must use the same compression format.');
-  process.exit(0);
+  process.exit(1);
 }
 
 fs.rmSync(out, { recursive: true, force: true });

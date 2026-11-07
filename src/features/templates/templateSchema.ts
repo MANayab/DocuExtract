@@ -3,26 +3,6 @@ import { z } from 'zod';
 export const TEMPLATE_SCHEMA_VERSION = 1 as const;
 export const TEMPLATE_EXPORT_MAX_BYTES = 256 * 1024;
 
-const safeText = z
-  .string()
-  .trim()
-  .min(1)
-  .max(160)
-  .refine(
-    (value) => !/[<>]/.test(value) && !value.includes('\0'),
-    'Template text cannot contain markup or control characters.',
-  );
-
-const optionalSafeText = z
-  .string()
-  .trim()
-  .max(160)
-  .refine(
-    (value) => !/[<>]/.test(value) && !value.includes('\0'),
-    'Template text cannot contain markup or control characters.',
-  )
-  .optional();
-
 export const templateFieldKeySchema = z.enum([
   'invoiceNumber',
   'invoiceDate',
@@ -37,25 +17,44 @@ export const templateFieldKeySchema = z.enum([
   'grandTotal',
 ]);
 
+const safeAnchor = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .refine(
+    (value) => !/[<>\d@₹$€£]/u.test(value) && !value.includes('\0'),
+    'Use a non-sensitive text label, not an invoice value, identifier or amount.',
+  );
+
+const safeSellerNameKey = z
+  .string()
+  .trim()
+  .min(1)
+  .max(160)
+  .refine(
+    (value) => !/[<>\d@₹$€£]/u.test(value) && !value.includes('\0'),
+    'Use a seller name, not a tax ID, invoice value, contact detail or amount.',
+  );
+
 export const sellerMatcherSchema = z
   .object({
-    gstin: optionalSafeText,
-    nameKey: optionalSafeText,
+    nameKey: safeSellerNameKey.optional(),
   })
-  .refine((value) => Boolean(value.gstin || value.nameKey), {
-    message: 'Provide a seller GSTIN or seller name key.',
+  .refine((value) => Boolean(value.nameKey), {
+    message: 'Provide a seller name key.',
   });
 
 export const vendorTemplateSchema = z.object({
   schemaVersion: z.literal(TEMPLATE_SCHEMA_VERSION),
   id: z.string().regex(/^[a-z0-9_-]{8,80}$/),
-  name: safeText,
+  name: safeSellerNameKey,
   seller: sellerMatcherSchema,
   fieldMappings: z
     .array(
       z.object({
         field: templateFieldKeySchema,
-        labelAnchor: safeText,
+        labelAnchor: safeAnchor,
       }),
     )
     .max(20),
@@ -63,7 +62,7 @@ export const vendorTemplateSchema = z.object({
     .array(
       z.object({
         column: z.enum(['description', 'quantity', 'unitPrice', 'taxAmount', 'lineTotal']),
-        headerAnchor: safeText,
+        headerAnchor: safeAnchor,
       }),
     )
     .max(8),

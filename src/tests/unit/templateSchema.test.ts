@@ -13,7 +13,7 @@ describe('seller template schema', () => {
           schemaVersion: TEMPLATE_SCHEMA_VERSION,
           id: 'template_12345678',
           name: 'Acme rules',
-          seller: { gstin: '29ABCDE1234F2Z5' },
+          seller: { nameKey: 'Acme Traders' },
           fieldMappings: [{ field: 'invoiceNumber', labelAnchor: 'Invoice No' }],
           tableColumns: [{ column: 'description', headerAnchor: 'Description' }],
           createdAt: '2026-11-02T00:00:00.000Z',
@@ -23,5 +23,8 @@ describe('seller template schema', () => {
     });
     expect(parseTemplateImport(json)).toHaveLength(1);
     expect(() => parseTemplateImport(json.replace('Invoice No', '<script>'))).toThrow();
+    expect(() => parseTemplateImport(json.replace('Invoice No', 'INV-123'))).toThrow();
+    expect(() => parseTemplateImport(json.replace('Acme Traders', '29ABCDE1234F2Z5'))).toThrow();
+    expect(() => parseTemplateImport(json.replace('nameKey', 'gstin'))).toThrow();
   });
 });

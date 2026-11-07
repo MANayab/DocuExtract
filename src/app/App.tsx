@@ -13,7 +13,7 @@ import { KpiCards } from '../components/Dashboard/KpiCards';
 import { ResultsTable } from '../components/Dashboard/ResultsTable';
 import { TemplateManager } from '../components/templates/TemplateManager';
 import { ReviewScreen } from '../components/review/ReviewScreen';
-import { OCR_BUNDLED } from '../config/build';
+import { DOCUEXTRACT_BUILD_LABEL, OCR_BUNDLED } from '../config/build';
 import { LOCALES, type LocaleCode } from '../config/locales';
 import { SITE } from '../content/site';
 import { useBatchStore, useOcrAvailable } from '../features/batch/useBatch';
@@ -23,6 +23,7 @@ import { analyzeInvoice } from '../features/validation/analysis';
 import type { Invoice } from '../types/invoice';
 import type { OcrLanguage } from '../features/ocr/ocrLanguages';
 import { DEFAULT_OCR_LANGUAGE, OCR_LANGUAGES } from '../features/ocr/ocrLanguages';
+import { prepareOcrLanguage } from '../features/ocr/ocrManifest';
 
 type View = { kind: 'dashboard' } | { kind: 'review'; id: string };
 
@@ -83,7 +84,7 @@ export function App() {
     const invoice = reviewing.invoice;
 
     return (
-      <div className="dx-app">
+      <div className="dx-app" data-build-label={DOCUEXTRACT_BUILD_LABEL}>
         <Header onHome={goHome} />
         <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
         <main id="main">
@@ -219,7 +220,27 @@ export function App() {
                     id="ocr-language"
                     aria-describedby="ocr-language-hint"
                     value={ocrLanguage}
-                    onChange={(event) => setOcrLanguage(event.target.value as OcrLanguage)}
+                    onChange={(event) => {
+                      const next = event.target.value as OcrLanguage;
+                      setOcrLanguage(next);
+                      const pending = `Preparing ${next} OCR model for offline use…`;
+                      setNotices((current) => [...current, pending]);
+                      void prepareOcrLanguage(next)
+                        .then(() =>
+                          setNotices((current) => [
+                            ...current.filter((message) => message !== pending),
+                            `${next} OCR model is cached for offline use.`,
+                          ]),
+                        )
+                        .catch((error: unknown) =>
+                          setNotices((current) => [
+                            ...current.filter((message) => message !== pending),
+                            error instanceof Error
+                              ? error.message
+                              : `${next} OCR model could not be cached.`,
+                          ]),
+                        );
+                    }}
                   >
                     {OCR_LANGUAGES.map((option) => (
                       <option key={option.code} value={option.code}>
@@ -229,8 +250,10 @@ export function App() {
                   </select>
                 </div>
                 <p id="ocr-language-hint" className="dx-locale-panel__hint">
-                  Applies only to scanned or image-only pages. OCR results are lower-confidence and
-                  must be reviewed. Supported languages: English, German and Hindi.
+                  Applies only to scanned or image-only pages. Selecting a language downloads its
+                  local model for offline use; choose it while online. OCR results are
+                  lower-confidence and must be reviewed. Supported languages: English, German and
+                  Hindi.
                 </p>
               </div>
             )}

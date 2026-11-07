@@ -14,7 +14,7 @@ No backend. No account. No database. No analytics. No telemetry.
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-1C1B19?style=flat-square)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-18.3-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
-[![Privacy](https://img.shields.io/badge/data-never%20leaves%20your%20device-1F6B45?style=flat-square)](PRIVACY.md)
+[![Privacy](https://img.shields.io/badge/data-processed%20locally-1F6B45?style=flat-square)](PRIVACY.md)
 
 [**Live app**](https://manayab.github.io/DocuExtract/) &nbsp;·&nbsp; [Report a bug](https://github.com/MANayab/DocuExtract/issues) &nbsp;·&nbsp; [Request a feature](https://github.com/MANayab/DocuExtract/issues) &nbsp;·&nbsp; [Changelog](CHANGELOG.md)
 
@@ -66,8 +66,10 @@ Most invoice tools ask you to upload financial documents to a server you do not 
 | **Review before export**           | Edit every field and line item; confidence bands highlight what to check; checks re-run as you type.                                                                                                |
 | **Locale-aware dates and numbers** | Select India (en-IN), United States (en-US), United Kingdom (en-GB), or Germany (de-DE). Numeric dates and separator interpretation depend on the selected locale; ambiguous values require review. |
 | **Safe spreadsheets**              | Every cell is sanitized against formula injection; CSV has a UTF-8 BOM so Excel shows ₹ correctly.                                                                                                  |
-| **No persistence**                 | Invoice data is never written to URLs, `localStorage` or `sessionStorage`. Memory is released after each file.                                                                                      |
+| **No invoice persistence**         | Invoice files and records stay in memory while the batch is active and are not persisted to URLs, browser storage or offline caches. Seller-name matching profiles use `localStorage` only after explicit consent. |
 | **SEO and AI-ready**               | Structured data, pre-rendered content, sitemap, `llms.txt`; see [docs/SEO.md](docs/SEO.md).                                                                                                         |
+| **Offline app support**            | The app shell, hashed chunks, PDF.js standard fonts and OCR runtime are cached locally. Select an OCR language online to cache its model before processing offline.                                      |
+| **Seller matching profiles**       | Optional seller-name matching profiles can be saved or imported locally after explicit consent. They do not currently change extraction rules.                                                      |
 | **Tested**                         | Unit, integration and end-to-end tests; type checking and linting in CI.                                                                                                                            |
 
 ## Locale-aware parsing
@@ -306,13 +308,13 @@ Full guide, limits and troubleshooting: [docs/OCR.md](docs/OCR.md).
 DocuExtract v1.6.0 adds an offline application shell for the installed or regularly visited GitHub Pages app.
 
 - The service worker caches only same-origin application code and public runtime assets under `/DocuExtract/`.
-- English, German and Hindi OCR models are **not pre-downloaded by the application shell**. A selected model is cached on demand after a successful same-origin OCR request, and each language uses an isolated versioned cache.
-- Invoice PDFs, extracted fields, line items, corrections, exports and seller-template data are never written by the service worker to Cache Storage, `localStorage` or `sessionStorage`.
-- Cache names are versioned. Superseded application-shell caches are removed during activation without touching non-DocuExtract caches.
+- The application shell includes hashed app chunks, PDF.js standard fonts, the OCR manifest, Tesseract worker and OCR WebAssembly runtime. Language models are not downloaded with the shell. Selecting an OCR language while online downloads its model into a separate versioned cache, without requiring an invoice to be processed online first.
+- Invoice PDFs, extracted fields, line items, corrections and exports are not written by the service worker to Cache Storage or by the app to `localStorage`/`sessionStorage`. Seller-name matching profiles are stored in `localStorage` only after explicit consent.
+- Application-shell and OCR caches are versioned. Previous shell caches are retained across updates so already-open tabs can still load their old hashed chunks; this can increase browser storage use.
 - A downloaded update waits for the user. DocuExtract never automatically reloads a tab because active invoice work is memory-only. The update prompt can be deferred, and activation tells the user to reload manually when work is safe.
 - If a download, installation or update check fails, the current page remains usable and the user can retry when online.
 
-Offline support cannot make a never-before-downloaded OCR language available without a network connection. Open the app online once and run OCR in each language you want available offline.
+Offline support cannot make a never-before-selected OCR language available without a network connection. Open the app online, wait for Offline ready, then select each OCR language you want available offline. Browser storage can be cleared or evicted.
 
 ## Search and AI discoverability
 
@@ -355,7 +357,7 @@ flowchart TB
 1. **Local first.** If a feature would need a server, it does not ship.
 2. **Never trust extracted text.** Everything read from a PDF is validated and sanitized before it is displayed or exported.
 3. **Say when unsure.** Ambiguous values are flagged on the review screen instead of silently guessed.
-4. **Release memory.** Documents and buffers are destroyed once processing completes.
+4. **Keep data local.** Invoice records remain in memory while the batch is active so they can be reviewed, exported or reprocessed. Remove records when finished; this does not prove complete browser memory erasure.
 
 ## Privacy and security
 
@@ -364,8 +366,9 @@ Files are processed locally by this application and are not uploaded by applicat
 | Area                | Behaviour                                                                    |
 | ------------------- | ---------------------------------------------------------------------------- |
 | Network             | No upload of invoice data. No analytics or telemetry.                        |
-| Storage             | Invoice data is not written to URLs, `localStorage` or `sessionStorage`.     |
-| Memory              | PDF buffers are released and PDF documents are destroyed after processing.   |
+| Storage             | Invoice data is not persisted to URLs, `localStorage`, `sessionStorage` or IndexedDB. Consent-based seller-name profiles use `localStorage`. |
+| Cache Storage       | Application assets, PDF.js fonts and selected OCR models only; invoice data is excluded. Old build caches remain while active tabs need them, then are pruned after every tab reports its build. |
+| Memory              | Source PDFs and extracted records remain in memory while the batch is active; removing records releases app references, not a guarantee of forensic erasure. |
 | Spreadsheet exports | Cells that could trigger formulas are sanitized (CSV and formula injection). |
 | Rendering           | React rendering does not use `dangerouslySetInnerHTML`.                      |
 
@@ -380,7 +383,7 @@ Released through v1.6.0:
 - v1.2.0: locale-aware date and number parsing.
 - v1.3.0 and v1.3.1: parsing hardening and version-source corrections.
 - v1.4.0: selectable English, German and Hindi local OCR, mixed-page handling and OCR asset auditing.
-- v1.5.0: consent-based seller templates with validated local import/export.
+- v1.5.0: consent-based seller-name matching profiles with validated local import/export; custom field/table rules are not connected to parsing.
 - v1.5.1: extraction-quality improvements, offline quality gates and version consistency.
 - v1.6.0: offline PWA app shell, on-demand OCR language caching and user-controlled update handling.
 
@@ -396,7 +399,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
 | OCR (optional, bundled locally) | tesseract.js 5.1 + tesseract.js-core                                           |
 | Validation                      | Zod 3.23                                                                       |
 | Export                          | ExcelJS 4.4, file-saver 2.0                                                    |
-| Quality                         | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.48               |
+| Quality                         | ESLint 9, Prettier 3, Vitest 2, Testing Library, Playwright 1.64.1               |
 | Hosting                         | GitHub Pages via GitHub Actions                                                |
 
 ## Contributing

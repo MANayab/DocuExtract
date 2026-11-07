@@ -12,7 +12,7 @@ export const SITE = {
   h1: 'PDF Invoice to Excel',
   tagline: 'Private, browser-only invoice extraction',
   description:
-    'Convert PDF invoices to Excel, CSV or JSON in your browser. Batch upload, GST-aware, OCR for scans. Free and open source: files never leave your device.',
+    'Convert PDF invoices to Excel, CSV or JSON in your browser. Files are processed locally by this application and are not uploaded by application code.',
   repo: 'https://github.com/MANayab/DocuExtract',
   author: 'MANayab',
   authorUrl: 'https://github.com/MANayab',
@@ -35,7 +35,7 @@ export function features(ocrBundled: boolean): Feature[] {
     {
       id: 'private',
       title: 'Private by design',
-      body: 'PDFs are read inside your browser tab. There is no server, account, database or analytics, so invoice data never leaves your device.',
+      body: 'Files are processed locally by this application and are not uploaded by application code. There is no application backend, account, database, analytics or telemetry.',
     },
     {
       id: 'batch',
@@ -63,6 +63,11 @@ export function features(ocrBundled: boolean): Feature[] {
           title: 'Scanned PDF detection',
           body: 'Image-only PDFs are detected and listed as needing OCR instead of being guessed. Optional local OCR can be added to a build.',
         },
+    {
+      id: 'offline',
+      title: 'Offline app support',
+      body: 'The application shell and PDF standard fonts are cached on this device. Select an OCR language while online to prepare its model for later offline use. Invoice files and extracted data are not cached.',
+    },
     {
       id: 'export',
       title: 'Excel-ready exports',
@@ -120,6 +125,10 @@ export function faqItems(ocrBundled: boolean): FaqItem[] {
       a: ocrBundled
         ? 'Yes. Scanned or image-only PDFs can be read with built-in English, German or Hindi OCR that runs locally in your browser. Choose the scanned-PDF language independently of invoice locale. German and Hindi extraction accuracy is experimental. OCR is less accurate than direct text extraction, so results need review and confidence is capped at 75%.'
         : 'Not in this build. Scanned or image-only PDFs need OCR, which is optional and not bundled here; they are listed as needing OCR instead of being guessed.',
+    },
+    {
+      q: 'Can I use DocuExtract offline?',
+      a: 'After opening the app online and seeing Offline ready, the application shell and PDF standard fonts are available from this device. Select the OCR language while online to download its model before going offline. Invoice files and extracted data are not stored in the offline cache. Browser storage can be cleared or evicted, so offline use should be checked before relying on it.',
     },
     {
       q: 'How accurate is the extraction?',

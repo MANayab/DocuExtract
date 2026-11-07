@@ -16,7 +16,7 @@ export default defineConfig({
       },
     ],
   },
-  define: { __OCR_BUNDLED__: false },
+  define: { __OCR_BUNDLED__: false, __DOCUEXTRACT_BUILD_LABEL__: JSON.stringify('test') },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/tests/setup.ts'],

@@ -4,9 +4,19 @@ DocuExtract runs Tesseract locally in the browser for scanned or image-only page
 
 Mixed PDFs keep text-layer pages and send pages without extractable text through OCR. OCR-derived values are capped at 75% confidence and require review.
 
+## Offline preparation
+
+After the app reports **Offline ready**, selecting an OCR language while online downloads that language model into its separate versioned Cache Storage entry. This prepares OCR for offline use without requiring the user to process an invoice online first. A language model is not cached until the user selects or uses that language.
+
+If the model has not been cached and the device is offline, the app returns a clear recoverable message asking the user to connect and select the language once. The engine uses a same-origin GET availability request because the service worker intentionally handles GET requests; a HEAD probe would bypass that route. The service worker returns a structured 503 for an uncached offline model, and the OCR action can be retried after connectivity returns.
+
+## Production asset path
+
+The worker, WebAssembly core and traineddata models are loaded from the application's `/DocuExtract/ocr/` path. The app does not create a blob worker or contact a third-party OCR service. The service worker precaches the OCR manifest, worker and core files; it caches a traineddata model only after the user selects or uses that language online.
+
 ## Accuracy status
 
-English is included in the bundled OCR configuration. German and Hindi extraction accuracy is experimental. The current automated quality gate does not certify representative field-level accuracy for German or Hindi scans, and human QA on real multilingual scans is pending.
+English, German and Hindi are included in the bundled OCR configuration. German and Hindi extraction accuracy remains experimental. The repository's current image-only fixture contains an English invoice; running the three language models against that fixture can verify model initialization and selected invoice anchors, but it cannot certify native German or Hindi invoice accuracy. Representative image-only scans in each language and human QA are still required.
 
 ## Limits and privacy
 

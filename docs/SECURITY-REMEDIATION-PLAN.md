@@ -1,0 +1,56 @@
+# Dependency security remediation plan
+
+Status: draft migration proposal. No residual risk is accepted. This document describes the baseline audit and candidate package upgrades; the npm-generated lockfile and complete compatibility results must be inspected before the migration is considered verified.
+
+## Baseline
+
+Fresh non-mutating npm audit of the current main lockfile (2026-11-07; artifact from audit run #42381256931):
+
+- 14 findings: 0 low, 10 moderate, 2 high, 2 critical.
+- 528 dependency nodes: 124 production, 393 development, 63 optional, 8 peer.
+- The audit workflow's successful result means the report was uploaded; npm audit itself is non-zero.
+
+## Critical and high advisories
+
+| Installed package / path | Advisory | Affected range and fixed version | Exposure | Candidate remediation |
+|---|---|---|---|---|
+| tinypool 1.1.1, transitive through Vitest 2.1.9 | GHSA-5gmw-xhrv-c9v3 (critical) | <=2.1.0; fixed 2.1.1 | Development/test worker pool; not shipped to production. | Upgrade Vitest and inspect the resolved worker tree. |
+| tinypool 1.1.1, same path | GHSA-85c8-ppgw-ccpr (critical) | <2.1.2; fixed 2.1.2 | Development/test worker pool; not shipped to production. | A 2.1.1-only Tinypool fix is insufficient; target a Vitest release whose resolved tree no longer includes vulnerable Tinypool. |
+| vitest 2.1.9, direct dev dependency | GHSA-5xrq-8626-4rwp (critical) | <3.2.6 (3.2.6 patched; 4.1.0 patched for the 4.x line) | Test runner; scripts use vitest run, not Vitest UI/Browser Mode. Development/test exposure remains material. | Candidate Vitest 5.1.0. It requires Node >=22.12 and Vite >=6.4; this is why the CI runtime is upgraded. |
+| vite 5.4.21, direct dev dependency | GHSA-587h-7wmj-h5pm (high), plus related Vite/launch-editor advisories in the raw npm audit | npm audit's installed range <=6.4.3; fixed releases exist on maintained Vite lines, including 8.3.3+. | Build/dev server tooling; static GitHub Pages production does not run the dev server. Local developer exposure remains, including Windows launch-editor advisories. | Candidate Vite 8.3.6 paired with @vitejs/plugin-react 6.2.1. |
+| zod 3.23.8, direct runtime dependency | GHSA-mrhx-c7xc-m3w5 (high) | <4.6.6; fixed 4.6.6 | Runtime validation of user-selected local seller-profile imports. The app caps import files at 256 KB before JSON parsing and constrains schema arrays, but this does not remove the vulnerable runtime dependency. | Candidate Zod 4.6.7; validate schema types, malformed imports, consent behavior and import/export round trips. |
+
+## Moderate findings
+
+- @vitest/mocker 2.1.9: GHSA-82fw-gwwq-j7x9 (fixed from 4.1.11) and GHSA-qxg6-89mg-rqv8 (fixed from 4.1.12). Candidate Vitest 5.1.0 replaces the 2.x Vitest dependency chain; verify the exact lockfile no longer resolves affected versions.
+- esbuild 0.21.5: GHSA-67mh-4wv8-2f99, affected <=0.24.2 and fixed from 0.25.0. Candidate Vite 8.3.6 uses the newer Rolldown build architecture; verify whether esbuild remains in the generated dependency graph and upgrade it if still present.
+- minimatch 10.2.6 under @typescript-eslint/typescript-estree: GHSA-g3hv-75wg-m249, affected >=7.0.0 and <11.0.1; fixed from 11.0.1. npm's suggested typescript-eslint 8.36.0 is a downgrade from installed 8.72.1 and is rejected. This proposal uses a scoped 11.0.5 override only under @typescript-eslint/typescript-estree; retain it only if npm resolves it and the full lint/typecheck suite passes. Do not globally override older minimatch copies with incompatible CommonJS interfaces.
+- vite-node 2.1.9 and the remaining @typescript-eslint package nodes are transitive paths. Verify their presence and advisories from the generated npm audit rather than assuming the parent upgrade removed them.
+
+## Exact candidate versions in this branch
+
+- Node.js CI: 22.23.4 (npm version recorded in CI). Vitest 5.1.0 requires Node ^22.12.0, ^24.0.0 or >=26.0.0 and Vite >=6.4.0. Node 20 CI is incompatible.
+- vitest: 5.1.0
+- vite: 8.3.6
+- @vitejs/plugin-react: 6.2.1 (paired with Vite 8)
+- zod: 4.6.7
+- @types/node: 22.20.5
+- Scoped override: @typescript-eslint/typescript-estree -> minimatch 11.0.5
+
+All versions are exact pins, not ranges. npm must generate the package-lock.json from package.json using the CI Node/npm toolchain. No lockfile hashes or resolved package metadata are hand-edited.
+
+## Required verification before remediation can be approved
+
+1. Generate package-lock.json with npm 10.9.9 under Node 22.23.4; upload it and raw npm audit / npm ls reports for review.
+2. Run clean npm ci against that exact generated lockfile.
+3. Formatting, TypeScript, ESLint, all Vitest unit tests, production build and existing extraction benchmark thresholds.
+4. Full Playwright/PWA/OCR suite, including actual English/German/Hindi OCR acceptance, offline reload, service-worker update/recovery and GitHub Pages /DocuExtract/ base path.
+5. Parsed XLSX, invoice-summary CSV, line-items CSV and JSON export assertions.
+6. OCR asset-size audit against current main.
+7. Fresh npm audit against the generated lockfile; no advisory may be suppressed. Any remaining finding blocks completion and must have its exact installed path, advisory, fixed version, exposure and remediation blocker recorded.
+
+## Current limitations and decision
+
+The interactive local container has Node and npm, but outbound DNS to github.com/npm is unavailable, so it cannot clone the repository or resolve package metadata. The branch's read-only CI jobs generate the candidate lockfile and upload it as an artifact rather than pushing changes. The lockfile artifact must be inspected and then applied to this branch before this PR can become merge-ready. If the artifact cannot be applied by the available connector, the maintainer must download the artifact and commit package-lock.json to this branch.
+
+No residual risk is accepted by this proposal. Keep issue #14 open until the lockfile is committed, the fresh audit is clean (or every remaining advisory is explicitly addressed without suppression), the complete test matrix passes, and the maintainer reviews the result.

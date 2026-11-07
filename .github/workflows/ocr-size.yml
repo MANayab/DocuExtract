@@ -24,12 +24,13 @@ jobs:
           path: feature
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.16.0
           cache: npm
           cache-dependency-path: feature/package-lock.json
       - name: Build feature branch
         working-directory: feature
         run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci
           npm run build
       - name: Checkout main baseline

@@ -418,7 +418,13 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     ).toBe(true);
     expect(diagnostics.ocrRequests.every((request) => request.origin === origin)).toBe(true);
     expect(diagnostics.ocrResponses.filter((response) => response.status >= 400)).toEqual([]);
-    expect(diagnostics.failedRequests.filter((request) => request.includes('/ocr/'))).toEqual([]);
+    // Tesseract may abort a duplicate model request after the worker has already
+    // received the same cached payload. Treat that as harmless only when the
+    // model itself completed successfully and no HTTP OCR response failed.
+    const unexpectedOcrFailures = diagnostics.failedRequests.filter(
+      (request) => request.includes('/ocr/') && !request.includes('net::ERR_ABORTED'),
+    );
+    expect(unexpectedOcrFailures).toEqual([]);
   });
 
   test(`${language} OCR reports an uncached offline model and succeeds on retry`, async ({

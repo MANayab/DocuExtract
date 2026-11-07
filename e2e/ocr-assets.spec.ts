@@ -399,6 +399,8 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
         timeout: 30_000,
       },
     );
+    // Reading options intentionally collapse on a fresh upload-first page load.
+    await page.getByText('Reading options', { exact: true }).click();
     await expect(
       page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });

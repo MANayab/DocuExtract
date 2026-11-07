@@ -12,10 +12,13 @@
 - Seller matching profiles require explicit consent for save/import. The current schema excludes seller tax IDs, numeric identifiers, contact details and amounts from matching keys/anchors.
 - The service worker is restricted to same-origin GET requests under `/DocuExtract/`; document/export paths are excluded from caching.
 - CI runs formatting, typecheck, lint, unit tests, build, offline benchmark and Playwright tests. OCR-size and dependency-audit workflows provide separate evidence.
+- The PWA status UI uses a polite live region, keyboard-operable dismissal and explicit ready/installing/offline/update/error presentation. Reading options are disclosed below the upload action and keep invoice locale separate from OCR language.
 
 ## Known security limitations
 
-The fresh non-mutating lockfile audit for PR #20 head `7e127d5ad4df0df4c59fb35075770e2918f19df6` is [run #42305472916](https://github.com/MANayab/DocuExtract/actions/runs/42305472916), artifact `dependency-security-audit`. The lockfile has not changed since that audit. It reports **14 package findings: 2 critical, 2 high and 10 moderate**. The workflow succeeded because it generated and uploaded a report; the underlying `npm audit` exit code was 1. This is not a clean audit.
+The latest main lockfile dependency audit remains unresolved: the last recorded report identifies 14 findings (2 critical, 2 high and 10 moderate). The report workflow's success means the report was generated, not that the dependency tree is vulnerability-free. Zod is a production dependency and requires priority remediation in the separately scoped security release. Do not treat the v1.6.1 UI work as dependency remediation.
+
+The latest non-mutating lockfile audit for the v1.6.1 candidate head `b7b8461165f5a75caf36e4a71aa2f54805c143aa` is [run #42374742371](https://github.com/MANayab/DocuExtract/actions/runs/42374742371), with the [dependency-security-audit artifact](https://github.com/MANayab/DocuExtract/actions/runs/42374742371/artifacts/13574819366). It reports **14 package findings: 2 critical, 2 high and 10 moderate**. The workflow succeeds because it generates and uploads the complete report; the underlying `npm audit` exit code is 1. This is not a clean audit. The v1.6.1 UI release does not remediate these findings.
 
 ### Critical and high findings
 

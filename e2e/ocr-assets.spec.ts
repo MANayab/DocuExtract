@@ -148,6 +148,7 @@ const scannedPdf = async (language: 'eng' | 'deu' | 'hin', page: Page) => {
 async function openApp(page: Page) {
   await page.goto('./');
   await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
+  await page.getByText('Reading options', { exact: true }).click();
 }
 
 async function selectLocaleForOcr(page: Page, language: 'eng' | 'deu' | 'hin') {

@@ -4,14 +4,23 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-### Implemented; verification pending
+## [1.6.1] — 2026-11-07 (release candidate)
 
-- Route Playwright application navigation through the GitHub Pages `/DocuExtract/` base path and assert the app loads before PWA checks.
-- Use a same-origin GET request for OCR model availability so the service worker can serve and cache the model; show a recoverable offline message for an uncached language.
-- Verify Offline ready against required cache entries and restore missing assets when connectivity returns.
-- Track the build IDs of active tabs before pruning old shell caches; defer cleanup when a live tab cannot report its build.
-- Add real scanned-PDF OCR, offline reload/retry, update recovery, parsed offline export and synthetic-marker privacy coverage.
+### Fixed
 
+- Styled the PWA status banner for ready, installing, offline, update and error states, with a bounded page-container layout, polite live announcements and a keyboard-operable dismiss control.
+- Reserved banner space to avoid layout movement when PWA status changes.
+- Put PDF upload first and moved invoice locale and OCR language into a compact, keyboard-accessible Reading options disclosure below the drop zone.
+- Removed duplicate option headings and labels; retained independent locale and OCR-language selection and clarified OCR model preparation and review guidance.
+
+### Tests
+
+- Added Playwright coverage for the banner's text, containment and dismissal.
+- Added desktop and mobile viewport checks for above-the-fold upload and independent reading-option controls.
+
+### QA limits
+
+- Browser automation covers synthetic fixtures and Chromium. Real supplier invoices, real scans, phone/desktop installation and manual light/dark visual review remain maintainer QA.
 
 ## [1.6.0] — 2026-11-05
 

@@ -72,8 +72,8 @@ test('reloads offline and performs extraction without caching invoice data', asy
       cached: [...cachedUrls],
     };
   });
-  expect(precache.version).toBe('1.6.0');
-  expect(precache.buildId).toMatch(/^1\.6\.0-[a-f0-9]{10}$/);
+  expect(precache.version).toBe('1.6.1');
+  expect(precache.buildId).toMatch(/^1\.6\.1-[a-f0-9]{10}$/);
   expect(precache.fonts).toHaveLength(14);
   expect(precache.ocrRuntime).toContain('ocr/manifest.json');
   expect(precache.ocrRuntime).toContain('ocr/worker.min.js');
@@ -257,6 +257,7 @@ test('prepares a selected OCR language without processing an invoice and reports
   context,
 }) => {
   await waitForWorker(page);
+  await page.getByText('Reading options', { exact: true }).click();
   await page.selectOption('#ocr-language', 'deu');
   await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({
     timeout: 60_000,

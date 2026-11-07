@@ -3,6 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 async function openApp(page: Page) {
   await page.goto('./');
   await expect(page.getByRole('heading', { level: 1, name: 'PDF Invoice to Excel' })).toBeVisible();
+  await page.getByText('Reading options', { exact: true }).click();
 }
 
 test('locale panel geometry and keyboard work at common widths', async ({ page }) => {
@@ -12,10 +13,8 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
 
     const panel = page.locator('.dx-locale-panel');
     const dropzone = page.locator('.dx-drop__zone');
-    const localeHint = page.getByText(
-      /Controls how ambiguous dates and number separators are interpreted/,
-    );
-    const ocrHint = page.getByText(/Applies only to scanned or image-only pages/);
+    const localeHint = page.getByText(/Controls how dates and number separators are interpreted/);
+    const ocrHint = page.getByText(/Applies only to scanned pages/);
 
     await expect(panel).toBeVisible();
     await expect(localeHint).toBeVisible();
@@ -30,7 +29,7 @@ test('locale panel geometry and keyboard work at common widths', async ({ page }
     expect(dropBox).not.toBeNull();
     expect(localeBox).not.toBeNull();
     expect(ocrBox).not.toBeNull();
-    expect(panelBox!.y + panelBox!.height).toBeLessThanOrEqual(dropBox!.y);
+    expect(dropBox!.y + dropBox!.height).toBeLessThanOrEqual(panelBox!.y);
     expect(localeBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
     expect(ocrBox!.y + ocrBox!.height).toBeLessThanOrEqual(panelBox!.y + panelBox!.height);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

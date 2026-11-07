@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/locale-panel.css';
+import '../styles/pwa-status.css';
 import { ErrorPanel } from '../components/ErrorPanel';
 import { PwaStatus } from '../components/PwaStatus';
 import { getPwaController } from '../features/pwa/register';
@@ -35,6 +36,7 @@ export function App() {
   const [notices, setNotices] = useState<string[]>([]);
   const [locale, setLocale] = useState<LocaleCode>(() => store.getLocale());
   const [ocrLanguage, setOcrLanguage] = useState<OcrLanguage>(DEFAULT_OCR_LANGUAGE);
+  const [readingOptionsOpen, setReadingOptionsOpen] = useState(false);
   const autoOpen = useRef(false);
 
   const summary = useMemo(() => summarize(records), [records]);
@@ -86,7 +88,9 @@ export function App() {
     return (
       <div className="dx-app" data-build-label={DOCUEXTRACT_BUILD_LABEL}>
         <Header onHome={goHome} />
-        <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
+        <div className="dx-container dx-pwa-slot">
+          <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
+        </div>
         <main id="main">
           <ReviewScreen
             record={reviewing}
@@ -143,7 +147,9 @@ export function App() {
         Skip to content
       </a>
       <Header onHome={goHome} />
-      <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
+      <div className="dx-container dx-pwa-slot">
+        <PwaStatus controller={pwa} hasActiveWork={records.length > 0} />
+      </div>
 
       <main id="main">
         <section className="dx-hero">
@@ -184,10 +190,16 @@ export function App() {
             </div>
           )}
 
-          <section className="dx-panel dx-locale-panel" aria-label="Extraction language settings">
-            <div className="dx-locale-panel__group">
-              <h2>Invoice locale (dates and numbers)</h2>
-              <div className="dx-locale-panel__field">
+          <FileUploader onFiles={handleFiles} />
+
+          <details
+            className="dx-panel dx-locale-panel"
+            open={readingOptionsOpen || records.some((record) => record.status === 'needs-ocr')}
+            onToggle={(event) => setReadingOptionsOpen(event.currentTarget.open)}
+          >
+            <summary className="dx-reading-options__summary">Reading options</summary>
+            <div className="dx-reading-options__grid">
+              <div className="dx-locale-panel__group">
                 <label htmlFor="invoice-locale">Invoice locale</label>
                 <select
                   id="invoice-locale"
@@ -197,6 +209,7 @@ export function App() {
                     const next = event.target.value as LocaleCode;
                     setLocale(next);
                     store.setLocale(next);
+                    setReadingOptionsOpen(true);
                   }}
                 >
                   {Object.values(LOCALES).map((option) => (
@@ -205,16 +218,13 @@ export function App() {
                     </option>
                   ))}
                 </select>
+                <p id="invoice-locale-hint" className="dx-locale-panel__hint">
+                  Controls how dates and number separators are interpreted. Review financial data
+                  before relying on it.
+                </p>
               </div>
-              <p id="invoice-locale-hint" className="dx-locale-panel__hint">
-                Controls how ambiguous dates and number separators are interpreted. Review financial
-                data before relying on it.
-              </p>
-            </div>
-            {OCR_BUNDLED && (
-              <div className="dx-locale-panel__group">
-                <h2>Scanned PDF language (OCR)</h2>
-                <div className="dx-locale-panel__field">
+              {OCR_BUNDLED && (
+                <div className="dx-locale-panel__group">
                   <label htmlFor="ocr-language">Scanned PDF language</label>
                   <select
                     id="ocr-language"
@@ -223,6 +233,7 @@ export function App() {
                     onChange={(event) => {
                       const next = event.target.value as OcrLanguage;
                       setOcrLanguage(next);
+                      setReadingOptionsOpen(true);
                       const pending = `Preparing ${next} OCR model for offline use…`;
                       setNotices((current) => [...current, pending]);
                       void prepareOcrLanguage(next)
@@ -248,18 +259,14 @@ export function App() {
                       </option>
                     ))}
                   </select>
+                  <p id="ocr-language-hint" className="dx-locale-panel__hint">
+                    Applies only to scanned pages. Choose while online to download its model for
+                    offline use. OCR results have lower confidence and must be reviewed.
+                  </p>
                 </div>
-                <p id="ocr-language-hint" className="dx-locale-panel__hint">
-                  Applies only to scanned or image-only pages. Selecting a language downloads its
-                  local model for offline use; choose it while online. OCR results are
-                  lower-confidence and must be reviewed. Supported languages: English, German and
-                  Hindi.
-                </p>
-              </div>
-            )}
-          </section>
-
-          <FileUploader onFiles={handleFiles} />
+              )}
+            </div>
+          </details>
 
           <TemplateManager onTemplatesChange={(templates) => store.setTemplates(templates)} />
 

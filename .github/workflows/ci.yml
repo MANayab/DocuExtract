@@ -21,8 +21,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Inspect Prettier output for quota regression
-        run: npx prettier e2e/pwa-update.spec.ts
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck

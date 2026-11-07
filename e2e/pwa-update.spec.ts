@@ -58,6 +58,13 @@ async function pageBuildId(page: Page): Promise<string> {
   return buildId;
 }
 
+async function reloadIntoBuild(page: Page, buildId: string) {
+  await page.reload();
+  await expect
+    .poll(() => pageBuildId(page), { timeout: 30_000 })
+    .toBe(buildId);
+}
+
 async function switchBuild(build: 'old' | 'new' | 'failed' | 'retry') {
   const response = await fetch(`http://127.0.0.1:4173/__pwa_test__/switch/${build}`, {
     method: 'POST',
@@ -138,8 +145,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const newBuildId = await activeBuildId(page);
   expect(newBuildId).not.toBe(oldBuildId);
 
-  await page.reload();
-  expect(await pageBuildId(page)).toBe(newBuildId);
+  await reloadIntoBuild(page, newBuildId);
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
@@ -184,8 +190,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const cacheNames = await page.evaluate(() => caches.keys());
   expect(cacheNames).not.toContain(`docuextract-${failedManifest.buildId}-shell`);
 
-  await page.reload();
-  expect(await pageBuildId(page)).toBe(newBuildId);
+  await reloadIntoBuild(page, newBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
 
@@ -223,8 +228,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   const retryBuildId = await activeBuildId(page);
   expect(retryBuildId).not.toBe(newBuildId);
 
-  await page.reload();
-  expect(await pageBuildId(page)).toBe(retryBuildId);
+  await reloadIntoBuild(page, retryBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');

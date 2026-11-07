@@ -1,8 +1,6 @@
 name: Dependency security audit
 on:
   push:
-    branches:
-      - chore/dependency-security-audit
   pull_request:
     branches:
       - main
@@ -13,7 +11,7 @@ permissions:
 
 jobs:
   audit:
-    name: Generate and audit candidate lockfile
+    name: Audit committed dependency tree
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,142 +23,38 @@ jobs:
         run: |
           node --version
           npm --version
-      - name: Use committed lockfile or generate a candidate with npm
-        shell: bash
-        run: |
-          if node --input-type=module -e '
-          import fs from "node:fs";
-          const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
-          const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
-          const root = lock.packages?.[""];
-          const normalize = value => JSON.stringify(Object.entries(value ?? {}).sort(([a], [b]) => a.localeCompare(b)));
-          if (!root ||
-              root.name !== manifest.name ||
-              root.version !== manifest.version ||
-              normalize(root.dependencies) !== normalize(manifest.dependencies) ||
-              normalize(root.devDependencies) !== normalize(manifest.devDependencies) ||
-              normalize(root.optionalDependencies) !== normalize(manifest.optionalDependencies) ||
-              normalize(root.engines) !== normalize(manifest.engines)) process.exit(1);
-          '; then
-            echo "Using committed package-lock.json; npm ci will validate it."
-          else
-            echo "No lockfile matching package.json; generating a candidate lockfile with npm."
-            rm -f package-lock.json
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          fi
-      - name: Install generated lockfile cleanly
+      - name: Install committed dependency tree
         run: npm ci
-      - name: Generate complete dependency audit report
+      - name: Audit committed lockfile
+        id: audit
         shell: bash
         run: |
           set +e
           npm audit --json > npm-audit.json
           audit_status=$?
           set -e
-          NPM_VERSION="$(npm --version)" AUDIT_EXIT_CODE=$audit_status node --input-type=module <<'NODE'
+          node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const audit = JSON.parse(fs.readFileSync('npm-audit.json', 'utf8'));
-          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-          const rows = [];
-          const collectAdvisories = (name, seen = new Set()) => {
-            if (seen.has(name)) return [];
-            seen.add(name);
-            const entry = audit.vulnerabilities?.[name];
-            if (!entry) return [];
-            return (entry.via ?? []).flatMap(v => {
-              if (typeof v === 'object') return [`${v.title ?? v.name ?? 'Advisory title unavailable'} (${v.url ?? 'no advisory URL'})`];
-              if (typeof v === 'string') return collectAdvisories(v, seen);
-              return [];
-            });
-          };
-          const dependsOnMinimatch = (name, seen = new Set()) => {
-            if (seen.has(name)) return false;
-            seen.add(name);
-            const entry = audit.vulnerabilities?.[name];
-            return (entry?.via ?? []).some(v =>
-              typeof v === 'string'
-                ? (v === 'minimatch' || dependsOnMinimatch(v, seen))
-                : typeof v === 'object' && v.name === 'minimatch'
-            );
-          };
-          const compareVersion = (left, right) => {
-            const a = String(left).split('.').map(Number);
-            const b = String(right).split('.').map(Number);
-            for (let i = 0; i < 3; i++) {
-              if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) - (b[i] ?? 0);
-            }
-            return 0;
-          };
-          for (const [name, item] of Object.entries(audit.vulnerabilities ?? {})) {
-            const installedEntries = Object.entries(lock.packages ?? {})
-              .filter(([path]) => path === 'node_modules/' + name || path.endsWith('/node_modules/' + name));
-            const installed = installedEntries.map(([path, pkg]) => `${pkg.version} at ${path}`).join('; ') || 'not found in lockfile';
-            const titles = [...new Set(collectAdvisories(name))].join('; ') ||
-              'No advisory object on this dependency node; follow its dependency chain in npm-audit.json';
-            const fix = item.fixAvailable;
-            const fixedName = fix && typeof fix === 'object' ? (fix.name ?? name) : name;
-            const fixedVersion = fix && typeof fix === 'object' ? fix.version : fix === true ? 'npm audit fix candidate' : 'None reported';
-            const currentFixedPackage = lock.packages?.['node_modules/' + fixedName]?.version;
-            let classification = 'No fix available';
-            if (dependsOnMinimatch(name)) {
-              classification = 'Transitive — needs upstream fix';
-            } else if (fix && typeof fix === 'object' && currentFixedPackage && compareVersion(fixedVersion, currentFixedPackage) < 0) {
-              classification = 'Transitive — needs upstream fix';
-            } else if (fix && typeof fix === 'object' && fix.isSemVerMajor) {
-              classification = 'Requires breaking upgrade';
-            } else if (fix) {
-              classification = 'Safe upgrade';
-            } else if (!item.isDirect) {
-              classification = 'Transitive — needs upstream fix';
-            }
-            rows.push({
-              name, installed, title: titles, severity: item.severity,
-              dependency: item.isDirect ? 'Direct' : 'Transitive',
-              range: item.range ?? 'Not specified',
-              fixed: fixedVersion === 'None reported' ? fixedVersion : `${fixedName}@${fixedVersion}`,
-              classification,
-            });
+          const report = JSON.parse(fs.readFileSync('npm-audit.json', 'utf8'));
+          const counts = report.metadata?.vulnerabilities ?? {};
+          console.log('npm audit severity totals:');
+          for (const severity of ['info', 'low', 'moderate', 'high', 'critical', 'total']) {
+            console.log(`  ${severity}: ${counts[severity] ?? 0}`);
           }
-          const order = {critical:0, high:1, moderate:2, low:3};
-          rows.sort((a,b) => order[a.severity]-order[b.severity] || a.name.localeCompare(b.name));
-          const esc = value => String(value).replaceAll('|','\\|').replaceAll('\n',' ');
-          const table = ['| Package | Installed version(s) and dependency path(s) | Vulnerability title / advisory | Severity | Dependency | Affected range | Fixed version / candidate | Classification |','|---|---|---|---|---|---|---|---|', ...rows.map(r => '| '+[r.name,r.installed,r.title,r.severity,r.dependency,r.range,r.fixed,r.classification].map(esc).join(' | ')+' |')].join('\n');
-          const counts = audit.metadata?.vulnerabilities ?? {};
-          const reachability = {
-            tinypool: 'Critical. Development/test-only worker pool. Worker options originate from repository-owned Vitest configuration and test code; no invoice/user input reaches this API. Not shipped in the production bundle.',
-            vitest: 'Critical. Development/test-only runner. Project scripts use `vitest run`; the vulnerable API/UI server is not started. Not shipped in the production bundle. Keep test-runner upgrades on the security roadmap.',
-            vite: 'High. Development/build tooling. The deployed GitHub Pages site is static and does not run the Vite dev server. Local developers may still expose a dev-server attack surface while running it; do not bind it publicly.',
-            zod: 'High. Direct runtime dependency used for local seller-profile imports. The importer has a 256 KB input cap and bounded schema arrays, and no network endpoint accepts these payloads; these controls are reachability mitigations only and do not accept the advisory. Zod 4 migration is required.',
-          };
-          const criticalHigh = [...new Set(rows.filter(r => r.severity === 'critical' || r.severity === 'high').map(r => r.name))];
-          const reachabilityTable = ['| Package | Production reachability / exposure assessment |','|---|---|',
-            ...criticalHigh.map(name => '| '+name+' | '+(reachability[name] ?? 'Review the raw advisory and dependency path; no production exploit path has been established.')+' |')].join('\n');
-          const summary = '# Dependency security audit\\n\\nThis report is generated from the npm-created candidate lockfile using Node 22.23.4. The complete raw npm report is attached as npm-audit.json.\\n\\n' +
-            '## Toolchain\\n\\n- Node: '+process.version+'\\n- npm: '+process.env.NPM_VERSION+'\\n- npm audit exit code: '+process.env.AUDIT_EXIT_CODE+'\\n\\n' +
-            '## Severity totals\\n\\n' + Object.entries(counts).map(([k,v]) => '- '+k+': '+v).join('\\n') + '\\n\\n' +
-            '## Vulnerability details\\n\\n' + (rows.length ? table : 'No known vulnerabilities reported by npm audit.') +
-            '\\n\\n## Candidate package changes\\n\\n' +
-            '- Vitest 2.1.9 → 5.1.0; Vite 5.4.21 → 8.3.6; @vitejs/plugin-react 4.7.0 → 6.2.1.\\n' +
-            '- Zod 3.23.8 → 4.6.7.\\n' +
-            '- Scoped @typescript-eslint/typescript-estree minimatch override → 11.0.5; retain only if compatibility tests pass.\\n' +
-            '- CI Node runtime → 22.23.4 with npm version recorded above.\\n\\n' +
-            '## Critical/high reachability review\\n\\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
-            '\\n\\n## Remediation decision\\n\\nNo advisories are suppressed and no residual risk is accepted. Any finding remaining in this generated lockfile blocks remediation completion and requires advisory-level review and a documented fix or blocker.\\n';
-          fs.writeFileSync('dependency-audit-report.md', summary);
-          console.log(summary);
-          console.log('npm audit exit code:', process.env.AUDIT_EXIT_CODE);
           NODE
-          echo "npm audit completed with exit code ${audit_status}; report retained for review."
-      - name: Enforce clean audit
-        run: npm audit --audit-level=low
-      - name: Upload full audit evidence
+          echo "exit_code=$audit_status" >> "$GITHUB_OUTPUT"
+          echo "npm audit exit code: $audit_status"
+      - name: Upload raw committed-lockfile audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-security-audit
-          path: |
-            package-lock.json
-            npm-audit.json
-            dependency-audit-report.md
+          path: npm-audit.json
           if-no-files-found: error
           retention-days: 30
+      - name: Enforce clean audit
+        if: always()
+        env:
+          AUDIT_EXIT_CODE: ${{ steps.audit.outputs.exit_code }}
+        run: |
+          test "$AUDIT_EXIT_CODE" = "0"

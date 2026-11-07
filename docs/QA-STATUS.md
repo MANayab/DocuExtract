@@ -49,7 +49,7 @@ The v1.6.1 candidate dependency audit [run #42374742371](https://github.com/MANa
 
 ## v1.6.1 release-candidate QA
 
-Automated coverage added in `e2e/pwa-ui.spec.ts` checks upload visibility at 1366×768 and 390×844; page overflow and container bounds at 1366×768, 1920×1080 and 390×844 in light and dark color schemes; keyboard access to Reading options; independent invoice-locale and OCR-language controls; and PWA banner semantics, theme contrast change, text separation, container bounds and keyboard dismissal.
+Automated coverage added in `e2e/pwa-ui.spec.ts` checks upload visibility at 1366×768 and 390×844; page overflow and container bounds at 1366×768, 1920×1080 and 390×844 in light and dark color schemes; keyboard access to Reading options; independent invoice-locale and OCR-language controls; and PWA banner semantics, light/dark styling, online/offline transitions, text separation, container bounds and keyboard dismissal. Existing locale, OCR and PWA acceptance tests were updated to operate the collapsed Reading options disclosure and assert the v1.6.1 build metadata.
 
 These are Chromium checks against the production build. They do not verify 1920×1080, every screen/dialog, all contrast ratios, screen-reader behavior, real device installation, actual offline use on a phone, or the visual quality of every dashboard/review/export state.
 

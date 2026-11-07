@@ -148,6 +148,7 @@ const scannedPdf = async (language: 'eng' | 'deu' | 'hin', page: Page) => {
 async function openApp(page: Page) {
   await page.goto('./');
   await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
+  await page.getByText('Reading options', { exact: true }).click();
 }
 
 async function selectLocaleForOcr(page: Page, language: 'eng' | 'deu' | 'hin') {
@@ -373,6 +374,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
   }) => {
     const diagnostics = diagnosticsByPage.get(page)!;
 
+    await context.setOffline(false);
     await openApp(page);
     await selectLocaleForOcr(page, language);
     await expect(
@@ -397,8 +399,10 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
         timeout: 30_000,
       },
     );
+    // Reading options intentionally collapse on a fresh upload-first page load.
+    await page.getByText('Reading options', { exact: true }).click();
     await expect(
-      page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
+      page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
     await page.getByLabel('Scanned PDF language').selectOption(language);
     if (language === 'deu') await page.getByLabel('Invoice locale').selectOption('de-DE');
@@ -443,6 +447,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
   }) => {
     const diagnostics = diagnosticsByPage.get(page)!;
 
+    await context.setOffline(false);
     await openApp(page);
     await selectLocaleForOcr(page, language);
     await expect(

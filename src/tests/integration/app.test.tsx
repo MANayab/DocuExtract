@@ -6,11 +6,15 @@ describe('app', () => {
   it('renders the upload screen with the page structure crawlers and users rely on', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { level: 1, name: /PDF Invoice to Excel/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: /PDF Invoice to Excel/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Choose PDF/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Choose invoice PDFs/i)).toHaveAttribute('multiple');
     expect(screen.getByRole('heading', { name: /How it works/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Frequently asked questions/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Frequently asked questions/i }),
+    ).toBeInTheDocument();
   });
 
   it('shows no results or export section before any file is added', () => {
@@ -24,5 +28,14 @@ describe('app', () => {
     render(<App />);
 
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  it('puts the upload action before collapsed reading options', () => {
+    render(<App />);
+
+    const upload = screen.getByRole('button', { name: /Choose PDF/i });
+    const options = screen.getByText('Reading options');
+    expect(upload.compareDocumentPosition(options) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(options.closest('details')).not.toHaveAttribute('open');
   });
 });

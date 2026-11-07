@@ -374,10 +374,11 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
   }) => {
     const diagnostics = diagnosticsByPage.get(page)!;
 
+    await context.setOffline(false);
     await openApp(page);
     await selectLocaleForOcr(page, language);
     await expect(
-      page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
+      page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
     await page.getByLabel('Scanned PDF language').selectOption(language);
     if (language === 'deu') await page.getByLabel('Invoice locale').selectOption('de-DE');

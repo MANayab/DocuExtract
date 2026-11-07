@@ -208,10 +208,12 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Update now' }).click();
-  await expect.poll(() => activeBuildId(page), { timeout: 60_000 }).not.toBe(newBuildId);
-  const retryBuildId = await activeBuildId(page);
-
-  await reloadIntoBuild(page, retryBuildId);
+  // Controller change can race the message-port build-ID probe. A reload is the
+  // user-visible acceptance boundary, so assert the new page and worker agree.
+  await page.reload();
+  await expect.poll(() => pageBuildId(page), { timeout: 30_000 }).not.toBe(newBuildId);
+  const retryBuildId = await pageBuildId(page);
+  expect(await activeBuildId(page)).toBe(retryBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');

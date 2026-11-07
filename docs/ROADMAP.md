@@ -31,7 +31,7 @@ Offline PWA support with a same-origin application shell at `/DocuExtract/`, ver
 
 ## Next
 
-- Implement and verify seller-specific field/table reading rules, or explicitly keep seller profiles as matching-only.
+- [x] Keep seller profiles matching-only for v1.6.1; defer actual field/table reading rules to [issue #25](https://github.com/MANayab/DocuExtract/issues/25).
 - Complete offline extraction/export and two-build service-worker update lifecycle verification.
 - Complete storage/network privacy verification and remediate or explicitly accept residual dependency risk.
 

@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.16.0
+          node-version: 22.23.4
           cache: npm
       - name: Record toolchain
         run: |
@@ -124,7 +124,7 @@ jobs:
             '- PostCSS 8.4.47 → 8.5.32; postcss-selector-parser 6.1.4 → 6.1.5; source-map-js 1.2.1 → 1.2.2.\n' +
             '- Scoped ExcelJS uuid override 8.3.2 → 11.1.1; XLSX export/build/test verification passed.\n' +
             '\n## Critical/high reachability review\n\n' + (criticalHigh.length ? reachabilityTable : 'No critical or high findings.') +
-            '\n\n## Remediation note\n\nThis report is generated from the npm-created candidate lockfile using Node 22.16.0. No integrity hashes are hand-edited, no advisories are suppressed, and no residual risk is accepted. Any remaining finding blocks remediation completion and must be tracked with its exact advisory and dependency path.\n';
+            '\n\n## Remediation note\n\nThis report is generated from the npm-created candidate lockfile using Node 22.23.4. No integrity hashes are hand-edited, no advisories are suppressed, and no residual risk is accepted. Any remaining finding blocks remediation completion and must be tracked with its exact advisory and dependency path.\n';
           fs.writeFileSync('dependency-audit-report.md', summary);
           console.log(summary);
           console.log('npm audit exit code:', process.env.AUDIT_EXIT_CODE);

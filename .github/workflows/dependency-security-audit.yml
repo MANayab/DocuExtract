@@ -26,7 +26,8 @@ jobs:
           node --version
           npm --version
       - name: Generate candidate lockfile with npm
-        run: rm -f package-lock.json
+        run: |
+          rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - name: Install generated lockfile cleanly
         run: npm ci

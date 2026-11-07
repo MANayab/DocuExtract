@@ -150,6 +150,14 @@ async function openApp(page: Page) {
   await expect(page.getByRole('heading', { name: 'PDF Invoice to Excel', level: 1 })).toBeVisible();
 }
 
+async function selectLocaleForOcr(page: Page, language: 'eng' | 'deu' | 'hin') {
+  if (language === 'deu') {
+    await page.getByLabel('Invoice locale').selectOption('de-DE');
+  } else {
+    await page.getByLabel('Invoice locale').selectOption('en-IN');
+  }
+}
+
 const pdf = async (kind: 'basic' | 'empty', name: string) => ({
   name,
   mimeType: 'application/pdf',
@@ -366,6 +374,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
+    await selectLocaleForOcr(page, language);
     await expect(
       page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });
@@ -435,6 +444,7 @@ for (const language of ['eng', 'deu', 'hin'] as const) {
     const diagnostics = diagnosticsByPage.get(page)!;
 
     await openApp(page);
+    await selectLocaleForOcr(page, language);
     await expect(
       page.locator('.dx-pwa:visible').getByText('Offline ready', { exact: true }),
     ).toBeVisible({ timeout: 30_000 });

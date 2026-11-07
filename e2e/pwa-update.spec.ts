@@ -208,9 +208,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Update now' }).click();
-  await expect
-    .poll(() => activeBuildId(page), { timeout: 60_000 })
-    .not.toBe(newBuildId);
+  await expect.poll(() => activeBuildId(page), { timeout: 60_000 }).not.toBe(newBuildId);
   const retryBuildId = await activeBuildId(page);
 
   await reloadIntoBuild(page, retryBuildId);

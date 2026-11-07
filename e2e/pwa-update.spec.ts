@@ -236,3 +236,72 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     )
     .toEqual([`docuextract-${retryBuildId}-shell`]);
 });
+
+test('a quota-exceeded update preserves the last working shell and active worker', async ({
+  page,
+  context,
+}) => {
+  await waitForController(page);
+  const workingBuildId = await activeBuildId(page);
+  const origin = new URL(page.url()).origin;
+  const session = await context.newCDPSession(page);
+
+  try {
+    await session.send('Storage.enable');
+    const { usage } = await session.send('Storage.getUsageAndQuota', { origin });
+    expect(usage).toBeGreaterThan(0);
+    // Constrain real Chromium storage to its current usage. Installing a second
+    // versioned shell must hit the browser's actual Cache Storage quota.
+    await session.send('Storage.overrideQuotaForOrigin', { origin, quotaSize: usage });
+    await switchBuild('quota');
+
+    const failedInstall = await page.evaluate(async () => {
+      const registration = await navigator.serviceWorker.ready;
+      return new Promise<boolean>((resolve, reject) => {
+        const timeout = window.setTimeout(
+          () => reject(new Error('Timed out waiting for quota-limited installation.')),
+          60_000,
+        );
+        registration.addEventListener(
+          'updatefound',
+          () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'redundant') {
+                window.clearTimeout(timeout);
+                resolve(true);
+              }
+            });
+          },
+          { once: true },
+        );
+        registration.update().catch(reject);
+      });
+    });
+    expect(failedInstall).toBe(true);
+    expect(await activeBuildId(page)).toBe(workingBuildId);
+
+    const quotaManifest = JSON.parse(
+      await readFile(resolve('.pwa-test-builds/quota/precache-manifest.json'), 'utf8'),
+    ) as { buildId: string };
+    const cacheNames = await page.evaluate(() => caches.keys());
+    expect(cacheNames).toContain(`docuextract-${workingBuildId}-shell`);
+    expect(cacheNames).not.toContain(`docuextract-${quotaManifest.buildId}-shell`);
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
+    expect(await activeBuildId(page)).toBe(workingBuildId);
+    await page.setInputFiles('input[type="file"]', await pdf('quota-recovery.pdf'));
+    await expect(page.getByRole('heading', { name: 'Review extracted fields' })).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
+  } finally {
+    await session.send('Storage.overrideQuotaForOrigin', {
+      origin,
+      quotaSize: 256 * 1024 * 1024,
+    }).catch(() => undefined);
+    await session.detach();
+  }
+});

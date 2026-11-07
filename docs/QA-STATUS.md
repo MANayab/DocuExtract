@@ -43,9 +43,22 @@ The maintainer has reported opening and processing demo/synthetic files, checkin
 
 The published v1.6.0 release title is **DocuExtract v1.6.0 — Offline PWA and On-Demand OCR Caching** and is intentionally unchanged. The existing `v1.6.0` tag is lightweight and points to `1f1ec88dc997519e67b71784166c487f784859c1`, the PR #18 merge commit. PR #20 was later merged into main at `cd3973fb6227bc79c6b321e6161da4989867e7d2`. This historical tag/release provenance is accepted and must not be rewritten or recreated.
 
-The v1.6.1 candidate dependency audit [run #42374742371](https://github.com/MANayab/DocuExtract/actions/runs/42374742371) generated a full report artifact and found 14 vulnerabilities (2 critical, 2 high, 10 moderate). The audit workflow's successful conclusion means the report was uploaded; `npm audit` itself exited 1. See [SECURITY.md](../SECURITY.md). This candidate is not a dependency-remediation release.
+The v1.6.1 candidate dependency audit [run #42378063709](https://github.com/MANayab/DocuExtract/actions/runs/42378063709) generated a full report artifact and found 14 vulnerabilities (2 critical, 2 high, 10 moderate). The audit workflow's successful conclusion means the report was uploaded; `npm audit` itself exited 1. See [SECURITY.md](../SECURITY.md). This candidate is not a dependency-remediation release.
 
-- Candidate state: PR #23 is open as a draft; no merge, tag, GitHub Release or deployment has been performed.
+- Candidate state: PR #23 remains open and unmerged; no v1.6.1 tag, GitHub Release or deployment has been created. The v1.6.0 tag and release remain unchanged.
+
+## v1.6.1 exact-head verification (2026-11-07)
+
+- Candidate branch: `fix/v1.6.1-pwa-polish`.
+- Verified head: `f24826d8452656917e2f77dc3f49532ca082704d`; base main: `cd3973fb6227bc79c6b321e6161da4989867e7d2`.
+- [CI #42378063770](https://github.com/MANayab/DocuExtract/actions/runs/42378063770): verify and Playwright jobs passed on the PR merge ref containing this head.
+- Verify job: `npm ci`, formatting, typecheck, lint, 27 Vitest files / 139 tests, production build and offline extraction benchmark all passed.
+- [Playwright: 26/26 passed](https://github.com/MANayab/DocuExtract/actions/runs/42378063770). Coverage includes OCR online and after offline reload for all three bundled languages, upload-first responsive layout, PWA state semantics, cached/uncached model behavior, update deferral/acceptance/recovery, exports, privacy and same-origin requests.
+- [OCR asset-size audit #42378063708](https://github.com/MANayab/DocuExtract/actions/runs/42378063708) passed. The feature build is 3,996 bytes larger than main. Worker, both WASM cores and all three language models were inventoried.
+- [Dependency audit #42378063709](https://github.com/MANayab/DocuExtract/actions/runs/42378063709) uploaded the full report; it remains non-clean at 14 findings (2 critical, 2 high, 10 moderate). The workflow succeeded in generating evidence, not in making `npm audit` clean.
+- The first E2E attempt found that the OCR test did not reopen the deliberately collapsed Reading options disclosure after an offline reload. The test was corrected in `f24826d`; no OCR or application behavior was weakened. The final exact-head Playwright run passed.
+- Actual browser OCR tests load the local Tesseract worker, WASM core and language model. English uses the repository's scanned-PDF fixture; German and Hindi use raster-PDF fixtures generated for the browser test. These results verify the test fixtures, not broad accuracy on real supplier invoices.
+- The temporary formatter workflow with repository write permissions was removed in commit `25c39cb81ffebb2d56f6266e309b089b4b90ab26`.
 
 ## v1.6.1 release-candidate QA
 

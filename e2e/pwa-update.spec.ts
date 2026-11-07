@@ -225,13 +225,13 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
-  await page.evaluate(() => {
-    navigator.serviceWorker.controller?.postMessage({ type: 'DOCUEXTRACT_CLEANUP_CACHES' });
-  });
+  // The foreground tab requests cleanup on focus; do not manually invoke the
+  // worker message, so this verifies the application's normal retry trigger.
+  await page.bringToFront();
   await expect
     .poll(() =>
       page.evaluate(() =>
-        caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
+        caches.keys().then((names) => names.filter((name) => name.startsWith('docuextract-'))),
       ),
     )
     .toEqual([`docuextract-${retryBuildId}-shell`]);

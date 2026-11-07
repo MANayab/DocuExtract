@@ -43,6 +43,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
   page.on('request', (request) => {
     observedRequests.push({ url: request.url(), body: request.postData() });
   });
+  await context.setOffline(false);
   await waitForWorker(page);
   const precache = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/precache-manifest.json');
@@ -95,7 +96,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
     await cache.delete(new URL('/DocuExtract/' + asset, window.location.origin).href);
     window.dispatchEvent(new Event('pageshow'));
   }, integrityAsset);
-  await expect(page.locator('.dx-pwa:visible').getByText(/Preparing offline support/)).toBeVisible({
+  await expect(page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true })).toBeVisible({
     timeout: 30_000,
   });
   await context.setOffline(false);

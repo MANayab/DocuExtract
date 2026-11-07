@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const builds = path.join(root, '.pwa-test-builds');
-const allowedBuilds = new Set(['old', 'new', 'failed', 'retry']);
+const allowedBuilds = new Set(['old', 'new', 'failed', 'retry', 'quota']);
 let activeBuild = 'old';
 
 const mimeTypes = {

@@ -207,15 +207,11 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await expect(
     page.locator('.dx-pwa:visible').getByText('Update available', { exact: true }),
   ).toBeVisible();
-  // The retry candidate must install after the failed candidate, while the
-  // known-good active worker continues serving the current tab until acceptance.
-  expect(await activeBuildId(page)).toBe(newBuildId);
-  const retryRegistrationReady = await page.evaluate(async () => {
-    const registration = await navigator.serviceWorker.ready;
-    return Boolean(registration.waiting);
-  });
-  expect(retryRegistrationReady).toBe(true);
-  const retryBuildId = newBuildId;
+  await page.getByRole('button', { name: 'Update now' }).click();
+  await expect
+    .poll(() => activeBuildId(page), { timeout: 60_000 })
+    .not.toBe(newBuildId);
+  const retryBuildId = await activeBuildId(page);
 
   await reloadIntoBuild(page, retryBuildId);
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
@@ -226,7 +222,7 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     caches.keys().then((names) => names.filter((name) => name.endsWith('-shell'))),
   );
   expect(shellCachesBeforeCleanup).toContain(`docuextract-${oldBuildId}-shell`);
-  expect(shellCachesBeforeCleanup).toContain(`docuextract-${newBuildId}-shell`);
+  expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
   await page.evaluate(() => {

@@ -27,41 +27,23 @@ jobs:
           node-version: 22.23.4
           cache: npm
           cache-dependency-path: feature/package-lock.json
+      - name: Install committed feature dependency tree
+        working-directory: feature
+        run: npm ci
       - name: Build feature branch
         working-directory: feature
-        run: |
-          if node --input-type=module -e '
-          import fs from "node:fs";
-          const manifest = JSON.parse(fs.readFileSync("package.json", "utf8"));
-          const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
-          const root = lock.packages?.[""];
-          const normalize = value => JSON.stringify(Object.entries(value ?? {}).sort(([a], [b]) => a.localeCompare(b)));
-          if (!root ||
-              root.name !== manifest.name ||
-              root.version !== manifest.version ||
-              normalize(root.dependencies) !== normalize(manifest.dependencies) ||
-              normalize(root.devDependencies) !== normalize(manifest.devDependencies) ||
-              normalize(root.optionalDependencies) !== normalize(manifest.optionalDependencies) ||
-              normalize(root.engines) !== normalize(manifest.engines)) process.exit(1);
-          '; then
-            echo "Using committed package-lock.json; npm ci will validate it."
-          else
-            echo "No lockfile matching package.json; generating a candidate lockfile with npm."
-            rm -f package-lock.json
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          fi
-          npm ci
-          npm run build
+        run: npm run build
       - name: Checkout main baseline
         uses: actions/checkout@v4
         with:
           ref: main
           path: baseline
+      - name: Install committed main dependency tree
+        working-directory: baseline
+        run: npm ci
       - name: Build main baseline
         working-directory: baseline
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
       - name: Measure models and deploy output
         shell: bash
         run: |

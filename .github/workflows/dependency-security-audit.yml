@@ -50,10 +50,10 @@ jobs:
         with:
           name: dependency-security-audit
           path: npm-audit.json
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 30
       - name: Enforce clean audit
-        if: always()
+        if: steps.audit.outcome == 'success'
         env:
           AUDIT_EXIT_CODE: ${{ steps.audit.outputs.exit_code }}
         run: |

@@ -2,11 +2,11 @@
 
 DocuExtract runs Tesseract locally in the browser for scanned or image-only pages. English, German and Hindi are selectable when their locally bundled models are present. OCR language is independent of invoice locale.
 
-Mixed PDFs keep text-layer pages and send pages without extractable text through OCR. OCR-derived values are capped at 75% confidence and require review.
+Mixed PDFs keep text-layer pages and send pages without extractable text through OCR. OCR-derived values are capped at 75% confidence and require review. The scanned-PDF language selector is independent of invoice locale and is available in the Reading options disclosure below the primary upload action.
 
 ## Offline preparation
 
-After the app reports **Offline ready**, selecting an OCR language while online downloads that language model into its separate versioned Cache Storage entry. This prepares OCR for offline use without requiring the user to process an invoice online first. A language model is not cached until the user selects or uses that language.
+After the app reports **Offline ready**, selecting an OCR language in Reading options while online downloads that language model into its separate versioned Cache Storage entry. This prepares OCR for offline use without requiring the user to process an invoice online first. A language model is not cached until the user selects or uses that language.
 
 If the model has not been cached and the device is offline, the app returns a clear recoverable message asking the user to connect and select the language once. The engine uses a same-origin GET availability request because the service worker intentionally handles GET requests; a HEAD probe would bypass that route. The service worker returns a structured 503 for an uncached offline model, and the OCR action can be retried after connectivity returns.
 

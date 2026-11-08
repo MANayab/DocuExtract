@@ -140,8 +140,8 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     oldBuildId,
     { timeout: 60_000 },
   );
+  await expect.poll(() => activeBuildId(page), { timeout: 60_000 }).not.toBe(oldBuildId);
   const newBuildId = await activeBuildId(page);
-  expect(newBuildId).not.toBe(oldBuildId);
 
   await reloadIntoBuild(page, newBuildId);
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);

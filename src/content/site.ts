@@ -66,7 +66,7 @@ export function features(ocrBundled: boolean): Feature[] {
     {
       id: 'offline',
       title: 'Offline app support',
-      body: 'The application shell and PDF standard fonts are cached on this device. Select an OCR language while online to prepare its model for later offline use. Invoice files and extracted data are not cached.',
+      body: 'The offline application shell, OCR runtime and PDF standard fonts are cached on this device. Select an OCR language in Reading options while online to prepare its model for later offline use. Invoice files and extracted data are not cached.',
     },
     {
       id: 'export',

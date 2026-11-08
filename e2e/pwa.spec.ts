@@ -43,6 +43,7 @@ test('reloads offline and performs extraction without caching invoice data', asy
   page.on('request', (request) => {
     observedRequests.push({ url: request.url(), body: request.postData() });
   });
+  await context.setOffline(false);
   await waitForWorker(page);
   const precache = await page.evaluate(async () => {
     const response = await fetch('/DocuExtract/precache-manifest.json');
@@ -72,8 +73,8 @@ test('reloads offline and performs extraction without caching invoice data', asy
       cached: [...cachedUrls],
     };
   });
-  expect(precache.version).toBe('1.6.0');
-  expect(precache.buildId).toMatch(/^1\.6\.0-[a-f0-9]{10}$/);
+  expect(precache.version).toBe('1.6.1');
+  expect(precache.buildId).toMatch(/^1\.6\.1-[a-f0-9]{10}$/);
   expect(precache.fonts).toHaveLength(14);
   expect(precache.ocrRuntime).toContain('ocr/manifest.json');
   expect(precache.ocrRuntime).toContain('ocr/worker.min.js');
@@ -95,7 +96,9 @@ test('reloads offline and performs extraction without caching invoice data', asy
     await cache.delete(new URL('/DocuExtract/' + asset, window.location.origin).href);
     window.dispatchEvent(new Event('pageshow'));
   }, integrityAsset);
-  await expect(page.locator('.dx-pwa:visible').getByText(/Preparing offline support/)).toBeVisible({
+  await expect(
+    page.locator('.dx-pwa:visible').getByText('Offline mode', { exact: true }),
+  ).toBeVisible({
     timeout: 30_000,
   });
   await context.setOffline(false);
@@ -257,6 +260,7 @@ test('prepares a selected OCR language without processing an invoice and reports
   context,
 }) => {
   await waitForWorker(page);
+  await page.getByText('Reading options', { exact: true }).click();
   await page.selectOption('#ocr-language', 'deu');
   await expect(page.getByText('deu OCR model is cached for offline use.')).toBeVisible({
     timeout: 60_000,

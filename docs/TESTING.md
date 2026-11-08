@@ -35,7 +35,7 @@ The 2026-11-06 main-baseline benchmark processed 8 synthetic invoices: 8/8 zero-
 
 Playwright runs Chromium against the production build served under `/DocuExtract/`. The reporter writes an HTML report to `playwright-report/` and raw results to `test-results/`; CI uploads both even after a failed test run. A missing report is a workflow warning, not silently treated as evidence.
 
-The main baseline run recorded 12 passing Chromium tests. This did not cover every requested offline lifecycle scenario. In particular, full offline extraction plus parsed XLSX/CSV/JSON downloads, controlled two-build update acceptance/deferral/failure recovery, multi-tab safety, and quota-failure recovery remain unverified.
+The PR #20 main baseline recorded 12 passing Chromium tests. The v1.6.1 candidate adds Chromium assertions for the PWA status banner's role, live announcement, separate title/detail, container bounds and keyboard dismissal; upload visibility at 1366×768 and 390×844; and independent locale/OCR-language selection. This did not cover every requested offline lifecycle scenario. In particular, full offline extraction plus parsed XLSX/CSV/JSON downloads, controlled two-build update acceptance/deferral/failure recovery, multi-tab safety, and quota-failure recovery remain unverified.
 
 ## Offline PWA test requirements
 
@@ -47,7 +47,7 @@ A passing mocked update-button test is not two-build update lifecycle verificati
 
 Use distinctive synthetic invoice markers. Inspect Cache Storage response bodies, localStorage, sessionStorage, IndexedDB, URL/query parameters and request bodies after upload, extraction, correction, seller-profile save/import/delete, export and reload. Cache key names alone do not prove invoice content is absent.
 
-## Human QA
+The candidate viewport checks do not cover 1920×1080, every dashboard/review/export state, alternate browsers, actual devices, screen-reader behavior or a complete manual contrast audit.\n\n## Human QA
 
 Human QA is separate from automated coverage. Real scans, multilingual OCR, seller-profile behavior, downloaded files, supported device/browser combinations, keyboard navigation and screen-reader behavior remain pending until recorded in the QA report.
 

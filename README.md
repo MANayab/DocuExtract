@@ -10,7 +10,7 @@ No backend. No account. No database. No analytics. No telemetry.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MANayab/DocuExtract/deploy.yml?branch=main&style=flat-square&label=deploy)](https://github.com/MANayab/DocuExtract/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1F6B45?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.0-C8431F?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.1-C8431F?style=flat-square)](CHANGELOG.md)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-1C1B19?style=flat-square)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-18.3-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -376,7 +376,7 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md). Please do not open
 
 ## Roadmap
 
-Released through v1.6.0:
+Released through v1.6.0; v1.6.1 PWA polish is prepared in the current release PR:
 
 - v1.0.0: browser-only text-PDF extraction, review, validation and export.
 - v1.1.0: batch processing, multi-invoice splitting, GST handling, English local OCR and combined exports.
@@ -385,7 +385,8 @@ Released through v1.6.0:
 - v1.4.0: selectable English, German and Hindi local OCR, mixed-page handling and OCR asset auditing.
 - v1.5.0: consent-based seller-name matching profiles with validated local import/export; custom field/table rules are not connected to parsing.
 - v1.5.1: extraction-quality improvements, offline quality gates and version consistency.
-- v1.6.0: offline PWA app shell, on-demand OCR language caching and user-controlled update handling.
+- v1.6.0: offline PWA app shell, on-demand OCR language caching and user-controlled update handling. The historical release tag remains on its original v1.6.0 commit; PR #20 subsequently hardened its PWA, privacy and QA baseline.
+- v1.6.1 (release candidate): responsive, dismissible offline/update status; upload-first layout with independent, collapsible invoice-locale and OCR-language settings; expanded Playwright layout and accessibility assertions.
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for limitations and later ideas.
 

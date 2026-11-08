@@ -29,11 +29,18 @@ Improved difficult line-item and table extraction, added currency fallback and w
 ### v1.6.0
 Offline PWA support with a same-origin application shell at `/DocuExtract/`, versioned application/OCR caches, PDF.js standard-font caching and user-controlled update handling. OCR models are cached after a language is selected or used online. Invoice PDFs and extracted invoice data are excluded from service-worker caches.
 
+## v1.6.1 release candidate
+
+PWA presentation and upload-first layout polish: accessible state banner, responsive page-container alignment, keyboard-operable dismissal, reserved banner space, and collapsed independent reading options below upload. Automated Chromium layout checks are added; visual review on real desktop and phone devices remains pending.
+
 ## Next
 
 - [x] Keep seller profiles matching-only for v1.6.1; defer actual field/table reading rules to [issue #25](https://github.com/MANayab/DocuExtract/issues/25).
 - Complete offline extraction/export and two-build service-worker update lifecycle verification.
 - Complete storage/network privacy verification and remediate or explicitly accept residual dependency risk.
+- v1.7.0: extraction quality, language-specific OCR amount parsing, end-to-end seller templates, HSN/SAC and field-level benchmark reporting.
+- v1.7.1: dependency remediation, privacy/network audit automation and release consistency checks.
+- v1.8.0: measured performance budgets and accessibility hardening.
 
 ## Later ideas
 

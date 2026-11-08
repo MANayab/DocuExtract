@@ -140,8 +140,8 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
     oldBuildId,
     { timeout: 60_000 },
   );
+  await expect.poll(() => activeBuildId(page), { timeout: 60_000 }).not.toBe(oldBuildId);
   const newBuildId = await activeBuildId(page);
-  expect(newBuildId).not.toBe(oldBuildId);
 
   await reloadIntoBuild(page, newBuildId);
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);
@@ -213,7 +213,15 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   await page.reload();
   await expect.poll(() => pageBuildId(page), { timeout: 30_000 }).not.toBe(newBuildId);
   const retryBuildId = await pageBuildId(page);
-  expect(await activeBuildId(page)).toBe(retryBuildId);
+  await expect
+    .poll(
+      async () => ({
+        page: await pageBuildId(page),
+        worker: await activeBuildId(page),
+      }),
+      { timeout: 30_000 },
+    )
+    .toEqual({ page: retryBuildId, worker: retryBuildId });
   await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
   expect(await pageBuildId(secondTab)).toBe(oldBuildId);
   await expect(secondTab.getByLabel('Invoice number')).toHaveValue('INV-BASIC-001');
@@ -225,17 +233,20 @@ test('defers and accepts a real two-build update, preserves an old tab, and reco
   expect(shellCachesBeforeCleanup).not.toContain(`docuextract-${newBuildId}-shell`);
 
   await secondTab.close();
-  // Reloading fires the app's normal pageshow cleanup trigger; no manual
-  // service-worker cleanup message is sent by the test.
-  await page.reload();
-  await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
+  // Each normal pageshow asks the worker to inspect live clients. A cache is
+  // deleted only after two complete snapshots agree that its build is inactive,
+  // so reload twice instead of relying on a timer after the tab closes.
+  for (let pass = 0; pass < 2; pass += 1) {
+    await page.reload();
+    await expect(page.getByRole('heading', { name: /PDF Invoice to Excel/i })).toBeVisible();
+  }
   await expect
     .poll(() =>
       page.evaluate(() =>
         caches.keys().then((names) => names.filter((name) => name.startsWith('docuextract-'))),
       ),
     )
-    .toEqual([`docuextract-${retryBuildId}-shell`]);
+    .toEqual(['docuextract-' + retryBuildId + '-shell']);
 });
 
 test('a quota-exceeded update preserves the last working shell and active worker', async ({

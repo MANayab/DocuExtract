@@ -19,6 +19,7 @@ jobs:
           cache: npm
       - name: Regenerate with npm
         run: |
+          rm package-lock.json
           npm install
           git diff -- package-lock.json
       - name: Prove clean install

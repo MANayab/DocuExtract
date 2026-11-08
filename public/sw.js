@@ -51,6 +51,9 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// A cache must be absent from two complete client snapshots before deletion.
+const inactiveShellCandidates = new Set();
+
 async function cleanupInactiveCaches() {
   const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   const activeBuildIds = new Set([BUILD_ID]);
@@ -99,13 +102,23 @@ async function cleanupInactiveCaches() {
 
   // An old or suspended tab that cannot identify its build may still need its
   // hashed chunks. Keep all caches until every live tab has replied.
-  if (!allClientsReported) return false;
+  if (!allClientsReported) {
+    inactiveShellCandidates.clear();
+    return false;
+  }
 
   const cacheNames = await caches.keys();
   for (const name of cacheNames) {
     if (name.startsWith('docuextract-') && name.endsWith('-shell')) {
       const buildId = name.slice('docuextract-'.length, -'-shell'.length);
-      if (!activeBuildIds.has(buildId)) await caches.delete(name);
+      if (activeBuildIds.has(buildId)) {
+        inactiveShellCandidates.delete(name);
+      } else if (inactiveShellCandidates.has(name)) {
+        await caches.delete(name);
+        inactiveShellCandidates.delete(name);
+      } else {
+        inactiveShellCandidates.add(name);
+      }
       continue;
     }
 
@@ -126,14 +139,7 @@ async function cleanupInactiveCaches() {
   return true;
 }
 
-async function cleanupWithShortRetry() {
-  await cleanupInactiveCaches();
-  // A closing tab can still appear as a healthy client during the first probe.
-  // Probe once more after the browser has had a chance to remove it. A genuinely
-  // open old tab will report its build ID again, so its cache remains protected.
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  await cleanupInactiveCaches();
-}
+
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -154,7 +160,7 @@ self.addEventListener('message', (event) => {
     return;
   }
   if (event.data?.type === 'DOCUEXTRACT_CLEANUP_CACHES') {
-    event.waitUntil(cleanupWithShortRetry());
+    event.waitUntil(cleanupInactiveCaches());
   }
 });
 

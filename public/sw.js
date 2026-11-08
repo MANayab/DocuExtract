@@ -142,8 +142,6 @@ async function cleanupInactiveCaches() {
   return true;
 }
 
-
-
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {

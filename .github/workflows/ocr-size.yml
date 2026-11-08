@@ -24,24 +24,26 @@ jobs:
           path: feature
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: feature/package-lock.json
+      - name: Install committed feature dependency tree
+        working-directory: feature
+        run: npm ci
       - name: Build feature branch
         working-directory: feature
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
       - name: Checkout main baseline
         uses: actions/checkout@v4
         with:
           ref: main
           path: baseline
+      - name: Install committed main dependency tree
+        working-directory: baseline
+        run: npm ci
       - name: Build main baseline
         working-directory: baseline
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
       - name: Measure models and deploy output
         shell: bash
         run: |

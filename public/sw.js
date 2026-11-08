@@ -127,10 +127,11 @@ async function cleanupInactiveCaches() {
 }
 
 async function cleanupWithShortRetry() {
-  if (await cleanupInactiveCaches()) return;
-  // A tab can disappear between clients.matchAll() and the build-ID probe.
-  // Retry once so a recently closed tab does not keep an obsolete shell forever.
-  await new Promise((resolve) => setTimeout(resolve, 250));
+  await cleanupInactiveCaches();
+  // A closing tab can still appear as a healthy client during the first probe.
+  // Probe once more after the browser has had a chance to remove it. A genuinely
+  // open old tab will report its build ID again, so its cache remains protected.
+  await new Promise((resolve) => setTimeout(resolve, 500));
   await cleanupInactiveCaches();
 }
 

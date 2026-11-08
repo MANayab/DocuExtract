@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   verify:
+    name: Verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,9 +19,14 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
           cache: npm
-      - run: npm ci
+      - name: Record toolchain
+        run: |
+          node --version
+          npm --version
+      - name: Install committed dependency tree
+        run: npm ci
       - name: Check formatting
         run: npm run format:check
       - run: npm run typecheck
@@ -49,9 +55,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
           cache: npm
-      - run: npm ci
+      - name: Install committed dependency tree
+        run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Install the Devanagari font used by the Hindi scan fixture
         run: |

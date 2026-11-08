@@ -119,14 +119,33 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    minify: 'esbuild',
     // exceljs (~0.9 MB) and tesseract load on demand; the pdf.js worker is a separate asset.
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: { pdf: ['pdfjs-dist'], excel: ['exceljs'], ocr: ['tesseract.js'] },
+        codeSplitting: {
+          groups: [
+            {
+              name: 'pdf',
+              test: /node_modules[\\/]pdfjs-dist[\\/]/,
+              priority: 30,
+            },
+            {
+              name: 'excel',
+              test: /node_modules[\\/]exceljs[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'ocr',
+              test: /node_modules[\\/]tesseract\\.js[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+        minify: {
+          compress: { dropConsole: true, dropDebugger: true },
+        },
       },
     },
   },
-  esbuild: { drop: ['console', 'debugger'] },
 });

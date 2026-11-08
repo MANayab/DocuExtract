@@ -51,8 +51,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
+// A cache must be absent from two complete client snapshots before deletion.
+const inactiveShellCandidates = new Set();
+
 async function cleanupInactiveCaches() {
-  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const windows = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
   const activeBuildIds = new Set([BUILD_ID]);
   let allClientsReported = true;
 
@@ -99,13 +105,23 @@ async function cleanupInactiveCaches() {
 
   // An old or suspended tab that cannot identify its build may still need its
   // hashed chunks. Keep all caches until every live tab has replied.
-  if (!allClientsReported) return;
+  if (!allClientsReported) {
+    inactiveShellCandidates.clear();
+    return false;
+  }
 
   const cacheNames = await caches.keys();
   for (const name of cacheNames) {
     if (name.startsWith('docuextract-') && name.endsWith('-shell')) {
       const buildId = name.slice('docuextract-'.length, -'-shell'.length);
-      if (!activeBuildIds.has(buildId)) await caches.delete(name);
+      if (activeBuildIds.has(buildId)) {
+        inactiveShellCandidates.delete(name);
+      } else if (inactiveShellCandidates.has(name)) {
+        await caches.delete(name);
+        inactiveShellCandidates.delete(name);
+      } else {
+        inactiveShellCandidates.add(name);
+      }
       continue;
     }
 
@@ -123,6 +139,7 @@ async function cleanupInactiveCaches() {
     }
     await caches.delete(name);
   }
+  return true;
 }
 
 self.addEventListener('activate', (event) => {

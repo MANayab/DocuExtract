@@ -99,7 +99,7 @@ async function cleanupInactiveCaches() {
 
   // An old or suspended tab that cannot identify its build may still need its
   // hashed chunks. Keep all caches until every live tab has replied.
-  if (!allClientsReported) return;
+  if (!allClientsReported) return false;
 
   const cacheNames = await caches.keys();
   for (const name of cacheNames) {
@@ -123,6 +123,15 @@ async function cleanupInactiveCaches() {
     }
     await caches.delete(name);
   }
+  return true;
+}
+
+async function cleanupWithShortRetry() {
+  if (await cleanupInactiveCaches()) return;
+  // A tab can disappear between clients.matchAll() and the build-ID probe.
+  // Retry once so a recently closed tab does not keep an obsolete shell forever.
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  await cleanupInactiveCaches();
 }
 
 self.addEventListener('activate', (event) => {
@@ -144,7 +153,7 @@ self.addEventListener('message', (event) => {
     return;
   }
   if (event.data?.type === 'DOCUEXTRACT_CLEANUP_CACHES') {
-    event.waitUntil(cleanupInactiveCaches());
+    event.waitUntil(cleanupWithShortRetry());
   }
 });
 

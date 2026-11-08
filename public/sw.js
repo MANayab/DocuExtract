@@ -55,7 +55,10 @@ self.addEventListener('install', (event) => {
 const inactiveShellCandidates = new Set();
 
 async function cleanupInactiveCaches() {
-  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  const windows = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
   const activeBuildIds = new Set([BUILD_ID]);
   let allClientsReported = true;
 
